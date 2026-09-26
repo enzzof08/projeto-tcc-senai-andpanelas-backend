@@ -1,0 +1,3654 @@
+openapi: 3.0.0
+
+info:
+  title: API Plataforma Inteligente de Receitas - Entre Panelas
+  description: API para controlar o projeto da Plataforma de Receita Inteligentes
+  version: 1.0.10.26
+  contact:
+    name: Entre Panelas
+    url: https://entrepanelas.com.br
+  license:
+    name: Proprietary
+    url: https://entrepanelas.com.br
+
+servers:
+  - url: /v1/entrepanelas
+    description: Entre Panelas API v1
+
+tags:
+  - name: Autenticação
+    description: Rotas de login, registro e recuperação de conta
+  - name: Usuários
+    description: CRUD e operações relacionadas a perfis de usuário
+  - name: Receitas
+    description: CRUD de receitas e operações relacionadas
+  - name: Ingredientes
+    description: Ingredientes das receitas
+  - name: Geladeira
+    description: Ingredientes disponíveis na geladeira do usuário
+  - name: Lista de Compras
+    description: Gerenciamento de lista de compras
+  - name: Comunidades
+    description: Operações com comunidades
+  - name: Interações
+    description: Curtidas e comentários em receitas
+  - name: Chefinho
+    description: Conversa com assistente IA
+  - name: Denúncias
+    description: Sistema de denúncias com análise por IA
+  - name: Seguindo
+    description: Operações de seguir/seguidores
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # RESPONSE ENVELOPE
+    ApiResponse:
+      type: object
+      properties:
+        api_description:
+          type: string
+          default: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+        development:
+          type: string
+          description: "Nome do desenvolvedor responsável (vazio na documentação inicial)"
+          default: ""
+        version:
+          type: string
+          default: "1.0.10.26"
+        status:
+          type: boolean
+        status_code:
+          type: integer
+          enum: [200, 201, 400, 401, 404, 415, 500, 502]
+        response:
+          type: object
+      required:
+        - api_description
+        - development
+        - version
+        - status
+        - status_code
+        - response
+
+    ErrorResponse:
+      type: object
+      properties:
+        api_description:
+          type: string
+          default: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+        development:
+          type: string
+          default: ""
+        version:
+          type: string
+          default: "1.0.10.26"
+        status:
+          type: boolean
+          enum: [false]
+        status_code:
+          type: integer
+          enum: [400, 401, 404, 415, 500, 502]
+        response:
+          type: object
+          properties:
+            message:
+              type: string
+
+    # USUARIO
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        nome:
+          type: string
+          maxLength: 150
+        username:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 256
+        descricao:
+          type: string
+          maxLength: 200
+        banner_url:
+          type: string
+          format: uri
+          maxLength: 2000
+        foto_perfil:
+          type: string
+          format: uri
+          maxLength: 2000
+        data_nascimento:
+          type: string
+          format: date
+      required:
+        - nome
+        - username
+        - email
+        - descricao
+        - banner_url
+        - foto_perfil
+        - data_nascimento
+
+    UsuarioPerfil:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        username:
+          type: string
+        descricao:
+          type: string
+        banner_url:
+          type: string
+        foto_perfil:
+          type: string
+        data_nascimento:
+          type: string
+          format: date
+        qtd_seguidores:
+          type: integer
+        qtd_seguindo:
+          type: integer
+        qtd_receitas:
+          type: integer
+
+    # RECEITA
+    Receita:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        titulo:
+          type: string
+          maxLength: 50
+        descricao:
+          type: string
+          maxLength: 200
+        foto:
+          type: string
+          format: uri
+          maxLength: 2048
+        video:
+          type: string
+          format: uri
+          maxLength: 2083
+        tempo:
+          type: string
+          format: time
+          description: "Tempo de preparo no formato HH:MM:SS"
+        qtd_curtida:
+          type: integer
+          minimum: 0
+        id_custo:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1=Econômico, 2=Moderado, 3=Alto"
+        id_dificuldade:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1=Fácil, 2=Médio, 3=Difícil"
+        id_porcao:
+          type: integer
+          minimum: 1
+          maximum: 15
+        id_usuario:
+          type: integer
+        usuario:
+          $ref: '#/components/schemas/UsuarioSimplificado'
+      required:
+        - titulo
+        - descricao
+        - foto
+        - tempo
+        - id_custo
+        - id_dificuldade
+        - id_porcao
+        - id_usuario
+
+    ReceitaCompleta:
+      allOf:
+        - $ref: '#/components/schemas/Receita'
+        - type: object
+          properties:
+            ingredientes:
+              type: array
+              items:
+                $ref: '#/components/schemas/Ingrediente'
+            modo_preparo:
+              type: array
+              items:
+                $ref: '#/components/schemas/ModoPreparo'
+            categorias:
+              type: array
+              items:
+                type: string
+            tags:
+              type: array
+              items:
+                type: string
+            comentarios:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comentario'
+            eh_curtida_pelo_usuario:
+              type: boolean
+            eh_salva_pelo_usuario:
+              type: boolean
+
+    UsuarioSimplificado:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        username:
+          type: string
+        foto_perfil:
+          type: string
+
+    # INGREDIENTE
+    Ingrediente:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        nome:
+          type: string
+          maxLength: 35
+        quantidade:
+          type: string
+          maxLength: 10
+        id_unidade_medida:
+          type: integer
+          description: "1=g, 2=kg, 3=ml, 4=L, 5=un"
+        unidade_medida:
+          type: string
+      required:
+        - nome
+        - quantidade
+        - id_unidade_medida
+
+    # MODO PREPARO
+    ModoPreparo:
+      type: object
+      properties:
+        id:
+          type: integer
+        metodo_preparo:
+          type: string
+          maxLength: 250
+        ordem_preparo:
+          type: integer
+          minimum: 1
+
+    # CATEGORIA
+    Categoria:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoria:
+          type: string
+          enum:
+            - "Café da manhã"
+            - "Almoço"
+            - "Jantar"
+            - "Sobremesa"
+            - "Lanche"
+            - "Sopa"
+            - "Salada"
+            - "Bebida"
+
+    # TAG
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome_tag:
+          type: string
+          maxLength: 30
+
+    # COMENTARIO
+    Comentario:
+      type: object
+      properties:
+        id:
+          type: integer
+        comentario:
+          type: string
+          maxLength: 250
+        id_receita:
+          type: integer
+        id_usuario:
+          type: integer
+        usuario:
+          $ref: '#/components/schemas/UsuarioSimplificado'
+
+    # GELADEIRA
+    IngredienteGeladeira:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome_ingrediente:
+          type: string
+          maxLength: 35
+        quantidade:
+          type: integer
+          minimum: 1
+        id_unidade_medida:
+          type: integer
+          description: "1=g, 2=kg, 3=ml, 4=L, 5=un"
+        unidade_medida:
+          type: string
+
+    # LISTA DE COMPRAS
+    ItemListaCompra:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        quantidade:
+          type: string
+        id_unidade_medida:
+          type: integer
+        id_status:
+          type: integer
+          enum: [1, 2]
+          description: "1=comprado, 2=pendente"
+        status:
+          type: string
+          enum: ["comprado", "pendente"]
+
+    # COMUNIDADE
+    Comunidade:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+          maxLength: 80
+        descricao:
+          type: string
+          maxLength: 300
+        foto_url:
+          type: string
+          format: uri
+          maxLength: 2000
+        banner_url:
+          type: string
+          format: uri
+          maxLength: 2000
+        id_categoria_principal:
+          type: integer
+          description: "Categoria principal da comunidade"
+        categoria_principal:
+          type: string
+        qtd_membros:
+          type: integer
+      required:
+        - nome
+        - descricao
+        - foto_url
+        - banner_url
+        - id_categoria_principal
+
+    CategoriaComumnidade:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoria_principal:
+          type: string
+          enum:
+            - "Confeitaria & Doces"
+            - "Culinária Brasileira"
+            - "Vegano & Vegetariano"
+            - "Fitness & Saudável"
+            - "Massas & Risotos"
+            - "Bebidas & Drinks"
+            - "Churrasco"
+
+    # CHEFINHO
+    ChefinhoConversa:
+      type: object
+      properties:
+        id:
+          type: integer
+        titulo:
+          type: string
+          maxLength: 100
+        data_hora:
+          type: string
+          format: date-time
+        id_usuario:
+          type: integer
+
+    Mensagem:
+      type: object
+      properties:
+        id:
+          type: integer
+        conteudo:
+          type: string
+          maxLength: 3000
+        tipo_remetente:
+          type: string
+          enum: ["usuario", "chefinho"]
+        data_hora:
+          type: string
+          format: date-time
+        id_chefinho_conversa:
+          type: integer
+
+    # DENUNCIA
+    Denuncia:
+      type: object
+      properties:
+        id:
+          type: integer
+        motivo:
+          type: string
+          maxLength: 50
+        detalhe:
+          type: string
+          maxLength: 200
+        data_hora:
+          type: string
+          format: date-time
+        id_usuario:
+          type: integer
+        id_receita:
+          type: integer
+        id_comunidade:
+          type: integer
+        id_usuario_denunciado:
+          type: integer
+
+    # AUTENTICACAO
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+      required:
+        - email
+        - senha
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: "Token JWT para autenticação"
+        usuario:
+          $ref: '#/components/schemas/UsuarioPerfil'
+
+    RegistroRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          maxLength: 150
+        username:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+        data_nascimento:
+          type: string
+          format: date
+        foto_perfil:
+          type: string
+          format: uri
+      required:
+        - nome
+        - username
+        - email
+        - senha
+        - data_nascimento
+
+    VerificacaoEmailRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        codigo:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+      required:
+        - email
+        - codigo
+
+    RecuperacaoSenhaRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+
+    NovasenhaRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        codigo:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+        nova_senha:
+          type: string
+        confirmar_senha:
+          type: string
+      required:
+        - email
+        - codigo
+        - nova_senha
+        - confirmar_senha
+
+    ConfirmarAlteracaoRequest:
+      type: object
+      properties:
+        codigo:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+      required:
+        - codigo
+
+paths:
+  # ============ AUTENTICAÇÃO ============
+
+  /auth/registro:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar novo usuário
+      description: Cria uma nova conta na plataforma. Um código de 6 dígitos será enviado para o e-mail para verificação.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+            example:
+              nome: "Carlos Ferreira"
+              username: "carlosf"
+              email: "carlos@email.com"
+              senha: "senha123"
+              data_nascimento: "1990-05-15"
+              foto_perfil: "https://exemplo.com/foto.jpg"
+      responses:
+        "201":
+          description: Usuário registrado com sucesso. Código de verificação enviado para o e-mail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 201
+                response:
+                  message: "Usuário registrado com sucesso. Código de verificação enviado para carlosferreira@email.com"
+        "400":
+          description: Dados inválidos ou e-mail já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: false
+                status_code: 400
+                response:
+                  message: "E-mail já cadastrado"
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verificar-email:
+    post:
+      tags:
+        - Autenticação
+      summary: Verificar código de confirmação de e-mail
+      description: Valida o código de 6 dígitos enviado ao e-mail durante o cadastro do usuário. Este é o FLUXO 1 de verificação.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificacaoEmailRequest'
+            example:
+              email: "carlos@email.com"
+              codigo: "123456"
+      responses:
+        "200":
+          description: E-mail verificado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  message: "E-mail verificado com sucesso"
+        "400":
+          description: Código inválido, expirado ou já utilizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: false
+                status_code: 400
+                response:
+                  message: "Código inválido"
+        "404":
+          description: Usuário ou e-mail não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Autenticar usuário
+      description: Realiza o login do usuário na plataforma. Retorna um token JWT para autenticação em rotas protegidas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "carlos@email.com"
+              senha: "senha123"
+      responses:
+        "200":
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        $ref: '#/components/schemas/LoginResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  usuario:
+                    id: 1
+                    nome: "Carlos Ferreira"
+                    username: "carlosf"
+                    email: "carlos@email.com"
+        "401":
+          description: E-mail ou senha inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: false
+                status_code: 401
+                response:
+                  message: "E-mail ou senha inválidos"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/recuperar-senha:
+    post:
+      tags:
+        - Autenticação
+      summary: Solicitar recuperação de senha
+      description: Inicia o fluxo de recuperação de senha. Um código de 6 dígitos será enviado para o e-mail. Este é o FLUXO 2 de verificação.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecuperacaoSenhaRequest'
+            example:
+              email: "carlos@email.com"
+      responses:
+        "200":
+          description: Código de recuperação enviado para o e-mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  message: "Código de recuperação enviado para carlos@email.com"
+        "404":
+          description: Usuário ou e-mail não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verificar-codigo-reset:
+    post:
+      tags:
+        - Autenticação
+      summary: Verificar código de recuperação de senha
+      description: Valida o código de 6 dígitos enviado para recuperação de senha. Parte do FLUXO 2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificacaoEmailRequest'
+            example:
+              email: "carlos@email.com"
+              codigo: "654321"
+      responses:
+        "200":
+          description: Código válido. Usuário pode prosseguir para redefinição da senha.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  message: "Código válido. Prossiga para redefinir a senha."
+        "400":
+          description: Código inválido, expirado ou já utilizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: false
+                status_code: 400
+                response:
+                  message: "Código expirado"
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/redefinir-senha:
+    post:
+      tags:
+        - Autenticação
+      summary: Redefinir senha do usuário
+      description: Define uma nova senha após validação do código de recuperação. Conclusão do FLUXO 2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NovasenhaRequest'
+            example:
+              email: "carlos@email.com"
+              codigo: "654321"
+              nova_senha: "novaSenha123"
+              confirmar_senha: "novaSenha123"
+      responses:
+        "200":
+          description: Senha redefinida com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  message: "Senha redefinida com sucesso"
+        "400":
+          description: Senhas não conferem ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Código inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ USUÁRIOS ============
+
+  /usuarios:
+    get:
+      tags:
+        - Usuários
+      summary: Listar usuários
+      description: Retorna uma lista paginada de usuários da plataforma. Este endpoint é público.
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Número da página
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Quantidade de registros por página
+        - name: busca
+          in: query
+          schema:
+            type: string
+          description: Buscar por nome ou username
+      responses:
+        "200":
+          description: Lista de usuários retornada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UsuarioPerfil'
+                          total:
+                            type: integer
+                          pagina:
+                            type: integer
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/{id}:
+    get:
+      tags:
+        - Usuários
+      summary: Obter perfil de um usuário
+      description: Retorna os dados públicos do perfil de um usuário específico.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID do usuário
+      responses:
+        "200":
+          description: Dados do perfil obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            $ref: '#/components/schemas/UsuarioPerfil'
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/me:
+    get:
+      tags:
+        - Usuários
+      summary: Obter dados do perfil autenticado
+      description: Retorna os dados completos do perfil do usuário autenticado.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dados do perfil obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            $ref: '#/components/schemas/Usuario'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar dados do perfil
+      description: Atualiza os dados do perfil do usuário autenticado. Para alterar e-mail ou senha, um código de verificação será enviado (FLUXO 3).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                  maxLength: 150
+                username:
+                  type: string
+                  maxLength: 20
+                descricao:
+                  type: string
+                  maxLength: 200
+                banner_url:
+                  type: string
+                  format: uri
+                foto_perfil:
+                  type: string
+                  format: uri
+            example:
+              nome: "Carlos Ferreira Silva"
+              username: "carlosf"
+              descricao: "Apaixonado por cozinha brasileira"
+              foto_perfil: "https://exemplo.com/foto.jpg"
+              banner_url: "https://exemplo.com/banner.jpg"
+      responses:
+        "200":
+          description: Perfil atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  message: "Perfil atualizado com sucesso"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/me/alterar-email:
+    post:
+      tags:
+        - Usuários
+      summary: Solicitar alteração de e-mail
+      description: Inicia o fluxo para alterar o e-mail. Um código de 6 dígitos será enviado para o novo e-mail. Este é o FLUXO 3 de verificação.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                novo_email:
+                  type: string
+                  format: email
+              required:
+                - novo_email
+      responses:
+        "200":
+          description: Código de confirmação enviado para o novo e-mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: E-mail inválido ou já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/me/confirmar-alteracao:
+    post:
+      tags:
+        - Usuários
+      summary: Confirmar alteração de dados sensíveis
+      description: Valida o código de 6 dígitos para confirmar alteração de dados sensíveis (e-mail, senha, data de nascimento). Conclusão do FLUXO 3.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmarAlteracaoRequest'
+      responses:
+        "200":
+          description: Alteração confirmada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Código inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/me/alterar-senha:
+    post:
+      tags:
+        - Usuários
+      summary: Solicitar alteração de senha
+      description: Inicia o fluxo para alterar a senha. Um código de 6 dígitos será enviado para o e-mail cadastrado (FLUXO 3).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                senha_atual:
+                  type: string
+              required:
+                - senha_atual
+      responses:
+        "200":
+          description: Código de confirmação enviado para o e-mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Senha atual incorreta ou não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ RECEITAS ============
+
+  /receitas:
+    get:
+      tags:
+        - Receitas
+      summary: Listar receitas
+      description: Retorna uma lista paginada de receitas. Suporta filtros por categoria, dificuldade, custo, tempo de preparo e busca por texto.
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: busca
+          in: query
+          schema:
+            type: string
+          description: Buscar por título ou descrição da receita
+        - name: id_categoria
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por categoria
+        - name: id_dificuldade
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+            description: 1=Fácil, 2=Médio, 3=Difícil
+        - name: id_custo
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+            description: 1=Econômico, 2=Moderado, 3=Alto
+        - name: tempo_max
+          in: query
+          schema:
+            type: string
+          description: Tempo máximo de preparo (HH:MM:SS)
+        - name: id_comunidade
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por receitas de uma comunidade
+        - name: ordenar_por
+          in: query
+          schema:
+            type: string
+            enum: ["recente", "populares", "curtidas"]
+          description: Ordenação das receitas
+      responses:
+        "200":
+          description: Lista de receitas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Receita'
+                          total:
+                            type: integer
+                          pagina:
+                            type: integer
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Receitas
+      summary: Criar uma nova receita
+      description: Cria uma nova receita. Apenas usuários autenticados podem criar receitas.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                  maxLength: 50
+                descricao:
+                  type: string
+                  maxLength: 200
+                foto:
+                  type: string
+                  format: uri
+                video:
+                  type: string
+                  format: uri
+                tempo:
+                  type: string
+                  format: time
+                id_custo:
+                  type: integer
+                  enum: [1, 2, 3]
+                id_dificuldade:
+                  type: integer
+                  enum: [1, 2, 3]
+                id_porcao:
+                  type: integer
+                  minimum: 1
+                  maximum: 15
+                ingredientes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      nome:
+                        type: string
+                      quantidade:
+                        type: string
+                      id_unidade_medida:
+                        type: integer
+                modo_preparo:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      metodo_preparo:
+                        type: string
+                      ordem_preparo:
+                        type: integer
+                categorias:
+                  type: array
+                  items:
+                    type: integer
+                tags:
+                  type: array
+                  items:
+                    type: integer
+              required:
+                - titulo
+                - descricao
+                - foto
+                - tempo
+                - id_custo
+                - id_dificuldade
+                - id_porcao
+                - ingredientes
+                - modo_preparo
+      responses:
+        "201":
+          description: Receita criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 201
+                response:
+                  message: "Receita criada com sucesso"
+                  id: 1
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/{id}:
+    get:
+      tags:
+        - Receitas
+      summary: Obter detalhes de uma receita
+      description: Retorna os dados completos de uma receita específica, incluindo ingredientes, modo de preparo, comentários e informações do autor.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+      responses:
+        "200":
+          description: Receita obtida com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            $ref: '#/components/schemas/ReceitaCompleta'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Receitas
+      summary: Atualizar uma receita
+      description: Atualiza os dados de uma receita. Apenas o autor da receita pode atualizá-la.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                descricao:
+                  type: string
+                foto:
+                  type: string
+                video:
+                  type: string
+                tempo:
+                  type: string
+                  format: time
+                id_custo:
+                  type: integer
+                id_dificuldade:
+                  type: integer
+                id_porcao:
+                  type: integer
+      responses:
+        "200":
+          description: Receita atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão para atualizar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Receitas
+      summary: Deletar uma receita
+      description: Remove uma receita permanentemente. Apenas o autor da receita pode deletá-la.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Receita deletada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão para deletar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/{id}/curtir:
+    post:
+      tags:
+        - Interações
+      summary: Curtir uma receita
+      description: Adiciona uma curtida na receita. Usuário autenticado só pode curtir cada receita uma vez.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+      responses:
+        "201":
+          description: Receita curtida com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 201
+                response:
+                  message: "Receita curtida com sucesso"
+        "400":
+          description: Receita já curtida por este usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Interações
+      summary: Descurtir uma receita
+      description: Remove a curtida do usuário autenticado em uma receita.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Curtida removida com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada ou curtida não existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/{id}/salvar:
+    post:
+      tags:
+        - Receitas
+      summary: Salvar uma receita
+      description: Salva uma receita para acessá-la depois. Usuário autenticado pode salvar cada receita uma vez.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Receita salva com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Receita já salva por este usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Receitas
+      summary: Remover receita salva
+      description: Remove uma receita da lista de salvos do usuário autenticado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Receita removida dos salvos com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada ou não estava salva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/{id}/comentarios:
+    get:
+      tags:
+        - Interações
+      summary: Listar comentários de uma receita
+      description: Retorna todos os comentários associados a uma receita específica.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Comentários obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Comentario'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Interações
+      summary: Adicionar comentário em uma receita
+      description: Cria um novo comentário na receita. Apenas usuários autenticados podem comentar.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comentario:
+                  type: string
+                  maxLength: 250
+              required:
+                - comentario
+      responses:
+        "201":
+          description: Comentário adicionado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /comentarios/{id}:
+    put:
+      tags:
+        - Interações
+      summary: Atualizar comentário
+      description: Atualiza um comentário existente. Apenas o autor do comentário pode atualizá-lo.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID do comentário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comentario:
+                  type: string
+                  maxLength: 250
+      responses:
+        "200":
+          description: Comentário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Comentário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Interações
+      summary: Deletar comentário
+      description: Remove um comentário permanentemente. Apenas o autor pode deletá-lo.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comentário deletado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Comentário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ INGREDIENTES E GELADEIRA ============
+
+  /usuarios/me/geladeira:
+    get:
+      tags:
+        - Geladeira
+      summary: Listar ingredientes na geladeira do usuário
+      description: Retorna os ingredientes disponíveis na geladeira do usuário autenticado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Ingredientes obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/IngredienteGeladeira'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Geladeira
+      summary: Adicionar ingrediente à geladeira
+      description: Adiciona um ingrediente à geladeira do usuário autenticado.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome_ingrediente:
+                  type: string
+                  maxLength: 35
+                quantidade:
+                  type: integer
+                  minimum: 1
+                id_unidade_medida:
+                  type: integer
+                  enum: [1, 2, 3, 4, 5]
+                  description: "1=g, 2=kg, 3=ml, 4=L, 5=un"
+              required:
+                - nome_ingrediente
+                - quantidade
+                - id_unidade_medida
+      responses:
+        "201":
+          description: Ingrediente adicionado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/me/geladeira/{id}:
+    put:
+      tags:
+        - Geladeira
+      summary: Atualizar ingrediente na geladeira
+      description: Atualiza a quantidade de um ingrediente na geladeira do usuário.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantidade:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Ingrediente atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Ingrediente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Geladeira
+      summary: Remover ingrediente da geladeira
+      description: Remove um ingrediente da geladeira do usuário autenticado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ingrediente removido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Ingrediente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/compatibilidade:
+    post:
+      tags:
+        - Geladeira
+      summary: Buscar receitas compatíveis com geladeira
+      description: Encontra receitas que podem ser feitas com os ingredientes disponíveis na geladeira do usuário, retornando um percentual de compatibilidade.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Receitas compatíveis obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                receita:
+                                  $ref: '#/components/schemas/Receita'
+                                compatibilidade_percentual:
+                                  type: number
+                                  minimum: 0
+                                  maximum: 100
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ LISTA DE COMPRAS ============
+
+  /usuarios/me/lista-compras:
+    get:
+      tags:
+        - Lista de Compras
+      summary: Listar itens da lista de compras
+      description: Retorna os itens da lista de compras do usuário autenticado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: ["comprado", "pendente", "todos"]
+            default: "todos"
+      responses:
+        "200":
+          description: Lista de compras obtida com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ItemListaCompra'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Lista de Compras
+      summary: Adicionar item à lista de compras
+      description: Adiciona um item à lista de compras do usuário autenticado.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_ingrediente:
+                  type: integer
+                  description: ID do ingrediente a adicionar
+              required:
+                - id_ingrediente
+      responses:
+        "201":
+          description: Item adicionado à lista de compras com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Dados inválidos ou item já na lista
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/me/lista-compras/{id}:
+    put:
+      tags:
+        - Lista de Compras
+      summary: Atualizar status de item na lista
+      description: Marca um item como comprado ou pendente na lista de compras.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_status:
+                  type: integer
+                  enum: [1, 2]
+                  description: "1=comprado, 2=pendente"
+      responses:
+        "200":
+          description: Status atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Item não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Lista de Compras
+      summary: Remover item da lista de compras
+      description: Remove um item da lista de compras do usuário autenticado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Item removido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Item não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/{id}/ingredientes-faltantes:
+    get:
+      tags:
+        - Lista de Compras
+      summary: Obter ingredientes faltantes de uma receita
+      description: Retorna os ingredientes que faltam na geladeira do usuário para fazer uma receita específica e oferece opção de adicioná-los à lista de compras.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+      responses:
+        "200":
+          description: Ingredientes faltantes obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                nome:
+                                  type: string
+                                quantidade:
+                                  type: string
+                                unidade_medida:
+                                  type: string
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /receitas/{id}/adicionar-faltantes-lista:
+    post:
+      tags:
+        - Lista de Compras
+      summary: Adicionar ingredientes faltantes à lista de compras
+      description: Adiciona automaticamente todos os ingredientes faltantes de uma receita à lista de compras do usuário.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Ingredientes adicionados à lista com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ COMUNIDADES ============
+
+  /comunidades:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar comunidades
+      description: Retorna uma lista paginada de comunidades disponíveis na plataforma.
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: busca
+          in: query
+          schema:
+            type: string
+          description: Buscar por nome de comunidade
+        - name: id_categoria_principal
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por categoria principal
+      responses:
+        "200":
+          description: Lista de comunidades obtida com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Comunidade'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Comunidades
+      summary: Criar uma comunidade
+      description: Cria uma nova comunidade. Apenas usuários autenticados podem criar comunidades.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                  maxLength: 80
+                descricao:
+                  type: string
+                  maxLength: 300
+                foto_url:
+                  type: string
+                  format: uri
+                banner_url:
+                  type: string
+                  format: uri
+                id_categoria_principal:
+                  type: integer
+              required:
+                - nome
+                - descricao
+                - foto_url
+                - banner_url
+                - id_categoria_principal
+      responses:
+        "201":
+          description: Comunidade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /comunidades/{id}:
+    get:
+      tags:
+        - Comunidades
+      summary: Obter detalhes de uma comunidade
+      description: Retorna os dados completos de uma comunidade específica.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comunidade obtida com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            $ref: '#/components/schemas/Comunidade'
+        "404":
+          description: Comunidade não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Comunidades
+      summary: Atualizar uma comunidade
+      description: Atualiza os dados de uma comunidade. Apenas o criador da comunidade pode atualizá-la.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                descricao:
+                  type: string
+                foto_url:
+                  type: string
+                banner_url:
+                  type: string
+      responses:
+        "200":
+          description: Comunidade atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Comunidade não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Comunidades
+      summary: Deletar uma comunidade
+      description: Remove uma comunidade permanentemente. Apenas o criador pode deletá-la.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comunidade deletada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Comunidade não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /comunidades/{id}/entrar:
+    post:
+      tags:
+        - Comunidades
+      summary: Entrar em uma comunidade
+      description: Adiciona o usuário autenticado como membro de uma comunidade.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Usuário adicionado à comunidade com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Usuário já é membro da comunidade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Comunidade não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /comunidades/{id}/sair:
+    post:
+      tags:
+        - Comunidades
+      summary: Sair de uma comunidade
+      description: Remove o usuário autenticado como membro de uma comunidade.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Usuário removido da comunidade com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Comunidade não encontrada ou usuário não é membro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /comunidades/{id}/receitas:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar receitas de uma comunidade
+      description: Retorna as receitas associadas a uma comunidade específica.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Receitas da comunidade obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Receita'
+        "404":
+          description: Comunidade não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ SEGUINDO/SEGUIDORES ============
+
+  /usuarios/{id}/seguir:
+    post:
+      tags:
+        - Seguindo
+      summary: Seguir um usuário
+      description: O usuário autenticado passa a seguir outro usuário.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID do usuário a seguir
+      responses:
+        "201":
+          description: Usuário seguido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Já segue este usuário ou tentou seguir a si mesmo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/{id}/deixar-seguir:
+    post:
+      tags:
+        - Seguindo
+      summary: Deixar de seguir um usuário
+      description: O usuário autenticado deixa de seguir outro usuário.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Usuário deixado de seguir com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Usuário não encontrado ou não estava sendo seguido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/{id}/seguidores:
+    get:
+      tags:
+        - Seguindo
+      summary: Listar seguidores de um usuário
+      description: Retorna a lista de usuários que seguem um usuário específico.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Seguidores obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UsuarioPerfil'
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /usuarios/{id}/seguindo:
+    get:
+      tags:
+        - Seguindo
+      summary: Listar usuários que um usuário segue
+      description: Retorna a lista de usuários que um usuário específico está seguindo.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Usuários seguidos obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UsuarioPerfil'
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ CHEFINHO ============
+
+  /chefinho/conversas:
+    get:
+      tags:
+        - Chefinho
+      summary: Listar conversas do usuário com Chefinho
+      description: Retorna a lista de conversas do usuário autenticado com o assistente Chefinho.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Conversas obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ChefinhoConversa'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Chefinho
+      summary: Iniciar nova conversa com Chefinho
+      description: Cria uma nova conversa entre o usuário e o assistente Chefinho.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                  maxLength: 100
+              required:
+                - titulo
+      responses:
+        "201":
+          description: Conversa criada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            $ref: '#/components/schemas/ChefinhoConversa'
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chefinho/conversas/{id}:
+    get:
+      tags:
+        - Chefinho
+      summary: Obter detalhes de uma conversa com Chefinho
+      description: Retorna os dados de uma conversa específica, incluindo todas as mensagens.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da conversa
+      responses:
+        "200":
+          description: Conversa obtida com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          conversa:
+                            $ref: '#/components/schemas/ChefinhoConversa'
+                          mensagens:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Mensagem'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Conversa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Chefinho
+      summary: Deletar uma conversa
+      description: Remove permanentemente uma conversa e todas as suas mensagens.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversa deletada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Conversa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chefinho/conversas/{id}/mensagens:
+    post:
+      tags:
+        - Chefinho
+      summary: Enviar mensagem ao Chefinho
+      description: Envia uma mensagem ao assistente Chefinho. A IA processará a mensagem e fornecerá uma resposta.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da conversa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conteudo:
+                  type: string
+                  maxLength: 3000
+              required:
+                - conteudo
+      responses:
+        "201":
+          description: Mensagem enviada e resposta gerada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          mensagem_usuario:
+                            $ref: '#/components/schemas/Mensagem'
+                          resposta_chefinho:
+                            $ref: '#/components/schemas/Mensagem'
+        "400":
+          description: Dados inválidos ou conteúdo vazio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Conversa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "502":
+          description: Erro ao comunicar com o serviço de IA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ DENÚNCIAS ============
+
+  /denuncias:
+    get:
+      tags:
+        - Denúncias
+      summary: Listar denúncias
+      description: Retorna uma lista paginada de denúncias. Apenas administradores podem visualizar todas. Usuários veem apenas suas próprias denúncias.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Denúncias obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Denuncia'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Denúncias
+      summary: Criar uma denúncia
+      description: Cria uma nova denúncia sobre conteúdo inadequado (receita, usuário ou comunidade). A denúncia será analisada por IA.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                motivo:
+                  type: string
+                  maxLength: 50
+                detalhe:
+                  type: string
+                  maxLength: 200
+                tipo:
+                  type: string
+                  enum: ["receita", "usuario", "comunidade"]
+                id_receita:
+                  type: integer
+                id_usuario:
+                  type: integer
+                id_comunidade:
+                  type: integer
+              required:
+                - motivo
+                - tipo
+      responses:
+        "201":
+          description: Denúncia criada com sucesso. Será analisada pela IA.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        "400":
+          description: Dados inválidos ou denúncia duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ia/denuncias/analisar:
+    post:
+      tags:
+        - Denúncias
+      summary: Analisar denúncia com IA
+      description: Encaminha uma denúncia para análise e classificação pela IA. Operação especial que requer permissões administrativas.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_denuncia:
+                  type: integer
+              required:
+                - id_denuncia
+      responses:
+        "200":
+          description: Denúncia analisada com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          resultado_analise:
+                            type: object
+                            properties:
+                              classificacao:
+                                type: string
+                              severidade:
+                                type: string
+                                enum: ["baixa", "media", "alta"]
+                              recomendacao:
+                                type: string
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Denúncia não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "502":
+          description: Erro ao comunicar com o serviço de IA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============ OUTROS ENDPOINTS ============
+
+  /categorias:
+    get:
+      tags:
+        - Receitas
+      summary: Listar categorias de receitas
+      description: Retorna a lista de categorias disponíveis para classificar receitas.
+      responses:
+        "200":
+          description: Categorias obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Categoria'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tags:
+    get:
+      tags:
+        - Receitas
+      summary: Listar tags disponíveis
+      description: Retorna a lista de tags disponíveis para classificar receitas.
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Tags obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Tag'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categorias-comunidades:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar categorias principais de comunidades
+      description: Retorna a lista de categorias principais disponíveis para comunidades.
+      responses:
+        "200":
+          description: Categorias obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/CategoriaComumnidade'
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /em-alta:
+    get:
+      tags:
+        - Receitas
+      summary: Obter buscas em alta
+      description: Retorna as buscas mais populares realizadas na plataforma no dia.
+      responses:
+        "200":
+          description: Buscas em alta obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                pesquisa:
+                                  type: string
+                                data_dia:
+                                  type: string
+                                  format: date
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
