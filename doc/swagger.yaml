@@ -2928,24 +2928,124 @@ paths:
                 status_code: 500
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Buscar
                   receitas compatíveis com geladeira". A solicitação não pôde ser concluída.
-  /usuarios/me/lista-compras:
+  # ============ LISTA DE COMPRAS ============
+
+  /usuarios/me/lista-compras/receitas:
     get:
       tags:
         - Lista de Compras
-      summary: Listar itens da lista de compras
-      description: Retorna os itens da lista de compras do usuário autenticado.
+      summary: Listar receitas presentes na lista de compras
+      description: |-
+        Retorna as receitas que possuem pelo menos um ingrediente
+        adicionado à lista de compras do usuário autenticado.
+
+        As receitas retornadas podem ser utilizadas para exibir
+        as opções de receitas na parte superior da tela da lista
+        de compras.
+
+        Uma mesma receita será retornada apenas uma vez, mesmo que
+        possua vários ingredientes adicionados à lista.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Receitas da lista de compras obtidas com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ReceitaListaCompra'
+
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.
+
+        "404":
+          description: Nenhuma receita possui ingredientes na lista de compras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: Nenhuma receita possui ingredientes adicionados à lista de compras.
+
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar receitas da lista de compras". A solicitação não pôde ser concluída.
+
+
+  /usuarios/me/lista-compras/receita/{id_receita}:
+    get:
+      tags:
+        - Lista de Compras
+      summary: Listar ingredientes da lista de compras por receita
+      description: |-
+        Retorna os ingredientes de uma receita específica que foram
+        adicionados à lista de compras do usuário autenticado.
+
+        O resultado pode ser filtrado pelo status da compra,
+        permitindo visualizar todos os ingredientes, somente os
+        pendentes ou somente os ingredientes já comprados.
+
+        O usuário é identificado através do token JWT.
       security:
         - bearerAuth: []
       parameters:
+        - name: id_receita
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+          example: 5
+
         - name: status
           in: query
+          required: false
           schema:
             type: string
-            enum: ["comprado", "pendente", "todos"]
-            default: "todos"
+            enum:
+              - Todos
+              - Pendentes
+              - Comprados
+            default: Todos
+          description: |-
+            Filtro utilizado para definir quais ingredientes da
+            lista de compras serão retornados.
+
+            Todos retorna todos os ingredientes da receita.
+            Pendentes retorna somente os ingredientes pendentes.
+            Comprados retorna somente os ingredientes já comprados.
+          example: Pendentes
+
       responses:
         "200":
-          description: Lista de compras obtida com sucesso
+          description: Ingredientes da receita obtidos com sucesso
           content:
             application/json:
               schema:
@@ -2960,56 +3060,9 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/ItemListaCompra'
-        "401":
-          description: Não autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
-        "500":
-          description: Erro interno do servidor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
-                  itens da lista de compras". A solicitação não pôde ser concluída.
-    post:
-      tags:
-        - Lista de Compras
-      summary: Adicionar item à lista de compras
-      description: Adiciona um item à lista de compras do usuário autenticado.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id_ingrediente:
-                  type: integer
-                  description: ID do ingrediente a adicionar
-              required:
-                - id_ingrediente
-      responses:
-        "201":
-          description: Item adicionado à lista de compras com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
+
         "400":
-          description: Dados inválidos ou item já na lista
+          description: ID da receita ou filtro de status inválido
           content:
             application/json:
               schema:
@@ -3017,7 +3070,8 @@ paths:
               example:
                 status: false
                 status_code: 400
-                message: Os dados enviados são inválidos ou o item informado já está na lista de compras.
+                message: O ID da receita ou o filtro de status informado é inválido.
+
         "401":
           description: Não autenticado
           content:
@@ -3027,8 +3081,19 @@ paths:
               example:
                 status: false
                 status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.
+
+        "404":
+          description: Receita ou ingredientes não encontrados na lista de compras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita ou os ingredientes informados não foram encontrados na lista de compras.
+
         "500":
           description: Erro interno do servidor
           content:
@@ -3038,14 +3103,111 @@ paths:
               example:
                 status: false
                 status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
-                  "Adicionar item à lista de compras". A solicitação não pôde ser concluída.
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar ingredientes da lista por receita". A solicitação não pôde ser concluída.
+
+
+    post:
+      tags:
+        - Lista de Compras
+      summary: Adicionar todos os ingredientes de uma receita à lista de compras
+      description: |-
+        Adiciona automaticamente todos os ingredientes de uma receita
+        à lista de compras do usuário autenticado.
+
+        A receita é identificada pelo ID informado na URL.
+        O sistema busca todos os ingredientes relacionados à receita
+        e adiciona cada um deles à lista de compras.
+
+        Os ingredientes são adicionados inicialmente com o status
+        "Pendente".
+
+        Não é necessário informar o ID do usuário, pois ele é
+        identificado através do token JWT.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_receita
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita cujos ingredientes serão adicionados
+          example: 5
+
+      responses:
+        "201":
+          description: Ingredientes da receita adicionados à lista de compras com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+        "400":
+          description: ID da receita inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: O ID da receita informado é inválido.
+
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.
+
+        "404":
+          description: Receita ou ingredientes não encontrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada ou não possui ingredientes cadastrados.
+
+        "409":
+          description: Um ou mais ingredientes da receita já estão na lista de compras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 409
+                message: Um ou mais ingredientes da receita já estão na lista de compras.
+
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Adicionar ingredientes da receita à lista de compras". A solicitação não pôde ser concluída.
+
+
   /usuarios/me/lista-compras/{id}:
     put:
       tags:
         - Lista de Compras
       summary: Atualizar status de item na lista
-      description: Marca um item como comprado ou pendente na lista de compras.
+      description: |-
+        Atualiza o status de um item específico da lista de compras.
+
+        O item é identificado pelo ID da lista de compras.
+        O status pode ser alterado entre "Comprado" e "Pendente".
       security:
         - bearerAuth: []
       parameters:
@@ -3054,6 +3216,9 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID do item da lista de compras
+          example: 7
+
       requestBody:
         required: true
         content:
@@ -3063,8 +3228,14 @@ paths:
               properties:
                 id_status:
                   type: integer
-                  enum: [1, 2]
-                  description: "1=comprado, 2=pendente"
+                  enum:
+                    - 1
+                    - 2
+                  description: "1=Comprado, 2=Pendente"
+                  example: 1
+              required:
+                - id_status
+
       responses:
         "200":
           description: Status atualizado com sucesso
@@ -3072,6 +3243,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: O ID do status informado é inválido.
+
         "401":
           description: Não autenticado
           content:
@@ -3081,8 +3264,8 @@ paths:
               example:
                 status: false
                 status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.
+
         "404":
           description: Item não encontrado
           content:
@@ -3093,6 +3276,7 @@ paths:
                 status: false
                 status_code: 404
                 message: O item informado não foi encontrado na lista de compras.
+
         "500":
           description: Erro interno do servidor
           content:
@@ -3102,13 +3286,18 @@ paths:
               example:
                 status: false
                 status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
-                  "Atualizar status de item na lista". A solicitação não pôde ser concluída.
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Atualizar status de item na lista". A solicitação não pôde ser concluída.
+
+
     delete:
       tags:
         - Lista de Compras
       summary: Remover item da lista de compras
-      description: Remove um item da lista de compras do usuário autenticado.
+      description: |-
+        Remove um item específico da lista de compras do usuário
+        autenticado.
+
+        O item é identificado pelo ID da lista de compras.
       security:
         - bearerAuth: []
       parameters:
@@ -3117,6 +3306,9 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID do item da lista de compras
+          example: 7
+
       responses:
         "200":
           description: Item removido com sucesso
@@ -3124,6 +3316,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
+
         "401":
           description: Não autenticado
           content:
@@ -3133,8 +3326,8 @@ paths:
               example:
                 status: false
                 status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.
+
         "404":
           description: Item não encontrado
           content:
@@ -3145,6 +3338,7 @@ paths:
                 status: false
                 status_code: 404
                 message: O item informado não foi encontrado na lista de compras.
+
         "500":
           description: Erro interno do servidor
           content:
@@ -3154,134 +3348,9 @@ paths:
               example:
                 status: false
                 status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
-                  "Remover item da lista de compras". A solicitação não pôde ser concluída.
-  /receitas/{id}/ingredientes-faltantes:
-    get:
-      tags:
-        - Lista de Compras
-      summary: Obter ingredientes faltantes de uma receita
-      description: Retorna os ingredientes que faltam na geladeira do usuário para fazer uma receita específica e 
-        oferece opção de adicioná-los à lista de compras.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: ID da receita
-      responses:
-        "200":
-          description: Ingredientes faltantes obtidos com sucesso
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/ApiResponse'
-                  - type: object
-                    properties:
-                      response:
-                        type: object
-                        properties:
-                          dados:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                nome:
-                                  type: string
-                                quantidade:
-                                  type: string
-                                unidade_medida:
-                                  type: string
-        "401":
-          description: Não autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
-        "404":
-          description: Receita não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 404
-                message: A receita informada não foi encontrada.
-        "500":
-          description: Erro interno do servidor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
-                  ingredientes faltantes de uma receita". A solicitação não pôde ser concluída.
-  /receitas/{id}/adicionar-faltantes-lista:
-    post:
-      tags:
-        - Lista de Compras
-      summary: Adicionar ingredientes faltantes à lista de compras
-      description: Adiciona automaticamente todos os ingredientes faltantes de uma receita à lista de compras do 
-        usuário.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "201":
-          description: Ingredientes adicionados à lista com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-        "401":
-          description: Não autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
-        "404":
-          description: Receita não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 404
-                message: A receita informada não foi encontrada.
-        "500":
-          description: Erro interno do servidor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
-                  "Adicionar ingredientes faltantes à lista de compras". A solicitação não pôde ser concluída.
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Remover item da lista de compras". A solicitação não pôde ser concluída.
+
+                
   /comunidades:
     get:
       tags:
