@@ -6,10 +6,10 @@ info:
   version: 1.0.10.26
   contact:
     name: Entre Panelas
-    url: https://entrepanelas.com.br
+    url: https://github.com/enzzof08/projeto-tcc-senai-andpanelas-backend/tree/main
   license:
     name: Proprietary
-    url: https://entrepanelas.com.br
+    url: https://github.com/mthenryx/projeto-tcc-senai-4tech-andpanelas
 
 servers:
   - url: /v1/entrepanelas
@@ -79,28 +79,29 @@ components:
     ErrorResponse:
       type: object
       properties:
-        api_description:
-          type: string
-          default: "API para controlar o projeto da Plataforma de Receita Inteligentes"
-        development:
-          type: string
-          default: ""
-        version:
-          type: string
-          default: "1.0.10.26"
         status:
           type: boolean
-          enum: [false]
+          enum:
+            - false
         status_code:
           type: integer
-          enum: [400, 401, 404, 415, 500, 502]
-        response:
-          type: object
-          properties:
-            message:
-              type: string
-
-    # USUARIO
+          enum:
+            - 400
+            - 401
+            - 404
+            - 415
+            - 500
+            - 502
+        message:
+          type: string
+      required:
+        - status
+        - status_code
+        - message
+      example:
+        status: false
+        status_code: 500
+        message: O servidor encontrou uma falha interna ao processar a solicitação.
     Usuario:
       type: object
       properties:
@@ -264,25 +265,97 @@ components:
     # INGREDIENTE
     Ingrediente:
       type: object
+      description: "Ingrediente de uma receita com quantidade e unidade de medida"
       properties:
         id:
           type: integer
           format: int32
+          example: 1
+          description: "ID único do ingrediente"
         nome:
           type: string
           maxLength: 35
+          example: "Frango"
+          description: "Nome do ingrediente"
         quantidade:
           type: string
           maxLength: 10
+          example: "500"
+          description: "Quantidade do ingrediente"
+        id_receita:
+          type: integer
+          example: 1
+          description: "ID da receita a qual o ingrediente pertence"
         id_unidade_medida:
           type: integer
-          description: "1=g, 2=kg, 3=ml, 4=L, 5=un"
+          enum: [1, 2, 3, 4, 5]
+          example: 1
+          description: "ID da unidade de medida (1=g, 2=kg, 3=ml, 4=L, 5=un)"
         unidade_medida:
           type: string
+          example: "g"
+          enum: ["g", "kg", "ml", "L", "un"]
+          description: "Nome da unidade de medida"
       required:
         - nome
         - quantidade
         - id_unidade_medida
+        - id_receita
+      example:
+        id: 1
+        nome: "Frango"
+        quantidade: "500"
+        id_receita: 1
+        id_unidade_medida: 1
+        unidade_medida: "g"
+
+    IngredienteRequest:
+      type: object
+      description: "Dados para adicionar um ingrediente a uma receita"
+      properties:
+        nome:
+          type: string
+          maxLength: 35
+          example: "Frango"
+        quantidade:
+          type: string
+          maxLength: 10
+          example: "600"
+        id_unidade_medida:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+          example: 1
+          description: "ID da unidade de medida (1=g, 2=kg, 3=ml, 4=L, 5=un)"
+      required:
+        - nome
+        - quantidade
+        - id_unidade_medida
+      example:
+        nome: "Frango"
+        quantidade: "600"
+        id_unidade_medida: 1
+
+    IngredienteUpdateRequest:
+      type: object
+      description: "Dados para atualizar um ingrediente de uma receita"
+      properties:
+        nome:
+          type: string
+          maxLength: 35
+          example: "Frango"
+        quantidade:
+          type: string
+          maxLength: 10
+          example: "600"
+        id_unidade_medida:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+          example: 1
+          description: "ID da unidade de medida (1=g, 2=kg, 3=ml, 4=L, 5=un)"
+      example:
+        nome: "Frango"
+        quantidade: "600"
+        id_unidade_medida: 1
 
     # MODO PREPARO
     ModoPreparo:
@@ -413,7 +486,7 @@ components:
         - banner_url
         - id_categoria_principal
 
-    CategoriaComumnidade:
+    CategoriaComunidade:
       type: object
       properties:
         id:
@@ -598,7 +671,8 @@ paths:
       tags:
         - Autenticação
       summary: Registrar novo usuário
-      description: Cria uma nova conta na plataforma. Um código de 6 dígitos será enviado para o e-mail para verificação.
+      description: Cria uma nova conta na plataforma. Um código de 6 dígitos será enviado para o e-mail para 
+        verificação.
       requestBody:
         required: true
         content:
@@ -634,26 +708,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
-                development: ""
-                version: "1.0.10.26"
                 status: false
                 status_code: 400
-                response:
-                  message: "E-mail já cadastrado"
+                message: Os dados enviados são inválidos ou o e-mail informado já está cadastrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Registrar novo usuário". A solicitação não pôde ser concluída.
   /auth/verificar-email:
     post:
       tags:
         - Autenticação
       summary: Verificar código de confirmação de e-mail
-      description: Valida o código de 6 dígitos enviado ao e-mail durante o cadastro do usuário. Este é o FLUXO 1 de verificação.
+      description: Valida o código de 6 dígitos enviado ao e-mail durante o cadastro do usuário. Este é o FLUXO 1 de 
+        verificação.
       requestBody:
         required: true
         content:
@@ -685,26 +760,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
-                development: ""
-                version: "1.0.10.26"
                 status: false
                 status_code: 400
-                response:
-                  message: "Código inválido"
+                message: O código informado é inválido, expirou ou já foi utilizado.
         "404":
           description: Usuário ou e-mail não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário ou o e-mail informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Verificar código de confirmação de e-mail". A solicitação não pôde ser concluída.
   /auth/login:
     post:
       tags:
@@ -752,32 +831,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
-                development: ""
-                version: "1.0.10.26"
                 status: false
                 status_code: 401
-                response:
-                  message: "E-mail ou senha inválidos"
+                message: As credenciais informadas são inválidas; o e-mail ou a senha não correspondem a uma conta 
+                  válida.
         "404":
           description: Usuário não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Autenticar usuário". A solicitação não pôde ser concluída.
   /auth/recuperar-senha:
     post:
       tags:
         - Autenticação
       summary: Solicitar recuperação de senha
-      description: Inicia o fluxo de recuperação de senha. Um código de 6 dígitos será enviado para o e-mail. Este é o FLUXO 2 de verificação.
+      description: Inicia o fluxo de recuperação de senha. Um código de 6 dígitos será enviado para o e-mail. Este é o 
+        FLUXO 2 de verificação.
       requestBody:
         required: true
         content:
@@ -807,13 +892,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário ou o e-mail informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Solicitar recuperação de senha". A solicitação não pôde ser concluída.
   /auth/verificar-codigo-reset:
     post:
       tags:
@@ -851,26 +944,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
-                development: ""
-                version: "1.0.10.26"
                 status: false
                 status_code: 400
-                response:
-                  message: "Código expirado"
+                message: O código informado é inválido, expirou ou já foi utilizado.
         "404":
           description: Usuário não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Verificar código de recuperação de senha". A solicitação não pôde ser concluída.
   /auth/redefinir-senha:
     post:
       tags:
@@ -909,21 +1006,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: As senhas informadas não conferem ou algum dos dados enviados é inválido.
         "401":
           description: Código inválido ou expirado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: A operação não foi autorizada porque o código informado é inválido ou expirou.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ USUÁRIOS ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Redefinir senha do usuário". A solicitação não pôde ser concluída.
   /usuarios:
     get:
       tags:
@@ -975,7 +1082,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  usuários". A solicitação não pôde ser concluída.
   /usuarios/{id}:
     get:
       tags:
@@ -1010,13 +1121,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  perfil de um usuário". A solicitação não pôde ser concluída.
   /usuarios/me:
     get:
       tags:
@@ -1046,18 +1165,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  dados do perfil autenticado". A solicitação não pôde ser concluída.
     put:
       tags:
         - Usuários
       summary: Atualizar dados do perfil
-      description: Atualiza os dados do perfil do usuário autenticado. Para alterar e-mail ou senha, um código de verificação será enviado (FLUXO 3).
+      description: Atualiza os dados do perfil do usuário autenticado. Para alterar e-mail ou senha, um código de 
+        verificação será enviado (FLUXO 3).
       security:
         - bearerAuth: []
       requestBody:
@@ -1109,25 +1238,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar dados do perfil". A solicitação não pôde ser concluída.
   /usuarios/me/alterar-email:
     post:
       tags:
         - Usuários
       summary: Solicitar alteração de e-mail
-      description: Inicia o fluxo para alterar o e-mail. Um código de 6 dígitos será enviado para o novo e-mail. Este é o FLUXO 3 de verificação.
+      description: Inicia o fluxo para alterar o e-mail. Um código de 6 dígitos será enviado para o novo e-mail. Este é 
+        o FLUXO 3 de verificação.
       security:
         - bearerAuth: []
       requestBody:
@@ -1155,25 +1298,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: O e-mail informado é inválido ou já está cadastrado em outra conta.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Solicitar alteração de e-mail". A solicitação não pôde ser concluída.
   /usuarios/me/confirmar-alteracao:
     post:
       tags:
         - Usuários
       summary: Confirmar alteração de dados sensíveis
-      description: Valida o código de 6 dígitos para confirmar alteração de dados sensíveis (e-mail, senha, data de nascimento). Conclusão do FLUXO 3.
+      description: Valida o código de 6 dígitos para confirmar alteração de dados sensíveis (e-mail, senha, data de 
+        nascimento). Conclusão do FLUXO 3.
       security:
         - bearerAuth: []
       requestBody:
@@ -1195,25 +1352,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: O código informado é inválido ou já expirou.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Confirmar alteração de dados sensíveis". A solicitação não pôde ser concluída.
   /usuarios/me/alterar-senha:
     post:
       tags:
         - Usuários
       summary: Solicitar alteração de senha
-      description: Inicia o fluxo para alterar a senha. Um código de 6 dígitos será enviado para o e-mail cadastrado (FLUXO 3).
+      description: Inicia o fluxo para alterar a senha. Um código de 6 dígitos será enviado para o e-mail cadastrado 
+        (FLUXO 3).
       security:
         - bearerAuth: []
       requestBody:
@@ -1240,21 +1411,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: a senha atual está incorreta ou o usuário não está autenticado.'
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ RECEITAS ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Solicitar alteração de senha". A solicitação não pôde ser concluída.
   /receitas:
     get:
       tags:
         - Receitas
       summary: Listar receitas
-      description: Retorna uma lista paginada de receitas. Suporta filtros por categoria, dificuldade, custo, tempo de preparo e busca por texto.
+      description: Retorna uma lista paginada de receitas. Suporta filtros por categoria, dificuldade, custo, tempo de 
+        preparo e busca por texto.
       parameters:
         - name: pagina
           in: query
@@ -1331,7 +1509,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  receitas". A solicitação não pôde ser concluída.
     post:
       tags:
         - Receitas
@@ -1373,15 +1555,19 @@ paths:
                   maximum: 15
                 ingredientes:
                   type: array
+                  description: "Lista de ingredientes da receita"
                   items:
-                    type: object
-                    properties:
-                      nome:
-                        type: string
-                      quantidade:
-                        type: string
-                      id_unidade_medida:
-                        type: integer
+                    $ref: '#/components/schemas/Ingrediente'
+                  example:
+                    - nome: "Frango"
+                      quantidade: "500"
+                      id_unidade_medida: 1
+                    - nome: "Cebola"
+                      quantidade: "1"
+                      id_unidade_medida: 5
+                    - nome: "Azeite"
+                      quantidade: "50"
+                      id_unidade_medida: 3
                 modo_preparo:
                   type: array
                   items:
@@ -1431,25 +1617,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Criar 
+                  uma nova receita". A solicitação não pôde ser concluída.
   /receitas/{id}:
     get:
       tags:
         - Receitas
       summary: Obter detalhes de uma receita
-      description: Retorna os dados completos de uma receita específica, incluindo ingredientes, modo de preparo, comentários e informações do autor.
+      description: Retorna os dados completos de uma receita específica, incluindo ingredientes, modo de preparo, 
+        comentários e informações do autor.
       parameters:
         - name: id
           in: path
@@ -1478,13 +1678,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  detalhes de uma receita". A solicitação não pôde ser concluída.
     put:
       tags:
         - Receitas
@@ -1535,19 +1743,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para atualizar este
+                  recurso.'
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar uma receita". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Receitas
@@ -1574,19 +1795,341 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para remover este
+                  recurso.'
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Deletar uma receita". A solicitação não pôde ser concluída.
+  /receitas/{id}/ingredientes:
+    get:
+      tags:
+        - Ingredientes
+      summary: Listar ingredientes de uma receita
+      description: Retorna todos os ingredientes cadastrados para uma receita específica.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+      responses:
+        "200":
+          description: Ingredientes obtidos com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      response:
+                        type: object
+                        properties:
+                          dados:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Ingrediente'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  dados:
+                    - id: 1
+                      nome: "Frango"
+                      quantidade: "600"
+                      id_receita: 1
+                      id_unidade_medida: 1
+                      unidade_medida: "g"
+                    - id: 2
+                      nome: "Limão siciliano"
+                      quantidade: "3"
+                      id_receita: 1
+                      id_unidade_medida: 5
+                      unidade_medida: "un"
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  ingredientes de uma receita". A solicitação não pôde ser concluída.
+    post:
+      tags:
+        - Ingredientes
+      summary: Adicionar ingrediente a uma receita
+      description: Adiciona um ingrediente à receita informada. O ID da receita é definido pela URL.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredienteRequest'
+            example:
+              nome: "Frango"
+              quantidade: "600"
+              id_unidade_medida: 1
+      responses:
+        "201":
+          description: Ingrediente adicionado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 201
+                response:
+                  dados:
+                    id: 1
+                    nome: "Frango"
+                    quantidade: "600"
+                    id_receita: 1
+                    id_unidade_medida: 1
+                    unidade_medida: "g"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
+        "404":
+          description: Receita não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Adicionar ingrediente a uma receita". A solicitação não pôde ser concluída.
+  /receitas/{id}/ingredientes/{id_ingrediente}:
+    put:
+      tags:
+        - Ingredientes
+      summary: Atualizar ingrediente de uma receita
+      description: Atualiza nome, quantidade ou unidade de medida de um ingrediente pertencente à receita.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+        - name: id_ingrediente
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID do ingrediente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredienteUpdateRequest'
+            example:
+              nome: "Frango"
+              quantidade: "700"
+              id_unidade_medida: 1
+      responses:
+        "200":
+          description: Ingrediente atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  dados:
+                    id: 1
+                    nome: "Frango"
+                    quantidade: "700"
+                    id_receita: 1
+                    id_unidade_medida: 1
+                    unidade_medida: "g"
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
+        "404":
+          description: Receita ou ingrediente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita ou o ingrediente informado não foi encontrado.
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar ingrediente de uma receita". A solicitação não pôde ser concluída.
+    delete:
+      tags:
+        - Ingredientes
+      summary: Remover ingrediente de uma receita
+      description: Remove um ingrediente da receita informada.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID da receita
+        - name: id_ingrediente
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID do ingrediente
+      responses:
+        "200":
+          description: Ingrediente removido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  message: "Ingrediente removido com sucesso"
+        "401":
+          description: Não autenticado ou sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
+        "404":
+          description: Receita ou ingrediente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita ou o ingrediente informado não foi encontrado.
+        "500":
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Remover ingrediente de uma receita". A solicitação não pôde ser concluída.
   /receitas/{id}/curtir:
     post:
       tags:
@@ -1623,25 +2166,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: A receita já está curtida pelo usuário autenticado.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Curtir
+                  uma receita". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Interações
@@ -1668,19 +2228,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada ou curtida não existe
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita não foi encontrada ou não existe uma curtida do usuário autenticado para removê-la.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Descurtir uma receita". A solicitação não pôde ser concluída.
   /receitas/{id}/salvar:
     post:
       tags:
@@ -1708,25 +2281,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: A receita já está salva pelo usuário autenticado.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Salvar
+                  uma receita". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Receitas
@@ -1753,19 +2343,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada ou não estava salva
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita não foi encontrada ou não existe um registro de salvamento do usuário autenticado 
+                  para removê-la.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Remover receita salva". A solicitação não pôde ser concluída.
   /receitas/{id}/comentarios:
     get:
       tags:
@@ -1811,13 +2415,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  comentários de uma receita". A solicitação não pôde ser concluída.
     post:
       tags:
         - Interações
@@ -1856,25 +2468,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Adicionar comentário em uma receita". A solicitação não pôde ser concluída.
   /comentarios/{id}:
     put:
       tags:
@@ -1913,19 +2542,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
         "404":
           description: Comentário não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O comentário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar comentário". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Interações
@@ -1952,21 +2594,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
         "404":
           description: Comentário não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O comentário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ INGREDIENTES E GELADEIRA ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Deletar comentário". A solicitação não pôde ser concluída.
   /usuarios/me/geladeira:
     get:
       tags:
@@ -2003,19 +2656,41 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/IngredienteGeladeira'
+              example:
+                api_description: "API para controlar o projeto da Plataforma de Receita Inteligentes"
+                development: ""
+                version: "1.0.10.26"
+                status: true
+                status_code: 200
+                response:
+                  dados:
+                    - id: 1
+                      nome_ingrediente: "Queijo"
+                      quantidade: 150
+                      id_unidade_medida: 1
+                      unidade_medida: "g"
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  ingredientes na geladeira do usuário". A solicitação não pôde ser concluída.
     post:
       tags:
         - Geladeira
@@ -2057,19 +2732,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Adicionar ingrediente à geladeira". A solicitação não pôde ser concluída.
   /usuarios/me/geladeira/{id}:
     put:
       tags:
@@ -2107,19 +2795,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Ingrediente não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O ingrediente informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar ingrediente na geladeira". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Geladeira
@@ -2146,25 +2847,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Ingrediente não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O ingrediente informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Remover ingrediente da geladeira". A solicitação não pôde ser concluída.
   /receitas/compatibilidade:
     post:
       tags:
         - Geladeira
       summary: Buscar receitas compatíveis com geladeira
-      description: Encontra receitas que podem ser feitas com os ingredientes disponíveis na geladeira do usuário, retornando um percentual de compatibilidade.
+      description: Encontra receitas que podem ser feitas com os ingredientes disponíveis na geladeira do usuário, 
+        retornando um percentual de compatibilidade.
       security:
         - bearerAuth: []
       responses:
@@ -2197,15 +2912,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ LISTA DE COMPRAS ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Buscar
+                  receitas compatíveis com geladeira". A solicitação não pôde ser concluída.
   /usuarios/me/lista-compras:
     get:
       tags:
@@ -2244,13 +2966,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  itens da lista de compras". A solicitação não pôde ser concluída.
     post:
       tags:
         - Lista de Compras
@@ -2283,19 +3014,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados são inválidos ou o item informado já está na lista de compras.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Adicionar item à lista de compras". A solicitação não pôde ser concluída.
   /usuarios/me/lista-compras/{id}:
     put:
       tags:
@@ -2334,19 +3078,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Item não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O item informado não foi encontrado na lista de compras.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar status de item na lista". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Lista de Compras
@@ -2373,25 +3130,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Item não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O item informado não foi encontrado na lista de compras.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Remover item da lista de compras". A solicitação não pôde ser concluída.
   /receitas/{id}/ingredientes-faltantes:
     get:
       tags:
         - Lista de Compras
       summary: Obter ingredientes faltantes de uma receita
-      description: Retorna os ingredientes que faltam na geladeira do usuário para fazer uma receita específica e oferece opção de adicioná-los à lista de compras.
+      description: Retorna os ingredientes que faltam na geladeira do usuário para fazer uma receita específica e 
+        oferece opção de adicioná-los à lista de compras.
       security:
         - bearerAuth: []
       parameters:
@@ -2431,25 +3202,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  ingredientes faltantes de uma receita". A solicitação não pôde ser concluída.
   /receitas/{id}/adicionar-faltantes-lista:
     post:
       tags:
         - Lista de Compras
       summary: Adicionar ingredientes faltantes à lista de compras
-      description: Adiciona automaticamente todos os ingredientes faltantes de uma receita à lista de compras do usuário.
+      description: Adiciona automaticamente todos os ingredientes faltantes de uma receita à lista de compras do 
+        usuário.
       security:
         - bearerAuth: []
       parameters:
@@ -2471,21 +3256,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Receita não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A receita informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ COMUNIDADES ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Adicionar ingredientes faltantes à lista de compras". A solicitação não pôde ser concluída.
   /comunidades:
     get:
       tags:
@@ -2536,7 +3332,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  comunidades". A solicitação não pôde ser concluída.
     post:
       tags:
         - Comunidades
@@ -2584,19 +3384,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Criar 
+                  uma comunidade". A solicitação não pôde ser concluída.
   /comunidades/{id}:
     get:
       tags:
@@ -2630,13 +3443,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A comunidade informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  detalhes de uma comunidade". A solicitação não pôde ser concluída.
     put:
       tags:
         - Comunidades
@@ -2678,19 +3499,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
         "404":
           description: Comunidade não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A comunidade informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Atualizar uma comunidade". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Comunidades
@@ -2717,19 +3551,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
         "404":
           description: Comunidade não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A comunidade informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Deletar uma comunidade". A solicitação não pôde ser concluída.
   /comunidades/{id}/entrar:
     post:
       tags:
@@ -2757,25 +3604,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: O usuário autenticado já participa desta comunidade.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Comunidade não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A comunidade informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Entrar
+                  em uma comunidade". A solicitação não pôde ser concluída.
   /comunidades/{id}/sair:
     post:
       tags:
@@ -2803,19 +3667,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Comunidade não encontrada ou usuário não é membro
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A comunidade não foi encontrada ou o usuário autenticado não participa dela.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Sair 
+                  de uma comunidade". A solicitação não pôde ser concluída.
   /comunidades/{id}/receitas:
     get:
       tags:
@@ -2861,15 +3738,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A comunidade informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ SEGUINDO/SEGUIDORES ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  receitas de uma comunidade". A solicitação não pôde ser concluída.
   /usuarios/{id}/seguir:
     post:
       tags:
@@ -2898,25 +3781,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: A operação não pode ser concluída porque o usuário já segue este perfil ou tentou seguir a 
+                  própria conta.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Usuário não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Seguir
+                  um usuário". A solicitação não pôde ser concluída.
   /usuarios/{id}/deixar-seguir:
     post:
       tags:
@@ -2944,19 +3845,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Usuário não encontrado ou não estava sendo seguido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário não foi encontrado ou não existe um registro de seguimento para esta relação.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Deixar
+                  de seguir um usuário". A solicitação não pôde ser concluída.
   /usuarios/{id}/seguidores:
     get:
       tags:
@@ -3002,13 +3916,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  seguidores de um usuário". A solicitação não pôde ser concluída.
   /usuarios/{id}/seguindo:
     get:
       tags:
@@ -3054,15 +3976,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: O usuário informado não foi encontrado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ CHEFINHO ============
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  usuários que um usuário segue". A solicitação não pôde ser concluída.
   /chefinho/conversas:
     get:
       tags:
@@ -3105,13 +4033,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  conversas do usuário com Chefinho". A solicitação não pôde ser concluída.
     post:
       tags:
         - Chefinho
@@ -3152,19 +4089,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Iniciar nova conversa com Chefinho". A solicitação não pôde ser concluída.
   /chefinho/conversas/{id}:
     get:
       tags:
@@ -3205,19 +4155,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Conversa não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A conversa informada não foi encontrada para o usuário autenticado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  detalhes de uma conversa com Chefinho". A solicitação não pôde ser concluída.
     delete:
       tags:
         - Chefinho
@@ -3244,19 +4207,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
         "404":
           description: Conversa não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A conversa informada não foi encontrada para o usuário autenticado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Deletar uma conversa". A solicitação não pôde ser concluída.
   /chefinho/conversas/{id}/mensagens:
     post:
       tags:
@@ -3307,39 +4283,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados são inválidos ou a mensagem ao Chefinho está vazia.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "404":
           description: Conversa não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A conversa informada não foi encontrada para o usuário autenticado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Enviar
+                  mensagem ao Chefinho". A solicitação não pôde ser concluída.
         "502":
           description: Erro ao comunicar com o serviço de IA
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ DENÚNCIAS ============
-
+              example:
+                status: false
+                status_code: 502
+                message: A solicitação não pôde ser concluída porque a API não conseguiu obter uma resposta válida do 
+                  serviço de IA externo.
   /denuncias:
     get:
       tags:
         - Denúncias
       summary: Listar denúncias
-      description: Retorna uma lista paginada de denúncias. Apenas administradores podem visualizar todas. Usuários veem apenas suas próprias denúncias.
+      description: Retorna uma lista paginada de denúncias. Apenas administradores podem visualizar todas. Usuários veem
+        apenas suas próprias denúncias.
       security:
         - bearerAuth: []
       parameters:
@@ -3376,18 +4373,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  denúncias". A solicitação não pôde ser concluída.
     post:
       tags:
         - Denúncias
       summary: Criar uma denúncia
-      description: Cria uma nova denúncia sobre conteúdo inadequado (receita, usuário ou comunidade). A denúncia será analisada por IA.
+      description: Cria uma nova denúncia sobre conteúdo inadequado (receita, usuário ou comunidade). A denúncia será 
+        analisada por IA.
       security:
         - bearerAuth: []
       requestBody:
@@ -3428,25 +4435,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados são inválidos ou já existe uma denúncia registrada para esta ocorrência.
         "401":
           description: Não autenticado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
+                  informado.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Criar 
+                  uma denúncia". A solicitação não pôde ser concluída.
   /ia/denuncias/analisar:
     post:
       tags:
         - Denúncias
       summary: Analisar denúncia com IA
-      description: Encaminha uma denúncia para análise e classificação pela IA. Operação especial que requer permissões administrativas.
+      description: Encaminha uma denúncia para análise e classificação pela IA. Operação especial que requer permissões 
+        administrativas.
       security:
         - bearerAuth: []
       requestBody:
@@ -3489,33 +4510,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Os dados enviados não estão em um formato válido para esta operação.
         "401":
           description: Não autenticado ou sem permissão
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 401
+                message: 'Acesso não autorizado: o usuário não está autenticado ou não possui permissão para executar esta
+                  operação.'
         "404":
           description: Denúncia não encontrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 404
+                message: A denúncia informada não foi encontrada.
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
+                  "Analisar denúncia com IA". A solicitação não pôde ser concluída.
         "502":
           description: Erro ao comunicar com o serviço de IA
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  # ============ OUTROS ENDPOINTS ============
-
+              example:
+                status: false
+                status_code: 502
+                message: A solicitação não pôde ser concluída porque a API não conseguiu obter uma resposta válida do 
+                  serviço de IA externo.
   /categorias:
     get:
       tags:
@@ -3545,7 +4586,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  categorias de receitas". A solicitação não pôde ser concluída.
   /tags:
     get:
       tags:
@@ -3586,7 +4631,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  tags disponíveis". A solicitação não pôde ser concluída.
   /categorias-comunidades:
     get:
       tags:
@@ -3609,14 +4658,18 @@ paths:
                           dados:
                             type: array
                             items:
-                              $ref: '#/components/schemas/CategoriaComumnidade'
+                              $ref: '#/components/schemas/CategoriaComunidade'
         "500":
           description: Erro interno do servidor
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
+                  categorias principais de comunidades". A solicitação não pôde ser concluída.
   /em-alta:
     get:
       tags:
@@ -3652,3 +4705,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Obter 
+                  buscas em alta". A solicitação não pôde ser concluída.
