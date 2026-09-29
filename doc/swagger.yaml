@@ -433,24 +433,55 @@ components:
           type: string
 
     # LISTA DE COMPRAS
+
+    ReceitaListaCompra:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID da receita
+          example: 5
+        titulo:
+          type: string
+          description: Nome da receita
+          example: Macarrão ao molho
+        foto:
+          type: string
+          format: uri
+          description: Imagem da receita
+          example: https://exemplo.com/macarrao.jpg
+
     ItemListaCompra:
       type: object
       properties:
         id:
           type: integer
+          description: ID do item da lista de compras
+          example: 7
         nome:
           type: string
+          description: Nome do ingrediente
+          example: Tomate
         quantidade:
           type: string
+          description: Quantidade do ingrediente
+          example: 2 unidades
         id_unidade_medida:
           type: integer
+          description: ID da unidade de medida utilizada pelo ingrediente
+          example: 5
         id_status:
           type: integer
           enum: [1, 2]
-          description: "1=comprado, 2=pendente"
+          description: "1=Comprado, 2=Pendente"
+          example: 2
         status:
           type: string
-          enum: ["comprado", "pendente"]
+          enum:
+            - comprado
+            - pendente
+          description: Status atual do ingrediente na lista de compras
+          example: pendente
 
     # COMUNIDADE
     Comunidade:
