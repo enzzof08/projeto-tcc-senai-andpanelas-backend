@@ -4169,7 +4169,7 @@ paths:
       tags:
       - Comunidades
       summary: Atualizar uma comunidade
-      description: Atualiza os dados de uma comunidade. Apenas o criador da comunidade pode atualizá-la.
+      description: Atualiza os dados de uma comunidade, incluindo sua categoria principal. Apenas o criador da comunidade pode atualizá-la.
       security:
       - bearerAuth: []
       parameters:
@@ -4178,6 +4178,7 @@ paths:
         required: true
         schema:
           type: integer
+        description: ID da comunidade que será atualizada.
       requestBody:
         required: true
         content:
@@ -4193,11 +4194,15 @@ paths:
                   type: string
                 banner_url:
                   type: string
+                id_categoria_principal:
+                  type: integer
+                  description: ID da categoria principal da comunidade.
             example:
               nome: Veganos Criativos
               descricao: Receitas plant-based e adaptações.
               foto_url: https://exemplo.com/comunidade.jpg
               banner_url: https://exemplo.com/banner.jpg
+              id_categoria_principal: 3
       responses:
         '200':
           description: Comunidade atualizada com sucesso
@@ -4353,7 +4358,7 @@ paths:
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Entrar
                   em uma comunidade". A solicitação não pôde ser concluída.
   /comunidades/{id}/sair:
-    post:
+    delete:
       tags:
       - Comunidades
       summary: Sair de uma comunidade
