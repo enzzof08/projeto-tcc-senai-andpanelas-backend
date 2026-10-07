@@ -30,7 +30,7 @@ const insertCategoria = async function(categoria){
 const selectAllCategoria = async function(){
     try {
 
-        let sql = 'select * from db_entre_panelas_2026 order by id desc'
+        let sql = 'select * from tbl_categoria order by id desc'
 
         let result = await knexConection.raw(sql)
 
