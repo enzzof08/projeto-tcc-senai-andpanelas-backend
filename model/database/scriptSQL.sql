@@ -10,10 +10,11 @@ create table tbl_usuario (
     username        varchar(20) not null,
     email		    varchar(256) not null,
     senha		    varchar(255) not null,
-    descricao	    varchar(200) not null,
-    banner_url      varchar(2000) not null,
-    foto_perfil     varchar(2000) not null,
-    data_nascimento date not null
+    data_nascimento date not null,
+    descricao	    varchar(200),
+    banner_url      varchar(2000),
+    foto_perfil     varchar(2000)
+    
 );
 
 create table tbl_em_alta (
