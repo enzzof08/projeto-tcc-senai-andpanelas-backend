@@ -369,7 +369,7 @@ create table tbl_catalogo_ingredientes (
 
 
 
-insert into tbl_catalogo_ingredientes (ingrediente) values
+insert into tbl_catalogo_ingredientes (nome) values
 -- Grãos, cereais e massas
 ('arroz'),
 ('arroz integral'),

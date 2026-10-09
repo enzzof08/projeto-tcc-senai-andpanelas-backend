@@ -4818,74 +4818,6 @@ paths:
                 status_code: 500
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
                   conversas do usuário com Chefinho". A solicitação não pôde ser concluída.
-    post:
-      tags:
-      - Chefinho
-      summary: Iniciar nova conversa com Chefinho
-      description: Cria uma nova conversa entre o usuário e o assistente Chefinho.
-      security:
-      - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                titulo:
-                  type: string
-                  maxLength: 100
-              required:
-              - titulo
-            example:
-              titulo: Receitas com frango
-      responses:
-        '201':
-          description: Conversa criada com sucesso
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/ApiResponse'
-                - type: object
-                  properties:
-                    response:
-                      type: object
-                      properties:
-                        dados:
-                          $ref: '#/components/schemas/ChefinhoConversa'
-        '400':
-          description: Dados inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 400
-                message: Os dados enviados não estão em um formato válido para esta operação.
-        '401':
-          description: Não autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 401
-                message: Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi 
-                  informado.
-        '500':
-          description: Erro interno do servidor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                status: false
-                status_code: 500
-                message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
-                  "Iniciar nova conversa com Chefinho". A solicitação não pôde ser concluída.
   /chefinho/conversas/{id}:
     get:
       tags:
@@ -5009,7 +4941,11 @@ paths:
       tags:
       - Chefinho
       summary: Enviar mensagem ao Chefinho
-      description: Envia uma mensagem ao assistente Chefinho. A IA processará a mensagem e fornecerá uma resposta.
+      description: >-
+        Envia a pergunta atual ao assistente Chefinho junto com as 10 últimas mensagens da conversa.
+        O front-end deve enviar as mensagens em ordem cronológica, da mais antiga para a mais recente.
+        O histórico deve conter mensagens dos papéis "user" e "agente". O back-end encaminhará
+        o histórico e a pergunta atual ao serviço independente do Chefinho para preservar o contexto.
       security:
       - bearerAuth: []
       parameters:
@@ -5026,13 +4962,45 @@ paths:
             schema:
               type: object
               properties:
-                conteudo:
+                historico_conversa:
+                  type: array
+                  maxItems: 10
+                  description: >-
+                    As 10 últimas mensagens anteriores à pergunta atual, em ordem cronológica
+                    (da mais antiga para a mais recente). Envie menos mensagens se a conversa
+                    ainda não tiver 10 mensagens.
+                  items:
+                    type: object
+                    properties:
+                      papel:
+                        type: string
+                        enum:
+                        - user
+                        - agente
+                      mensagem:
+                        type: string
+                        maxLength: 3000
+                    required:
+                    - papel
+                    - mensagem
+                pergunta_atual:
                   type: string
                   maxLength: 3000
+                  description: Mensagem nova que o usuário está enviando ao Chefinho.
               required:
-              - conteudo
+              - historico_conversa
+              - pergunta_atual
             example:
-              conteudo: Quero uma receita com frango e limão.
+              historico_conversa:
+              - papel: user
+                mensagem: Oi! Tô com uns peitos de frango na geladeira e queria fazer algo diferente hoje. Dá pra fazer alguma receita legal com frango rápida?
+              - papel: agente
+                mensagem: Dá sim! Que tal um frango xadrez caseiro ou um frango ao molho cremoso de requeijão e milho? Ambas ficam prontas em menos de 20 minutos.
+              - papel: user
+                mensagem: Gostei da ideia do frango cremoso! Como que faz?
+              - papel: agente
+                mensagem: "É bem simples: corte o frango em cubos..."
+              pergunta_atual: E o que eu posso fazer de café da manhã amanhã?
       responses:
         '201':
           description: Mensagem enviada e resposta gerada com sucesso
