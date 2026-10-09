@@ -25,7 +25,7 @@ const ERROR_INTERNAL_SERVER_MODEL      = {status: false, status_code: 500, messa
 const ERROR_INTERNAL_SERVER_CONTROLLER = {status: false, status_code: 500, message: 'Não foi possível processar a requisição devido a um erro interno no servidor [CONTROLLER]'}
 
 //Mensagens de SUCESSO do projeto de EntrePanelas
-const SUCCESS_RESPONSE                = {status: true, status_code: 200}
+const SUCCESS_RESPONSE                = {status: true, status_code: 200, message: 'Ação concluida com sucesso!'}
 const SUCCESS_UPDATE_ITEM             = {status: true, status_code: 200, message: 'Item atualizado com sucesso!'}
 const SUCCESS_DELETED_ITEM            = {status: true, status_code: 200, message: 'Item excluído com sucesso!'}
 const SUCCESS_CREATED_ITEM            = {status: true, status_code: 201, message: 'Item inserido com sucesso!'}
