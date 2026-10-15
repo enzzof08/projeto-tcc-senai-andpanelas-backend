@@ -99,7 +99,6 @@ create table tbl_porcao (
 create table tbl_receita (
 	id			    int not null auto_increment primary key,
     descricao		varchar(200) not null,
-    qtd_curtida		int not null,
     tempo			time not null,
     foto			varchar(2048) not null,
     video			varchar(2083),
