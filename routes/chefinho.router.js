@@ -42,3 +42,6 @@ router.post('/:id/mensagens', bodyParserJSON, async function (request, response)
     response.status(result.status_code)
     response.json(result)
 })
+
+
+module.exports = router

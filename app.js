@@ -25,6 +25,16 @@ app.use(cors(corsOptions))
 const chefinhoRouter = require('./routes/chefinho.router.js')
 app.use('/v1/chefinho/conversas', cors(), chefinhoRouter)
 
+const dificuldadeRouter = require('./routes/dificuldadade.router.js')
+app.use('/v1/entrepanelas/dificuldade', cors(), dificuldadeRouter)
+
+const custoRouter = require('./routes/custo.router.js')
+app.use('/v1/entrepanelas/custo', cors(), custoRouter)
+
+
+const usuarioRouter = require('./routes/usuario.router.js')
+app.use('/v1/entrepanelas/usuario', cors(), usuarioRouter)
+
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
     console.log('API aguardando novas requisições...')

@@ -2,7 +2,7 @@ const configMessages = require('../modulo/configMessages')
 
 const custoDAO = require('../../model/DAO/custo/custo')
 
-const listarCategoria = async function () {
+const listarCusto = async function () {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -47,5 +47,5 @@ const validarDados = async function(custo){
 }
 
 module.exports = {
-    listarCategoria
+    listarCusto
 }
