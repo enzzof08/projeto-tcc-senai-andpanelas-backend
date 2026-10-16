@@ -7,7 +7,7 @@
 
 //Padronização dos retornos da API (Cabeçalho)
 const DEFAULT_MESSAGE = {
-    api_description: 'API para controlar o projeto de EntrePanelas',
+    api_description: 'API para controlar o projeto EntrePanelas',
     development: '4tech',
     version: '1.0.4.26',
     status: Boolean,
