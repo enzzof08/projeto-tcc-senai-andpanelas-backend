@@ -133,3 +133,24 @@ const excluirEmAlta = async function(id){
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
+
+const validarDados = async function(emAlta){
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    if(emAlta.pesquisa == undefined || emAlta.pesquisa == '' || emAlta.pesquisa == null){
+        customMessage.ERROR_BAD_REQUEST.field = '[PESQUISA] INVALIDA'
+        return customMessage.ERROR_BAD_REQUEST
+    }else if(emAlta.data == undefined || emAlta.data == '' || emAlta.data == null || emAlta.data.length != 10){
+        customMessage.ERROR_BAD_REQUEST.field = '[DATA] INVALIDA'
+    }else{
+        return false
+    }    
+}
+
+module.exports = {
+    inserirNovoEmAlta,
+    atualizarEmAlta,
+    listarEmAlta,
+    excluirEmAlta
+}
