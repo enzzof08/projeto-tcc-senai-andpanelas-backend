@@ -11,8 +11,8 @@ const listarPorcao = async function(){
         if(result){
 
             if(result.length > 0){
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCES_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCES_RESPONSE.status_code
+                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                 customMessage.DEFAULT_MESSAGE.response.count = result.length
                 customMessage.DEFAULT_MESSAGE.response.porcao = result
 
@@ -24,6 +24,7 @@ const listarPorcao = async function(){
             return customMessage.ERROR_INTERNAL_SERVER_MODEL
         }
     }catch(error){
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
