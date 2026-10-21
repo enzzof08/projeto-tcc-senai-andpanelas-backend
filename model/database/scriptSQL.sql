@@ -1,8 +1,10 @@
-create database db_entre_panelas_2026;
+#create database db_entre_panelas_2026;
 
 use db_entre_panelas_2026;
 
 #drop database db_entre_panelas_2026;
+
+#SHOW TABLES;
 
 create table tbl_usuario (
 	id			    int not null auto_increment primary key,
@@ -363,12 +365,12 @@ create table tbl_curtida (
 
 create table tbl_catalogo_ingredientes (
 	id				  int not null auto_increment primary key,
-	nome			  varchar(35) not null
+	ingrediente			  varchar(35) not null
 );
 
 
 
-insert into tbl_catalogo_ingredientes (nome) values
+insert into tbl_catalogo_ingredientes (ingrediente) values
 -- Grãos, cereais e massas
 ('arroz'),
 ('arroz integral'),

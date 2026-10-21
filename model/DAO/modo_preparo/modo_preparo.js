@@ -7,7 +7,7 @@ const knexConection = knex(knexDatabaseConfig.development)
 
 const insertModoPreparo = async function(modoPreparo){
     try {
-        let sql = `insert into tbl_ingrediente (
+        let sql = `insert into tbl_modo_preparo (
             ordem_preparo,
             metodo_preparo,
             id_receita
@@ -26,7 +26,8 @@ const insertModoPreparo = async function(modoPreparo){
             return false
         
     } catch (error) {
-
+        
+        console.log(error)
         return false
     }
 }

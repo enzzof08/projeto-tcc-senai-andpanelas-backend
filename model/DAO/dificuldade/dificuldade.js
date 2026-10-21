@@ -20,6 +20,25 @@ const selectAllDificuldade = async function(){
     }
 }
 
+
+const selectByIdDificuldade = async function(id){
+    try{
+        let sql = `select * from tbl_dificuldade where id=${id}`
+
+        let result = await knexConection.raw(sql)
+
+        if(Array.isArray(result)){
+            return result[0]
+        }else{
+            return false
+        }
+    }catch(error){
+        return false
+    }
+}
+
+
 module.exports = {
-    selectAllDificuldade
+    selectAllDificuldade,
+    selectByIdDificuldade
 }

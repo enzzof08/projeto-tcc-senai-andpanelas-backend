@@ -8,6 +8,8 @@ const controllerIngrediente = require('../ingrediente/controller_ingrediente.js'
 
 const controllerMdPreparo = require('../modo_preparo/controller_modo_preparo.js')
 
+const controllerReceitaCategoria = require('../receita/controller_receita_categoria.js')
+
 
 
 
@@ -22,11 +24,14 @@ const inserirNovaReceita = async function (receita, contentType) {
 
             let validar = await validarDados(receita)
 
+
             //Retorna um JSON de erro caso algum atributo seja inválido,
             //senão retorna um false(Não teve erro)
             if (validar) {
+
                 return validar //400
             } else {
+
 
                 // Corrige os nomes dos ingredientes usando o catálogo
                 for (const ingrediente of receita.ingredientes) {
@@ -34,6 +39,7 @@ const inserirNovaReceita = async function (receita, contentType) {
                     let nomeCorrigido = await ingredienteDAO.corrigirNomeIngrediente(
                         ingrediente.nome
                     )
+                    console.log(nomeCorrigido)
 
                     // Verifica se ocorreu um erro na consulta ao catálogo
                     if (nomeCorrigido === false) {
@@ -48,6 +54,7 @@ const inserirNovaReceita = async function (receita, contentType) {
 
 
                 if (result) { //201
+
                     receita.id = result
 
                     // Percorre os ingredientes recebidos na requisição
@@ -64,15 +71,16 @@ const inserirNovaReceita = async function (receita, contentType) {
                         // Chama a Controller de ingredientes
                         let resultIngrediente =
                             await controllerIngrediente.inserirIngrediente(
-                                ingredienteReceita,
+                                ingredienteReceita
                             )
+
+                        // console.log('RESULTADO DO INGREDIENTE:', resultIngrediente)
 
                         // Verifica se o ingrediente foi cadastrado
                         if (!resultIngrediente || !resultIngrediente.status) {
                             return customMessage.SUCCESS_CREATED_ITEM_WARNING
                         }
                     }
-
 
                     // Percorre as etapas do modo de preparo
                     for (const itemPreparo of receita.modo_preparo) {
@@ -89,10 +97,29 @@ const inserirNovaReceita = async function (receita, contentType) {
                             modoPreparo
                         )
 
+
                         // Verifica se a etapa foi cadastrada
                         if (!resultPreparo || !resultPreparo.status) {
                             return customMessage.SUCCESS_CREATED_ITEM_WARNING
                         }
+                    }
+
+                    for (itemCategoria of receita.categoria) {
+
+
+                        let receitaCategoria = {
+                            "id_receita": receita.id,
+                            "id_categoria": itemCategoria.id
+                        }
+
+
+                        let resultCategoria = await controllerReceitaCategoria.inserirNovaReceitaCategoria(receitaCategoria)
+                        console.log(resultCategoria)
+
+                        if (!resultCategoria.status) {
+                            return customMessage.SUCCESS_CREATED_ITEM_WARNING  //201 com alerta de cadastro
+                        }
+
                     }
 
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
@@ -101,8 +128,6 @@ const inserirNovaReceita = async function (receita, contentType) {
                     customMessage.DEFAULT_MESSAGE.response = receita
 
                     return customMessage.DEFAULT_MESSAGE //201
-
-
 
                 } else {
 
@@ -121,6 +146,65 @@ const inserirNovaReceita = async function (receita, contentType) {
 
 }
 
+
+// Função para listar todas as receitas
+const listarReceitas = async function () {
+
+    // Cria uma cópia das mensagens padronizadas
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        let result = await receitaDAO.selectAllReceitas()
+
+
+        if (result) {
+            if (result.length > 0) {
+
+                for (receita of result) {
+                    //Busca na controller da classificacao o ID referente a FK da classificacao
+                    let resultClassificacao = await controllerClassificacao.buscarClassificacao(filme.id_classificacao)
+
+                    //Se encontrar o ID
+                    if (resultClassificacao.status) {
+                        //Adicionar um atributo classificação no JSON do filme e colocar o resultado com os dados da classificação
+                        filme.classificacao = resultClassificacao.response.classificacao
+                        //Apaga o id_classificação do JSON de filme
+                        delete filme.id_classificacao
+                    }
+
+                    //Manipulação de dados para retornar os Generos relacionados aos filmes
+
+                    let resultGeneros = await controllerFilmeGenero.buscarGenerosIdFilme(filme.id)
+
+                    if (resultGeneros.status) {
+
+                        filme.genero = resultGeneros.response.filme_genero
+
+                    }
+
+                }
+
+                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+                customMessage.DEFAULT_MESSAGE.response.count = result.length
+                customMessage.DEFAULT_MESSAGE.response = result
+
+                return customMessage.DEFAULT_MESSAGE // 200
+
+            } else {
+                return customMessage.ERROR_NOT_FOUND //404
+            }
+        } else {
+            customMessage.ERROR_INTERNAL_SERVER_MODEL //404
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
 
 
 
@@ -157,6 +241,9 @@ const validarDados = async function (receita) {
     } else if (!Array.isArray(receita.modo_preparo) || receita.modo_preparo.length == 0) {
         customMessage.ERROR_BAD_REQUEST.field = '[MODO DE PREPARO] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
+    } else if (!Array.isArray(receita.categoria) || receita.categoria.length == 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[CATEGORIA] INVÁLIDA'
+        return customMessage.ERROR_BAD_REQUEST
     } else {
         return false
     }
@@ -176,5 +263,6 @@ const tratarDados = async function (receita) {
 }
 
 module.exports = {
-    inserirNovaReceita
+    inserirNovaReceita,
+    listarReceitas
 }

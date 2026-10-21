@@ -42,6 +42,7 @@ const insertReceita = async function (receita) {
         }
 
     } catch (error) {
+        console.log(error)
         return false
     }
 }

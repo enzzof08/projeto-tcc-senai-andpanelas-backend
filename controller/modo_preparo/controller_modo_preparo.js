@@ -13,6 +13,7 @@ const inserirModoPreparo = async function (mdPreparo) {
         } else {
 
             let result = await mdPreparoDAO.insertModoPreparo(await tratarDados(mdPreparo))
+            
             if (result) {
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
@@ -26,6 +27,7 @@ const inserirModoPreparo = async function (mdPreparo) {
         }
 
     } catch (error) {
+        
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 

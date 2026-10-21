@@ -41,10 +41,10 @@ const validarDados = async function (ingrediente) {
     } else if (ingrediente.quantidade == undefined || ingrediente.quantidade == '' || isNaN(ingrediente.quantidade) || ingrediente.quantidade == null || ingrediente.quantidade.length > 10) {
         customMessage.ERROR_BAD_REQUEST.field = '[QUANTIDADE] INVÁLIDA'
         return customMessage.ERROR_BAD_REQUEST
-    } else if (ingrediente.id_receita || ingrediente.id_receita == '' || ingrediente.id_receita == null || isNaN(ingrediente.id_receita) || ingrediente.id_receita <= 0) {
+    } else if (ingrediente.id_receita == null || ingrediente.id_receita == '' || ingrediente.id_receita == null || isNaN(ingrediente.id_receita) || ingrediente.id_receita <= 0) {
         customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
-    } else if (fingrediente.id_unidade_medida == undefined || ingrediente.id_unidade_medida == '' || ingrediente.id_unidade_medida == null || isNaN(ingrediente.id_unidade_medida) || ingrediente.id_unidade_medida <= 0) {
+    } else if (ingrediente.id_unidade_medida == undefined || ingrediente.id_unidade_medida == '' || ingrediente.id_unidade_medida == null || isNaN(ingrediente.id_unidade_medida) || ingrediente.id_unidade_medida <= 0) {
         customMessage.ERROR_BAD_REQUEST.field = '[ID_UNIDADE_MEDIDA] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
     }else {

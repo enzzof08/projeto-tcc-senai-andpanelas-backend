@@ -20,7 +20,7 @@ const corrigirNomeIngrediente = async function (nomeDigitado) {
         nomeDigitado = nomeDigitado.trim()
 
         // Busca os nomes corretos que estão cadastrados no dicionário
-        let dicionario = await knexConection('tbl_catalogo_ingrediente')
+        let dicionario = await knexConection('tbl_catalogo_ingredientes')
             .select('ingrediente')
 
         // Se o dicionário estiver vazio, mantém o nome digitado
@@ -32,7 +32,6 @@ const corrigirNomeIngrediente = async function (nomeDigitado) {
         const fuse = new Fuse(dicionario, {
             keys: ['ingrediente'],
             threshold: 0.28,
-            ignoreLocation: true,
             ignoreDiacritics: true
         })
 
@@ -48,7 +47,6 @@ const corrigirNomeIngrediente = async function (nomeDigitado) {
         return nomeDigitado
 
     } catch (error) {
-
         // Retorna false se ocorrer um erro na consulta ou no processamento
         return false
     }
