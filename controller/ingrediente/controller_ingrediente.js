@@ -31,6 +31,40 @@ const inserirIngrediente = async function (ingrediente) {
 
 }
 
+// Função para listar os ingredientes de uma receita
+const listarIngredientesPorReceita = async function (idReceita) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        // Valida o ID da receita
+        if ( (idReceita == undefined || String(idReceita).replaceAll(' ', '') == '' || idReceita == '' || idReceita == null || isNaN(idReceita) || idReceita <= 0) ) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVÁLIDO'
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        // let result = await ingredienteDAO.selectIngredientesPorReceita(
+        //     Number(idReceita)
+        // )
+
+        // if (result === false) {
+        //     return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        // }
+
+        // customMessage.DEFAULT_MESSAGE.status = true
+        // customMessage.DEFAULT_MESSAGE.status_code = 200
+        // customMessage.DEFAULT_MESSAGE.message = 'Ingredientes consultados com sucesso'
+        // customMessage.DEFAULT_MESSAGE.response = result
+
+        // return customMessage.DEFAULT_MESSAGE
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 
 const validarDados = async function (ingrediente) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))

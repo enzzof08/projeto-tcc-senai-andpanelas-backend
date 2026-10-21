@@ -48,6 +48,24 @@ const insertReceita = async function (receita) {
 }
 
 
+const selectALLReceita = async function(){
+    try {
+        let sql = 'select * from tbl_receita order by id desc'
+
+        let result = await knexConection.raw(sql)
+
+        if(Array.isArray(result)){
+            return result[0]  
+        }else{
+            return false
+        }
+
+    } catch (error) {
+        return false
+    }
+}
+
+
 module.exports = {
     insertReceita
 }

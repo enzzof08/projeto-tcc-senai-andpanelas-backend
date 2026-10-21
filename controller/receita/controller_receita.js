@@ -11,6 +11,11 @@ const controllerMdPreparo = require('../modo_preparo/controller_modo_preparo.js'
 const controllerReceitaCategoria = require('../receita/controller_receita_categoria.js')
 
 
+const controllerDificuldade = require('../dificuldade/controller_dificuldade.js')
+
+const controllerCusto = require('../custo/controller_custo.js')
+
+const controllerPorcao = require('../porcao/controller_porcao.js')
 
 
 const inserirNovaReceita = async function (receita, contentType) {
@@ -162,18 +167,24 @@ const listarReceitas = async function () {
             if (result.length > 0) {
 
                 for (receita of result) {
-                    //Busca na controller da classificacao o ID referente a FK da classificacao
-                    let resultClassificacao = await controllerClassificacao.buscarClassificacao(filme.id_classificacao)
 
-                    //Se encontrar o ID
-                    if (resultClassificacao.status) {
-                        //Adicionar um atributo classificação no JSON do filme e colocar o resultado com os dados da classificação
-                        filme.classificacao = resultClassificacao.response.classificacao
-                        //Apaga o id_classificação do JSON de filme
-                        delete filme.id_classificacao
+                    let resultDificuldade = await controllerDificuldade(receita.id_dificuldade)
+                    if (resultDificuldade.status) {
+                        receita.dificuldade = resultDificuldade.response.dificuldade
+                        delete receita.id_dificuldade
                     }
 
-                    //Manipulação de dados para retornar os Generos relacionados aos filmes
+                    let resultCusto = await controllerCusto(receita.id_custo)
+                    if (resultCusto.status) {
+                        receita.custo = resultDificuldade.response.custo
+                        delete receita.id_custo
+                    }
+
+                    let resultPorcao = await controllerPorcao(receita.id_porcao)
+                    if (resultPorcao.status) {
+                        receita.porcao = resultPorcao.response.porcao
+                        delete receita.id_porcao
+                    }
 
                     let resultGeneros = await controllerFilmeGenero.buscarGenerosIdFilme(filme.id)
 
