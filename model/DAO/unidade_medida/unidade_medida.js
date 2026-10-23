@@ -37,5 +37,6 @@ const selectByIdUnidadeMedida = async function(id){
 }
 
 module.exports = {
-    selectALLUnidadeMedida
+    selectALLUnidadeMedida,
+    selectByIdUnidadeMedida
 }
