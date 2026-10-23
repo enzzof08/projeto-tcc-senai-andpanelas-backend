@@ -155,3 +155,10 @@ const validarDados = async function(tag){
         return false
     }
 }
+
+module.exports = {
+    inserirNovaTag,
+    atualizarTag,
+    listarTag,
+    buscarTag
+}
