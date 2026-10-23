@@ -43,8 +43,8 @@ const buscarPorcao = async function(id){
             if(result){
 
                 if(result.length > 0){
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCES_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCES_RESPONSE.status_code
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                     customMessage.DEFAULT_MESSAGE.response.porcao = result
 
                     return customMessage.DEFAULT_MESSAGE
