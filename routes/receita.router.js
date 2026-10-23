@@ -18,13 +18,21 @@ router.post('/', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
-// router.get('/:id', async function (request, response) {
-//     let id = request.params.id
+router.get('/', async function (request, response) {
 
-//     let result = await controllerUsuario.buscarUsuario(id)
+    let result = await controllerReceita.listarReceitas()
 
-//     response.status(result.status_code)
-//     response.json(result)
-// })
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/:id', async function (request, response) {
+    let id = request.params.id
+
+    let result = await controllerReceita.buscarReceita(id)
+
+    response.status(result.status_code)
+    response.json(result)
+})
 
 module.exports = router

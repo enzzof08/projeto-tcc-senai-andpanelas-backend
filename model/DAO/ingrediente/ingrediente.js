@@ -82,8 +82,34 @@ const insertIngrediente = async function(ingrediente){
 }
 
 
+const selectIngredientesPorIdReceita = async function (idReceita) {
+    try {
+        let sql = `
+            SELECT
+                tbl_ingrediente.nome,
+                tbl_ingrediente.quantidade,
+                tbl_unidade_medida.unidade
+            FROM tbl_ingrediente
+                INNER JOIN tbl_unidade_medida
+                    ON tbl_ingrediente.id_unidade_medida = tbl_unidade_medida.id
+            WHERE tbl_ingrediente.id_receita = ${idReceita};
+        `
+
+        // Encaminha o SELECT para o banco de dados
+        let result = await knexConection.raw(sql)
+
+        // Retorna os ingredientes encontrados
+        return result[0]
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 
 module.exports = {
     corrigirNomeIngrediente,
-    insertIngrediente
+    insertIngrediente,
+    selectIngredientesPorIdReceita
 }

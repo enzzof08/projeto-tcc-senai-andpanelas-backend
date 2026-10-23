@@ -42,8 +42,8 @@ const buscarDificuldade = async function(id){
             if(result){
 
                 if(result.length > 0){
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCES_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCES_RESPONSE.status_code
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                     customMessage.DEFAULT_MESSAGE.response.dificuldade = result
 
                     return customMessage.DEFAULT_MESSAGE
@@ -55,6 +55,7 @@ const buscarDificuldade = async function(id){
             }
         }
     } catch(error){
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }

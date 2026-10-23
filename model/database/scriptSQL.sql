@@ -6,6 +6,8 @@ use db_entre_panelas_2026;
 
 #SHOW TABLES;
 
+SELECT * FROM tbl_ingrediente;
+
 create table tbl_usuario (
 	id			    int not null auto_increment primary key,
     nome    	    varchar(150) not null,

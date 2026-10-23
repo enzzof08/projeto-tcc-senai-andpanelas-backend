@@ -32,8 +32,25 @@ const insertModoPreparo = async function(modoPreparo){
     }
 }
 
+const selectByIdModoPreparo = async function(id){
+    try{
+        let sql = `select * from tbl_modo_preparo where id_receita=${id}`
+
+        let result = await knexConection.raw(sql)
+
+        if(Array.isArray(result)){
+            return result[0]
+        }else{
+            return false
+        }
+    }catch(error){
+        return false
+    }
+}
+
 
 
 module.exports = {
-    insertModoPreparo
+    insertModoPreparo,
+    selectByIdModoPreparo
 }
