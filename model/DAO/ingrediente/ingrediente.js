@@ -31,7 +31,7 @@ const corrigirNomeIngrediente = async function (nomeDigitado) {
         // Configura o Fuse para comparar os nomes dos ingredientes
         const fuse = new Fuse(dicionario, {
             keys: ['ingrediente'],
-            threshold: 0.28,
+            threshold: 0.30,
             ignoreDiacritics: true
         })
 

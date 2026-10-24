@@ -32,7 +32,6 @@ const buscarDificuldade = async function(id){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-
         if(id == undefined || String(id).replaceAll('', '') == '' || id == null || id <= 0){
             customMessage.ERROR_BAD_REQUEST.field = '[ID_DIFICULDADE] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST 

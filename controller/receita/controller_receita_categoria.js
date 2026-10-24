@@ -42,15 +42,15 @@ const buscarCategoriasIdReceita = async function (idReceita) {
         } else {
             let result = await receitaCtgnDAO.selectCategoriaByIdReceita(idReceita)
             if (result) {
-                if (result.length > 0) {
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                    customMessage.DEFAULT_MESSAGE.response.receita_categoria = result
-
-                    return customMessage.DEFAULT_MESSAGE
-                } else {
-                    return customMessage.ERROR_NOT_FOUND
+                if (result === false) {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
                 }
+                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                customMessage.DEFAULT_MESSAGE.response.categoria = result
+
+                return customMessage.DEFAULT_MESSAGE
+
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
@@ -65,14 +65,14 @@ const buscarCategoriasIdReceita = async function (idReceita) {
 const excluirCategoriasIdReceita = async function (idReceita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
     try {
-        
-            //Chamar a função do DAO para excluir o genero
-            let result = await receitaCtgnDAO.deleteCategoriasByIdReceita(idReceita)
-            if (result) {
-                return customMessage.SUCCESS_DELETED_ITEM
-            } else {
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
-            }
+
+        //Chamar a função do DAO para excluir o genero
+        let result = await receitaCtgnDAO.deleteCategoriasByIdReceita(idReceita)
+        if (result) {
+            return customMessage.SUCCESS_DELETED_ITEM
+        } else {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
 
 
     } catch (error) {
@@ -97,5 +97,6 @@ const validarDados = async function (receitaCategoria) {
 
 module.exports = {
     inserirNovaReceitaCategoria,
-    excluirCategoriasIdReceita
+    excluirCategoriasIdReceita,
+    buscarCategoriasIdReceita
 }

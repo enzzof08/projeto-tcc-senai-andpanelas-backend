@@ -6,7 +6,7 @@ use db_entre_panelas_2026;
 
 #SHOW TABLES;
 
-SELECT * FROM tbl_ingrediente;
+#SELECT * FROM tbl_ingrediente;
 
 create table tbl_usuario (
 	id			    int not null auto_increment primary key,
@@ -710,7 +710,7 @@ insert into tbl_porcao (numero_porcao) values
 
 insert into tbl_dificuldade (dificuldade) values
 ('Fácil'),
-('Médio'),
+('Média'),
 ('Difícil');
 
 insert into tbl_custo (tipo_custo) values
@@ -725,7 +725,7 @@ insert into tbl_unidade_medida (unidade) values
 ('L'),
 ('un');
 
-insert into tbl_categoria (categoria) values
+INSERT INTO tbl_categoria (categoria) VALUES
 ('Café da manhã'),
 ('Almoço'),
 ('Jantar'),
@@ -736,15 +736,9 @@ insert into tbl_categoria (categoria) values
 ('Bebida');
 
 INSERT INTO tbl_tag (nome_tag) VALUES
-('ComidaBoa'),
 ('ReceitaCaseira'),
-('ReceitaRapida'), 
+('ReceitaRapida'),
 ('FacilDeFazer'),
-('Almoco'),
-('Jantar'),
-('CafeDaManha'),
-('Lanche'),
-('Sobremesa'),
 ('Doce'),
 ('Salgado'),
 ('Massa'),
@@ -757,7 +751,6 @@ INSERT INTO tbl_tag (nome_tag) VALUES
 ('Fit'),
 ('LowCarb'),
 ('Proteica'),
-('BaixoCusto'),
 ('Economica'),
 ('Familia'),
 ('Romantico'),
@@ -777,15 +770,25 @@ INSERT INTO tbl_tag (nome_tag) VALUES
 ('SemLactose'),
 ('SemGluten');
 
+INSERT INTO tbl_categoria_principal (categoria_principal) VALUES
+('Comida caseira'),
+('Confeitaria e doces'),
+('Massas, pizzas e risotos'),
+('Carnes e aves'),
+('Peixes e frutos do mar'),
+('Churrasco'),
+('Culinária brasileira'),
+('Culinária internacional'),
+('Alimentação saudável'),
+('Culinária vegetariana e vegana'),
+('Lanches e petiscos'),
+('Pães e panificação'),
+('Sopas e caldos'),
+('Bebidas e drinks'),
+('Receitas econômicas'),
+('Receitas rápidas');
+
 insert into tbl_status (status) values
 ('comprado'),
 ('pendente');
 
-insert into tbl_categoria_principal (categoria_principal) values
-('Confeitaria & Doces'),
-('Culinária Brasileira'),
-('Vegano & Vegetariano'),
-('Fitness & Saudável'),
-('Massas & Risotos'),
-('Bebidas & Drinks'),
-('Churrasco');

@@ -10,6 +10,7 @@ const controllerMdPreparo = require('../modo_preparo/controller_modo_preparo.js'
 
 const controllerReceitaCategoria = require('../receita/controller_receita_categoria.js')
 
+const controllerUsuario = require('../usuario/controller_usuario.js')
 
 const controllerDificuldade = require('../dificuldade/controller_dificuldade.js')
 
@@ -78,8 +79,6 @@ const inserirNovaReceita = async function (receita, contentType) {
                             await controllerIngrediente.inserirIngrediente(
                                 ingredienteReceita
                             )
-
-                        // console.log('RESULTADO DO INGREDIENTE:', resultIngrediente)
 
                         // Verifica se o ingrediente foi cadastrado
                         if (!resultIngrediente || !resultIngrediente.status) {
@@ -168,41 +167,57 @@ const listarReceitas = async function () {
 
                 for (receita of result) {
 
+                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
+                    if (resultUsuario) {
+                        receita.usuario = resultUsuario.response.usuario
+                        delete receita.id_usuario
+                    } else
+                        return resultUsuario
+
+
                     let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
                     if (resultDificuldade) {
                         receita.dificuldade = resultDificuldade.response.dificuldade
                         delete receita.id_dificuldade
-                    }else
-                    return resultDificuldade
+                    } else
+                        return resultDificuldade
+
+
+                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
+                    if (resultCategoria) {
+                        receita.categoria = resultCategoria.response.categoria
+
+                    } else
+                        return resultCategoria
 
 
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                     if (resultCusto) {
                         receita.custo = resultDificuldade.response.custo
                         delete receita.id_custo
-                    }else
-                    return resultCusto
+                    } else
+                        return resultCusto
 
 
                     let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
                     if (resultPorcao) {
                         receita.porcao = resultPorcao.response.porcao
                         delete receita.id_porcao
-                    }else
-                    return resultPorcao
+                    } else
+                        return resultPorcao
 
 
                     let resultIngrediente = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
-                    if(resultIngrediente){
+                    if (resultIngrediente) {
                         receita.ingredientes = resultIngrediente.response.ingrediente
-                    }else
-                    return resultIngrediente
+                    } else
+                        return resultIngrediente
 
                     let resultMdPreparo = await controllerMdPreparo.buscarModoPreparo(receita.id)
-                    if (resultMdPreparo && resultMdPreparo.status) {
+                    if (resultMdPreparo) {
                         receita.modo_preparo = resultMdPreparo.response.modo_preparo
-                    }else
-                    return resultMdPreparo
+                    } else
+                        return resultMdPreparo
 
                 }
 
@@ -234,62 +249,82 @@ const buscarReceita = async function (idReceita) {
 
     try {
 
-        let receita = await receitaDAO.selectReceitaByID(idReceita)
+        let result = await receitaDAO.selectReceitaByID(idReceita)
 
-        if (receita) {
-            if (receita.length > 0) {
+
+        if (result) {
+            if (result.length > 0) {
+
+                for (receita of result) {
+
+                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
+                    if (resultUsuario) {
+                        receita.usuario = resultUsuario.response.usuario
+                        delete receita.id_usuario
+                    } else
+                        return resultUsuario
 
                     let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
                     if (resultDificuldade) {
                         receita.dificuldade = resultDificuldade.response.dificuldade
                         delete receita.id_dificuldade
-                    }else
-                    return resultDificuldade
+                    } else
+                        return resultDificuldade
+
+
+                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
+                    console.log(resultCategoria)
+                    if (resultCategoria) {
+                        receita.categoria = resultCategoria.response.categoria
+
+                    } else
+                        return resultCategoria
 
 
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                     if (resultCusto) {
                         receita.custo = resultDificuldade.response.custo
                         delete receita.id_custo
-                    }else
-                    return resultCusto
+                    } else
+                        return resultCusto
 
 
                     let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
                     if (resultPorcao) {
                         receita.porcao = resultPorcao.response.porcao
                         delete receita.id_porcao
-                    }else
-                    return resultPorcao
+                    } else
+                        return resultPorcao
 
 
                     let resultIngrediente = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
-                    if(resultIngrediente){
+                    if (resultIngrediente) {
                         receita.ingredientes = resultIngrediente.response.ingrediente
-                    }else
-                    return resultIngrediente
-                    
+                    } else
+                        return resultIngrediente
 
                     let resultMdPreparo = await controllerMdPreparo.buscarModoPreparo(receita.id)
                     if (resultMdPreparo && resultMdPreparo.status) {
                         receita.modo_preparo = resultMdPreparo.response.modo_preparo
-                    }else
-                    return resultMdPreparo
-                
+                    } else
+                        return resultMdPreparo
+
+                }
 
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
                 customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response = receita
+                customMessage.DEFAULT_MESSAGE.response = result
 
                 return customMessage.DEFAULT_MESSAGE // 200
 
             } else {
                 return customMessage.ERROR_NOT_FOUND //404
             }
+
         } else {
-            customMessage.ERROR_INTERNAL_SERVER_MODEL //404
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL //404
         }
 
     } catch (error) {

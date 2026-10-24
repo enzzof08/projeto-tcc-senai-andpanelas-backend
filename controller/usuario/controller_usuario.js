@@ -20,7 +20,9 @@ const inserirNovoUsuario = async function (dados, contentType) {
                 dados.senha = senhaHash
 
                 let result = await userDAO.insertUsuario(await tratarDados(dados))
+ 
                 if (result) {
+                    dados.id = result
                     dados.senha = undefined
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
                     customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
@@ -153,7 +155,7 @@ const buscarUsuario = async function (id) {
             customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
             customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
             customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
-            customMessage.DEFAULT_MESSAGE.response = result
+            customMessage.DEFAULT_MESSAGE.response.usuario = result
 
             return customMessage.DEFAULT_MESSAGE
 

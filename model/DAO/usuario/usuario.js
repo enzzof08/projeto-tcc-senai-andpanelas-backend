@@ -9,18 +9,21 @@ const knexConection = knex(knexDatabaseConfig.development)
 
 const insertUsuario = async function (usuario) {
     try {
+        const foto_perfil = usuario.foto_perfil ?? ''
         let sql = `INSERT INTO tbl_usuario (
             nome,
             username,
             email,
             senha,
-            data_nascimento
+            data_nascimento,
+            foto_perfil
         ) VALUES (
             '${usuario.nome}',
             '${usuario.username}',
             '${usuario.email}',
             '${usuario.senha}',
-            '${usuario.data_nascimento}'
+            '${usuario.data_nascimento}',
+            if('${foto_perfil}' = '', NULL, '${foto_perfil}')
         );`
 
         let result = await knexConection.raw(sql)

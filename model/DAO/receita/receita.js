@@ -72,7 +72,7 @@ const selectReceitaByID = async function(idReceita){
         let result = await knexConection.raw(sql)
 
         if(Array.isArray(result)){
-            return result[0]  
+             return result[0]
         }else{
             return false
         }
