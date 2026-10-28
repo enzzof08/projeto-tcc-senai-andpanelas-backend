@@ -138,6 +138,7 @@ create table tbl_modo_preparo (
     constraint FK_RECEITA_MODO_PREPARO
     foreign key (id_receita)
     references tbl_receita(id)
+    ON DELETE CASCADE
 );
 
 create table tbl_categoria (
@@ -152,11 +153,15 @@ create table tbl_receita_categoria (
     
     constraint FK_CATEGORIA_RECEITA_CATEGORIA
     foreign key (id_categoria)
-    references tbl_categoria(id),
+    references tbl_categoria(id)
+    ON DELETE CASCADE,
     
 	constraint FK_RECEITA_RECEITA_CATEGORIA
     foreign key (id_receita)
     references tbl_receita(id)
+    ON DELETE CASCADE,
+    
+    UNIQUE (id_receita, id_categoria)
 );
 
 create table tbl_comentario (
@@ -186,11 +191,15 @@ create table tbl_tag_receita (
     
 	constraint FK_RECEITA_TAG_RECEITA
     foreign key (id_receita)
-    references tbl_receita(id),
+    references tbl_receita(id)
+    ON DELETE CASCADE,
     
 	constraint FK_TAG_TAG_RECEITA
     foreign key (id_tag)
     references tbl_tag(id)
+    ON DELETE CASCADE,
+    
+    UNIQUE (id_receita, id_tag)
 );
 
 create table tbl_salvo (
@@ -206,6 +215,7 @@ create table tbl_salvo (
     constraint FK_USUARIO_SALVO
     foreign key (id_usuario)
     references tbl_usuario(id)
+
 );
 
 create table tbl_ingrediente (
@@ -217,7 +227,8 @@ create table tbl_ingrediente (
     
     constraint FK_RECEITA_INGREDIENTES
     foreign key (id_receita)
-    references tbl_receita(id),
+    references tbl_receita(id)
+    ON DELETE CASCADE,
     
     constraint FK_UNIDADE_MEDIDA_INGREDIENTES
     foreign key (id_unidade_medida)

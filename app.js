@@ -41,6 +41,10 @@ app.use('/v1/entrepanelas/receita', cors(), receitaRouter)
 const porcaoRouter = require('./routes/porcao.router.js')
 app.use('/v1/entrepanelas/porcao', cors(), porcaoRouter)
 
+
+const ingredienteRouter = require('./routes/ingrediente.router.js')
+app.use('/v1/entrepanelas/ingrediente', cors(), ingredienteRouter)
+
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
     console.log('API aguardando novas requisições...')

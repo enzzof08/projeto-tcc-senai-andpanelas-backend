@@ -150,7 +150,6 @@ const inserirNovaReceita = async function (receita, contentType) {
 
 }
 
-
 // Função para listar todas as receitas
 const listarReceitas = async function () {
 
@@ -333,6 +332,168 @@ const buscarReceita = async function (idReceita) {
     }
 }
 
+const buscarReceitasPorIngredientes = async function (ingredientes) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (ingredientes != undefined && !Array.isArray(ingredientes)) {
+            ingredientes = [ingredientes]
+        }
+
+        let validar = await validarDadosBuscaIngredientes(ingredientes)
+
+        if (validar) {
+
+            return validar
+
+        } else {
+
+            let ingredientesCorrigidos = []
+
+            for (const ingrediente of ingredientes) {
+
+                let resultIngrediente = await controllerIngrediente.corrigirIngredienteNome(ingrediente)
+
+                if (resultIngrediente && resultIngrediente.status) {
+
+                    ingredientesCorrigidos.push(
+                        resultIngrediente.response
+                    )
+
+                } else {
+
+                    return resultIngrediente
+                }
+            }
+
+            let result = await receitaDAO.selectReceitasPorIngredientes(ingredientesCorrigidos)
+
+            if (result) {
+                if (result.length > 0) {
+
+                    for (receita of result) {
+
+                        let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
+                        if (resultUsuario) {
+                            receita.usuario = resultUsuario.response.usuario
+                            delete receita.id_usuario
+                        } else
+                            return resultUsuario
+
+                        let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
+                        if (resultDificuldade) {
+                            receita.dificuldade = resultDificuldade.response.dificuldade
+                            delete receita.id_dificuldade
+                        } else
+                            return resultDificuldade
+
+
+                        let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
+                        if (resultCusto) {
+                            receita.custo = resultDificuldade.response.custo
+                            delete receita.id_custo
+                        } else
+                            return resultCusto
+
+
+                        let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
+                        if (resultPorcao) {
+                            receita.porcao = resultPorcao.response.porcao
+                            delete receita.id_porcao
+                        } else
+                            return resultPorcao
+
+
+
+                        let resultIngredientes = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
+                        if (resultIngredientes) {
+
+                            let ingredientesReceita = resultIngredientes.response.ingrediente
+                            let quantidadeEncontrada = 0
+
+                            for (const itemIngrediente of ingredientesReceita) {
+
+                                if (ingredientesCorrigidos.includes(itemIngrediente.nome)) {
+                                    quantidadeEncontrada++
+                                }
+                            }
+
+                            if (ingredientesReceita.length > 0) {
+
+                                //Retornar o valor da compatibilidade (em numero inteiro)
+                                receita.compatibilidade = Math.round(
+                                    ((quantidadeEncontrada / ingredientesReceita.length) * 100)
+                                )
+
+                            } else {
+
+                                receita.compatibilidade = 0
+                            }
+
+                        } else {
+                            return resultIngredientes
+                        }
+
+                    }
+
+                    // Ordenar as receitas de acordo com a compatibilidade
+                    result.sort((a, b) => b.compatibilidade - a.compatibilidade)
+
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+                    customMessage.DEFAULT_MESSAGE.response.count = result.length
+                    customMessage.DEFAULT_MESSAGE.response.receitas = result
+
+                    return customMessage.DEFAULT_MESSAGE
+
+                } else {
+                    return customMessage.ERROR_NOT_FOUND
+                }
+
+            } else {
+
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+
+const excluirReceita = async function (id) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        let resultBuscarReceita = await buscarReceita(id)
+
+        if (resultBuscarReceita.status) {
+
+            let result = await receitaDAO.deleteReceita(id)
+
+            if (result){
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+            customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+
+            return customMessage.DEFAULT_MESSAGE 
+
+            }else
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+
+        } else {
+            return resultBuscarReceita
+        }
+
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
 
 const validarDados = async function (receita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -375,9 +536,6 @@ const validarDados = async function (receita) {
     }
 }
 
-
-
-//Função para tratar os dados a serem inseridos
 const tratarDados = async function (receita) {
     //Tratamento para eliminar a chegada da aspas ('') como caracter inválido
     receita.titulo = receita.titulo.replaceAll("'", "")
@@ -388,8 +546,36 @@ const tratarDados = async function (receita) {
     return receita
 }
 
+const validarDadosBuscaIngredientes = async function (ingredientes) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    if (!Array.isArray(ingredientes) || ingredientes.length == 0) {
+
+        customMessage.ERROR_BAD_REQUEST.field = '[INGREDIENTES] INVÁLIDOS'
+        return customMessage.ERROR_BAD_REQUEST
+
+    } else {
+
+        for (const ingrediente of ingredientes) {
+
+            if (
+                typeof ingrediente != 'string' ||
+                ingrediente.trim() == ''
+            ) {
+                customMessage.ERROR_BAD_REQUEST.field = '[INGREDIENTES] INVÁLIDOS'
+                return customMessage.ERROR_BAD_REQUEST
+            }
+        }
+
+        return false
+    }
+}
+
 module.exports = {
     inserirNovaReceita,
     listarReceitas,
-    buscarReceita
+    buscarReceita,
+    buscarReceitasPorIngredientes,
+    excluirReceita
 }
