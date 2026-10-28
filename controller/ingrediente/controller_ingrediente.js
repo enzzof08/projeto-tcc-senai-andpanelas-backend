@@ -85,6 +85,43 @@ const validarDados = async function (ingrediente) {
     }
 }
 
+const corrigirIngredienteNome = async function (ingrediente) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        let validar = await validarDadosCorrigirNome(ingrediente)
+
+        if (validar) {
+
+            return validar
+
+        } else {
+
+            let result = await ingredienteDAO.corrigirNomeIngrediente(await tratarDadosIngrediente(ingrediente))
+
+            if (result) {
+
+                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+                customMessage.DEFAULT_MESSAGE.response = result
+
+                return customMessage.DEFAULT_MESSAGE
+
+            } else {
+
+                return customMessage.ERROR_NOT_FOUND
+
+            }
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 
 //Função para tratar os dados a serem inseridos
 const tratarDados = async function (ingrediente) {
@@ -93,9 +130,27 @@ const tratarDados = async function (ingrediente) {
 
     return ingrediente
 }
+const validarDadosCorrigirNome = async function (nome) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
 
+    if (
+        nome == undefined || nome == null || typeof nome != 'string'
+    ) {
+        customMessage.ERROR_BAD_REQUEST.field = '[NOME] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else {
+        return false
+    }
+}
+
+const tratarDadosIngrediente = async function (ingrediente) {
+    ingrediente = ingrediente.replaceAll("'", "")
+
+    return ingrediente
+}
 
 module.exports = {
     inserirIngrediente,
-    listarIngredientesPorReceita
+    listarIngredientesPorReceita,
+    corrigirIngredienteNome
 }

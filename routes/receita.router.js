@@ -35,4 +35,24 @@ router.get('/:id', async function (request, response) {
     response.json(result)
 })
 
+//Buscar de acordo com os ingredientes
+router.get('/ingrediente/buscar', async function (request, response) {
+
+    let ingredientes = request.query.ingredientes
+
+    let result = await controllerReceita.buscarReceitasPorIngredientes(ingredientes)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.delete('/:id', async function(request,response){
+    let id = request.params.id
+
+    let result = await controllerReceita.excluirReceita(id)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 module.exports = router
