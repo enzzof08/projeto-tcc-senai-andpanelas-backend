@@ -4,7 +4,7 @@ const knexDatabaseConfig = require('../../database_config/knexConfig')
 
 const knexConection = knex(knexDatabaseConfig.development)
 
-const insertComunidade = async function(comuidade){
+const insertComunidade = async function(comunidade){
 
     try{
         let sql = `insert into tbl_comunidade (
