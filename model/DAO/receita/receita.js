@@ -27,10 +27,10 @@ const insertReceita = async function (receita) {
             '${receita.tempo}',
             '${receita.foto}',
             if('${video}' = '', NULL, '${video}'),
-            '${receita.id_custo}',
-            '${receita.id_dificuldade}',
-            '${receita.id_porcao}',
-            '${receita.id_usuario}'
+            ${receita.id_custo},
+            ${receita.id_dificuldade},
+            ${receita.id_porcao},
+            ${receita.id_usuario}
         );`
 
         let result = await knexConection.raw(sql)
@@ -135,6 +135,31 @@ const selectReceitasPorIngredientes = async function (ingredientes) {
     }
 }
 
+const updateReceita = async function (receita) {
+    try {
+        let sql = `UPDATE tbl_receita SET
+            titulo = '${receita.titulo}',
+            descricao = '${receita.descricao}',
+            tempo = '${receita.tempo}',
+            foto = '${receita.foto}',
+            video = '${receita.video}',
+            id_custo = ${receita.id_custo},
+            id_dificuldade = ${receita.id_dificuldade},
+            id_porcao = ${receita.id_porcao}
+        WHERE id = ${receita.id};`
+
+        let result = await knexConection.raw(sql)
+
+        if (result)
+            return true
+        else
+            return false
+
+    } catch (error) {
+        return false
+    }
+}
+
 const deleteReceita = async function (idReceita) {
     try {
 
@@ -159,5 +184,6 @@ module.exports = {
     selectALLReceita,
     selectReceitaByID,
     selectReceitasPorIngredientes,
-    deleteReceita
+    deleteReceita,
+    updateReceita
 }

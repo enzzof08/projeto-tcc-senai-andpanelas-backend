@@ -6,7 +6,7 @@ use db_entre_panelas_2026;
 
 #SHOW TABLES;
 
-#SELECT * FROM tbl_ingrediente;
+#SELECT * FROM tbl_categoria_principal;
 
 create table tbl_usuario (
 	id			    int not null auto_increment primary key,
@@ -32,20 +32,14 @@ create table tbl_unidade_medida (
 	unidade		varchar(6) not null
 );
 
-create table tbl_ingrediente_geladeira (
+create table tbl_geladeira_ingrediente (
 	id			      int not null auto_increment primary key,
 	nome_ingrediente  varchar(35) not null,
-    quantidade	      int not null,
     id_usuario		  int not null,
-    id_unidade_medida int not null,
     
     constraint FK_USUARIO_INGREDIENTE_GELADEIRA
     foreign key (id_usuario)
-    references tbl_usuario(id),
-    
-    constraint FK_UNIDADE_MEDIDA_INGREDIENTE_GELADEIRA
-    foreign key (id_unidade_medida)
-    references tbl_unidade_medida(id)
+    references tbl_usuario(id)
 );
 
 create table tbl_seguindo_seguidor (

@@ -4,7 +4,7 @@ const knexDatabaseConfig = require('../../database_config/knexConfig')
 
 const knexConection = knex(knexDatabaseConfig.development)
 
-const insertComunidade = async function(comuidade){
+const insertComunidade = async function(comunidade){
 
     try{
         let sql = `insert into tbl_comunidade (
@@ -19,7 +19,7 @@ const insertComunidade = async function(comuidade){
             '${comunidade.foto_url}',
             '${comunidade.nome}',
             '${comunidade.banner_url}',
-            '${comunidade.id_categoria}',
+            '${comunidade.id_categoria_principal}',
             '${comunidade.descricao}'
         
         );`
@@ -33,6 +33,7 @@ const insertComunidade = async function(comuidade){
         }
 
     } catch (error){
+        console.log(error)
         return false
     }
 }
@@ -40,11 +41,11 @@ const insertComunidade = async function(comuidade){
 const updateComunidade = async function(comunidade){
 
     try{
-        let sql = `update tbl_update set
+        let sql = `update tbl_comunidade set
                         foto_url = '${comunidade.foto_url}',
                         nome = '${comunidade.nome}',
                         banner_url = '${comunidade.banner_url}',
-                        id_categoria_principal = '${comunidade.categoria_principal}',
+                        id_categoria_principal = '${comunidade.id_categoria_principal}',
                         descricao = '${comunidade.descricao}'`
 
         let result = await knexConection.raw(sql)
@@ -55,6 +56,7 @@ const updateComunidade = async function(comunidade){
             return false
 
     } catch (error){
+        console.log(error)
         return false
     }
 }

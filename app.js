@@ -31,7 +31,6 @@ app.use('/v1/entrepanelas/dificuldade', cors(), dificuldadeRouter)
 const custoRouter = require('./routes/custo.router.js')
 app.use('/v1/entrepanelas/custo', cors(), custoRouter)
 
-
 const usuarioRouter = require('./routes/usuario.router.js')
 app.use('/v1/entrepanelas/usuario', cors(), usuarioRouter)
 
@@ -44,6 +43,12 @@ app.use('/v1/entrepanelas/porcao', cors(), porcaoRouter)
 
 const ingredienteRouter = require('./routes/ingrediente.router.js')
 app.use('/v1/entrepanelas/ingrediente', cors(), ingredienteRouter)
+
+const comunidadeRouter = require('./routes/comunidade.router.js')
+app.use('/v1/entrepanelas/comunidade', cors(), comunidadeRouter)
+
+const geladeiraRouter = require('./routes/geladeira.router.js')
+app.use('/v1/entrepanelas/geladeira', cors(), geladeiraRouter)
 
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
