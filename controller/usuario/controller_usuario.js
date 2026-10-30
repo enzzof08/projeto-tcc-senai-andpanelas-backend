@@ -94,9 +94,9 @@ const atualizarUsuario = async function (dados, id, contentType) {
     try {
         if (String(contentType).toUpperCase().includes('APPLICATION/JSON')) {
 
-            let usuario = await userDAO.selectUsuarioById(id)
+            let BuscaUsuario = await buscarUsuario(id)
 
-            if (usuario) {
+            if (BuscaUsuario) {
 
                 let dadosAtualizados = {
                     nome: dados.nome === undefined ? usuario.nome : dados.nome,
@@ -129,7 +129,7 @@ const atualizarUsuario = async function (dados, id, contentType) {
                 }
 
             } else {
-                return customMessage.ERROR_NOT_FOUND // 404
+                return BuscaUsuario
             }
 
         } else {

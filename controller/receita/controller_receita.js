@@ -30,9 +30,6 @@ const inserirNovaReceita = async function (receita, contentType) {
 
             let validar = await validarDados(receita)
 
-
-            //Retorna um JSON de erro caso algum atributo seja inválido,
-            //senão retorna um false(Não teve erro)
             if (validar) {
 
                 return validar //400
@@ -167,7 +164,7 @@ const listarReceitas = async function () {
                 for (receita of result) {
 
                     let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-                    if (resultUsuario) {
+                    if (resultUsuario.status) {
                         receita.usuario = resultUsuario.response.usuario
                         delete receita.id_usuario
                     } else
@@ -175,7 +172,7 @@ const listarReceitas = async function () {
 
 
                     let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-                    if (resultDificuldade) {
+                    if (resultDificuldade.status) {
                         receita.dificuldade = resultDificuldade.response.dificuldade
                         delete receita.id_dificuldade
                     } else
@@ -183,7 +180,7 @@ const listarReceitas = async function () {
 
 
                     let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-                    if (resultCategoria) {
+                    if (resultCategoria.status) {
                         receita.categoria = resultCategoria.response.categoria
 
                     } else
@@ -191,7 +188,7 @@ const listarReceitas = async function () {
 
 
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-                    if (resultCusto) {
+                    if (resultCusto.status) {
                         receita.custo = resultDificuldade.response.custo
                         delete receita.id_custo
                     } else
@@ -199,7 +196,7 @@ const listarReceitas = async function () {
 
 
                     let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-                    if (resultPorcao) {
+                    if (resultPorcao.status) {
                         receita.porcao = resultPorcao.response.porcao
                         delete receita.id_porcao
                     } else
@@ -207,13 +204,13 @@ const listarReceitas = async function () {
 
 
                     let resultIngrediente = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
-                    if (resultIngrediente) {
+                    if (resultIngrediente.status) {
                         receita.ingredientes = resultIngrediente.response.ingrediente
                     } else
                         return resultIngrediente
 
                     let resultMdPreparo = await controllerMdPreparo.buscarModoPreparo(receita.id)
-                    if (resultMdPreparo) {
+                    if (resultMdPreparo.status) {
                         receita.modo_preparo = resultMdPreparo.response.modo_preparo
                     } else
                         return resultMdPreparo
@@ -241,6 +238,149 @@ const listarReceitas = async function () {
     }
 }
 
+const atualizarReceita = async function (dados, id, contentType) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (String(contentType).toUpperCase().includes('APPLICATION/JSON')) {
+
+            let receitaBusca = await buscarReceita(id)
+
+            if (receitaBusca.status) {
+
+                let dadosAtualizados = {
+                    titulo: dados.titulo === undefined ? receitaAtual.titulo : dados.titulo,
+                    descricao: dados.descricao === undefined ? receitaAtual.descricao : dados.descricao,
+                    tempo: dados.tempo === undefined ? receitaAtual.tempo : dados.tempo,
+                    foto: dados.foto === undefined ? receitaAtual.foto : dados.foto,
+                    video: dados.video === undefined ? receitaAtual.video : dados.video,
+                    id_custo: dados.id_custo === undefined ? receitaAtual.id_custo : dados.id_custo,
+                    id_dificuldade: dados.id_dificuldade === undefined ? receitaAtual.id_dificuldade : dados.id_dificuldade,
+                    id_porcao: dados.id_porcao === undefined ? receitaAtual.id_porcao : dados.id_porcao
+                }
+
+                let validar = await validarDadosAtualizacao(dadosAtualizados)
+
+                if (validar) {
+                    return validar
+                } else {
+
+                    dadosAtualizados.id = id
+
+                    // let result = await .updateUsuario(dadosAtualizados)
+                    let result = await receitaDAO.updateReceita(dadosAtualizados)
+
+                    if (result) {
+
+
+                    //Ingredientes
+                    if (dados.ingredientes !== undefined) {
+
+                        // Exclui os ingredientes antigos da receita
+                        await receitaDAO.deletarIngredientesReceita(id)
+                    
+                        // Cadastra os novos ingredientes
+                        for (const itemIngrediente of dados.ingredientes) {
+                    
+                            let nomeCorrigido = await ingredienteDAO.corrigirNomeIngrediente(
+                                itemIngrediente.nome
+                            )
+                    
+                            if (nomeCorrigido === false) {
+                                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                            }
+                    
+                            let ingredienteReceita = {
+                                nome: nomeCorrigido,
+                                quantidade: itemIngrediente.quantidade,
+                                id_receita: id,
+                                id_unidade_medida: itemIngrediente.id_unidade_medida
+                            }
+                    
+                            let resultIngrediente = await controllerIngrediente.inserirIngrediente(
+                                ingredienteReceita
+                            )
+                    
+                            if (!resultIngrediente || !resultIngrediente.status) {
+                                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                            }
+                        }
+                    }
+
+                    if (dados.modo_preparo !== undefined) {
+
+                        // Exclui as etapas antigas
+                        await receitaDAO.deletarModoPreparoReceita(id)
+                    
+                        // Cadastra as novas etapas
+                        for (const itemPreparo of dados.modo_preparo) {
+                    
+                            let modoPreparo = {
+                                metodo_preparo: itemPreparo.metodo_preparo,
+                                ordem_preparo: itemPreparo.ordem_preparo,
+                                id_receita: id
+                            }
+                    
+                            let resultPreparo = await controllerMdPreparo.inserirModoPreparo(
+                                modoPreparo
+                            )
+                    
+                            if (!resultPreparo || !resultPreparo.status) {
+                                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                            }
+                        }
+                    }
+
+
+                    if (dados.categoria !== undefined) {
+
+                        // Exclui as categorias antigas
+                        await receitaDAO.deletarCategoriasReceita(id)
+                    
+                        // Cadastra as novas categorias
+                        for (const itemCategoria of dados.categoria) {
+                    
+                            let receitaCategoria = {
+                                id_receita: id,
+                                id_categoria: itemCategoria.id
+                            }
+                    
+                            let resultCategoria = await controllerReceitaCategoria.inserirNovaReceitaCategoria(
+                                receitaCategoria
+                            )
+                    
+                            if (!resultCategoria || !resultCategoria.status) {
+                                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                            }
+                        }
+                    }
+
+
+
+                    
+                        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
+                        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
+                        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
+                        customMessage.DEFAULT_MESSAGE.response = dadosAtualizados
+
+                        return customMessage.DEFAULT_MESSAGE // 200
+                    } else {
+                        return customMessage.ERROR_INTERNAL_SERVER_MODEL // 500
+                    }
+                }
+
+            } else {
+                return receitaBusca
+            }
+
+        } else {
+            return customMessage.ERROR_CONTENT_TYPE // 415
+        }
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER // 500
+    }
+}
+
 const buscarReceita = async function (idReceita) {
 
     // Cria uma cópia das mensagens padronizadas
@@ -257,14 +397,14 @@ const buscarReceita = async function (idReceita) {
                 for (receita of result) {
 
                     let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-                    if (resultUsuario) {
+                    if (resultUsuario.status) {
                         receita.usuario = resultUsuario.response.usuario
                         delete receita.id_usuario
                     } else
                         return resultUsuario
 
                     let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-                    if (resultDificuldade) {
+                    if (resultDificuldade.status) {
                         receita.dificuldade = resultDificuldade.response.dificuldade
                         delete receita.id_dificuldade
                     } else
@@ -272,8 +412,7 @@ const buscarReceita = async function (idReceita) {
 
 
                     let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-                    console.log(resultCategoria)
-                    if (resultCategoria) {
+                    if (resultCategoria.status) {
                         receita.categoria = resultCategoria.response.categoria
 
                     } else
@@ -281,7 +420,7 @@ const buscarReceita = async function (idReceita) {
 
 
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-                    if (resultCusto) {
+                    if (resultCusto.status) {
                         receita.custo = resultDificuldade.response.custo
                         delete receita.id_custo
                     } else
@@ -289,7 +428,7 @@ const buscarReceita = async function (idReceita) {
 
 
                     let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-                    if (resultPorcao) {
+                    if (resultPorcao.status) {
                         receita.porcao = resultPorcao.response.porcao
                         delete receita.id_porcao
                     } else
@@ -297,13 +436,13 @@ const buscarReceita = async function (idReceita) {
 
 
                     let resultIngrediente = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
-                    if (resultIngrediente) {
+                    if (resultIngrediente.status) {
                         receita.ingredientes = resultIngrediente.response.ingrediente
                     } else
                         return resultIngrediente
 
                     let resultMdPreparo = await controllerMdPreparo.buscarModoPreparo(receita.id)
-                    if (resultMdPreparo && resultMdPreparo.status) {
+                    if (resultMdPreparo.status) {
                         receita.modo_preparo = resultMdPreparo.response.modo_preparo
                     } else
                         return resultMdPreparo
@@ -313,7 +452,6 @@ const buscarReceita = async function (idReceita) {
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
                 customMessage.DEFAULT_MESSAGE.response = result
 
                 return customMessage.DEFAULT_MESSAGE // 200
@@ -492,6 +630,38 @@ const excluirReceita = async function (id) {
 
     } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const validarDadosAtualizacao = async function (receita) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    if (receita.titulo == undefined || receita.titulo == '' || receita.titulo == null || receita.titulo.length > 50) {
+        customMessage.ERROR_BAD_REQUEST.field = '[TITULO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.descricao == undefined || receita.descricao == '' || receita.descricao == null || receita.descricao.length > 200) {
+        customMessage.ERROR_BAD_REQUEST.field = '[DESCRICAO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.tempo == undefined || receita.tempo == '' || receita.tempo == null) {
+        customMessage.ERROR_BAD_REQUEST.field = '[TEMPO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.foto.length > 2000 || !/^https?:\/\/.+/.test(receita.foto)) {
+        customMessage.ERROR_BAD_REQUEST.field = '[FOTO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.id_porcao == undefined || receita.id_porcao == '' || receita.id_porcao == null || isNaN(receita.id_porcao) || receita.id_porcao <= 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_PORCAO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.id_dificuldade == undefined || receita.id_dificuldade == '' || receita.id_dificuldade == null || isNaN(receita.id_dificuldade) || receita.id_dificuldade <= 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_DIFICULDADE] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.id_custo == undefined || receita.id_custo == '' || receita.id_custo == null || isNaN(receita.id_custo) || receita.id_custo <= 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_CUSTO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (receita.id_usuario == undefined || receita.id_usuario == '' || receita.id_usuario == null || isNaN(receita.id_usuario) || receita.id_usuario <= 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    } else {
+        return false
     }
 }
 
