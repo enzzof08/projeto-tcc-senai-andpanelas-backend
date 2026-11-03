@@ -18,6 +18,19 @@ router.post('/', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
+router.put('/:id', bodyParserJSON, async function (request, response) {
+    let dados = request.body
+
+    let contentType = request.headers['content-type']
+
+    let id = request.params.id
+
+    let result = await controllerReceita.atualizarReceita(dados,id ,contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 router.get('/', async function (request, response) {
 
     let result = await controllerReceita.listarReceitas()

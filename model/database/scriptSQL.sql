@@ -37,6 +37,8 @@ create table tbl_geladeira_ingrediente (
 	nome_ingrediente  varchar(35) not null,
     id_usuario		  int not null,
     
+    unique (id_usuario, nome_ingrediente),
+    
     constraint FK_USUARIO_INGREDIENTE_GELADEIRA
     foreign key (id_usuario)
     references tbl_usuario(id)

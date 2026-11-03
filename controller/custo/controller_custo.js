@@ -47,8 +47,8 @@ const buscarCusto = async function(id){
             if(result){
 
                 if(result.length > 0){
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCES_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCES_RESPONSE.status_code
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                     customMessage.DEFAULT_MESSAGE.response.custo = result
 
                     return customMessage.DEFAULT_MESSAGE
@@ -60,6 +60,7 @@ const buscarCusto = async function(id){
             }
         }
     } catch(error){
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }

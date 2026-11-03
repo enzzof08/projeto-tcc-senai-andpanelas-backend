@@ -48,9 +48,28 @@ const selectByIdModoPreparo = async function(id){
     }
 }
 
+const deleteModoPreparoByIdReceita = async function (idReceita) {
+    try {
+
+        let sql = `DELETE FROM tbl_modo_preparo WHERE id_receita = ${idReceita}`
+
+        let result = await knexConection.raw(sql)
+
+        if (result) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
 
 
 module.exports = {
     insertModoPreparo,
-    selectByIdModoPreparo
+    selectByIdModoPreparo,
+    deleteModoPreparoByIdReceita
 }

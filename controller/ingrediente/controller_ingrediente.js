@@ -64,6 +64,31 @@ const listarIngredientesPorReceita = async function (idReceita) {
     }
 }
 
+const excluirIngredientesPorReceita = async function (idReceita) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        let result = await ingredienteDAO.deleteIngredientesByIdReceita(idReceita)
+
+            if (result) {
+
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+
+                    return customMessage.DEFAULT_MESSAGE
+            } else {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 
 const validarDados = async function (ingrediente) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -152,5 +177,6 @@ const tratarDadosIngrediente = async function (ingrediente) {
 module.exports = {
     inserirIngrediente,
     listarIngredientesPorReceita,
-    corrigirIngredienteNome
+    corrigirIngredienteNome,
+    excluirIngredientesPorReceita
 }

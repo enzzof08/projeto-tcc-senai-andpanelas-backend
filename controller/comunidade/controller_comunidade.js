@@ -18,7 +18,7 @@ const inserirNovaComunidade = async function (comunidade, contentType) {
             } else {
 
                 let result = await comunidadeDAO.insertComunidade(await tratarDados(comunidade))
-
+                console.log(result)
                 if (result) {
                     comunidade.id = result
 
@@ -38,6 +38,7 @@ const inserirNovaComunidade = async function (comunidade, contentType) {
         }
 
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
@@ -223,7 +224,7 @@ const tratarDados = async function (comunidade) {
     comunidade.banner_url = comunidade.banner_url.replaceAll("'", '')
     comunidade.descricao = comunidade.descricao.replaceAll("'", "")
 
-    return receita
+    return comunidade
 }
 
 module.exports = {

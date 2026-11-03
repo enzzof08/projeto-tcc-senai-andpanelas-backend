@@ -5,7 +5,7 @@ const knexDatabaseConfig = require('../../database_config/knexConfig')
 const knexConection = knex(knexDatabaseConfig.development)
 
 
-const insertGeladeiraIngrediente = async function(ingrediente){
+const insertGeladeiraIngrediente = async function (ingrediente) {
     try {
         let sql = `insert into tbl_geladeira_ingrediente (
             nome_ingrediente,
@@ -14,27 +14,27 @@ const insertGeladeiraIngrediente = async function(ingrediente){
             '${ingrediente.nome_ingrediente}',
             ${ingrediente.id_usuario}
         );`
-        
+
         //Encaminha para o BD o scriptSQL
         let result = await knexConection.raw(sql)
-        
-        if(result)
+
+        if (result)
             return result[0].insertId //Retorna o ID gerado no insert
         else
             return false
-        
+
     } catch (error) {
-        
+
         console.log(error)
-        return false
+        throw error
     }
 }
 
 const selectALLGeladeiraIngrediente = async function (idUsuario) {
     try {
-        let sql = `select * FROM tbl_geladeira_ingrediente
-                   WHERE id_usuario = ${idUsuario}
-                   ORDER BY id DESC`
+        let sql = `SELECT nome_ingrediente
+                   FROM tbl_geladeira_ingrediente
+                   WHERE id_usuario = ${idUsuario}`
 
         let result = await knexConection.raw(sql)
 
@@ -88,6 +88,7 @@ const deleteGeladeiraIngrediente = async function (idIngrediente) {
         return false
     }
 }
+
 
 module.exports = {
     insertGeladeiraIngrediente,
