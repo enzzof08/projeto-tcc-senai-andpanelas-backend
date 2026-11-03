@@ -107,9 +107,29 @@ const selectIngredientesPorIdReceita = async function (idReceita) {
     }
 }
 
+const deleteIngredientesByIdReceita = async function (idReceita) {
+    try {
+
+        let sql = `DELETE FROM tbl_ingrediente WHERE id_receita = ${idReceita}`
+
+        let result = await knexConection.raw(sql)
+
+        if (result) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 
 module.exports = {
     corrigirNomeIngrediente,
     insertIngrediente,
-    selectIngredientesPorIdReceita
+    selectIngredientesPorIdReceita,
+    deleteIngredientesByIdReceita
 }
