@@ -18,6 +18,10 @@ const controllerCusto = require('../custo/controller_custo.js')
 
 const controllerPorcao = require('../porcao/controller_porcao.js')
 
+const controllerComunidadeReceita = require('../comunidade_receita/controller_comunidade_receita.js')
+
+const controllerTagReceita = require('../receita/controller_tag_receita.js')
+
 
 const inserirNovaReceita = async function (receita, contentType) {
 
@@ -83,7 +87,7 @@ const inserirNovaReceita = async function (receita, contentType) {
                         }
                     }
 
-                    // Percorre as etapas do modo de preparo
+                    // MODO PREPARO
                     for (const itemPreparo of receita.modo_preparo) {
 
                         // Monta o objeto do modo de preparo
@@ -97,6 +101,7 @@ const inserirNovaReceita = async function (receita, contentType) {
                         let resultPreparo = await controllerMdPreparo.inserirModoPreparo(
                             modoPreparo
                         )
+                        console.log(resultPreparo)
 
 
                         // Verifica se a etapa foi cadastrada
@@ -105,6 +110,7 @@ const inserirNovaReceita = async function (receita, contentType) {
                         }
                     }
 
+                    // CATEGORIA
                     for (itemCategoria of receita.categoria) {
 
 
@@ -116,6 +122,7 @@ const inserirNovaReceita = async function (receita, contentType) {
 
                         let resultCategoria = await controllerReceitaCategoria.inserirNovaReceitaCategoria(receitaCategoria)
                         console.log(resultCategoria)
+                        
 
                         if (!resultCategoria.status) {
                             return customMessage.SUCCESS_CREATED_ITEM_WARNING  //201 com alerta de cadastro
@@ -178,6 +185,8 @@ const listarReceitas = async function () {
                     } else
                         return resultDificuldade
 
+                        
+
 
                     let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
                     if (resultCategoria.status) {
@@ -187,12 +196,17 @@ const listarReceitas = async function () {
                         return resultCategoria
 
 
+                        
+
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
+                    //console.log(resultCusto)
                     if (resultCusto.status) {
                         receita.custo = resultDificuldade.response.custo
                         delete receita.id_custo
                     } else
                         return resultCusto
+
+                        
 
 
                     let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
@@ -201,6 +215,8 @@ const listarReceitas = async function () {
                         delete receita.id_porcao
                     } else
                         return resultPorcao
+
+                        
 
 
                     let resultIngrediente = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
@@ -248,36 +264,24 @@ const atualizarReceita = async function (dados, id, contentType) {
 
             if (receitaBusca.status) {
 
-                let dadosAtualizados = {
-                    titulo: dados.titulo === undefined ? receitaAtual.titulo : dados.titulo,
-                    descricao: dados.descricao === undefined ? receitaAtual.descricao : dados.descricao,
-                    tempo: dados.tempo === undefined ? receitaAtual.tempo : dados.tempo,
-                    foto: dados.foto === undefined ? receitaAtual.foto : dados.foto,
-                    video: dados.video === undefined ? receitaAtual.video : dados.video,
-                    id_custo: dados.id_custo === undefined ? receitaAtual.id_custo : dados.id_custo,
-                    id_dificuldade: dados.id_dificuldade === undefined ? receitaAtual.id_dificuldade : dados.id_dificuldade,
-                    id_porcao: dados.id_porcao === undefined ? receitaAtual.id_porcao : dados.id_porcao
-                }
-
-                let validar = await validarDadosAtualizacao(dadosAtualizados)
+                let validar = await validarDados(dados)
 
                 if (validar) {
                     return validar
                 } else {
 
-                    dadosAtualizados.id = id
+                    dados.id = id
 
                     // let result = await .updateUsuario(dadosAtualizados)
-                    let result = await receitaDAO.updateReceita(dadosAtualizados)
+                    let result = await receitaDAO.updateReceita(dados)
 
                     if (result) {
-
-
+z
                     //Ingredientes
                     if (dados.ingredientes !== undefined) {
 
                         // Exclui os ingredientes antigos da receita
-                        await receitaDAO.deletarIngredientesReceita(id)
+                        await controllerIngrediente.excluirIngredientesPorReceita(id)
                     
                         // Cadastra os novos ingredientes
                         for (const itemIngrediente of dados.ingredientes) {
@@ -310,7 +314,7 @@ const atualizarReceita = async function (dados, id, contentType) {
                     if (dados.modo_preparo !== undefined) {
 
                         // Exclui as etapas antigas
-                        await receitaDAO.deletarModoPreparoReceita(id)
+                        await controllerMdPreparo.excluirModoPreparoPorReceita(id)
                     
                         // Cadastra as novas etapas
                         for (const itemPreparo of dados.modo_preparo) {
@@ -335,7 +339,7 @@ const atualizarReceita = async function (dados, id, contentType) {
                     if (dados.categoria !== undefined) {
 
                         // Exclui as categorias antigas
-                        await receitaDAO.deletarCategoriasReceita(id)
+                        await controllerReceitaCategoria.excluirCategoriasIdReceita(id)
                     
                         // Cadastra as novas categorias
                         for (const itemCategoria of dados.categoria) {
@@ -361,7 +365,7 @@ const atualizarReceita = async function (dados, id, contentType) {
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
                         customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
                         customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
-                        customMessage.DEFAULT_MESSAGE.response = dadosAtualizados
+                        customMessage.DEFAULT_MESSAGE.response = dados
 
                         return customMessage.DEFAULT_MESSAGE // 200
                     } else {
@@ -530,7 +534,7 @@ const buscarReceitasPorIngredientes = async function (ingredientes) {
 
                         let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                         if (resultCusto) {
-                            receita.custo = resultDificuldade.response.custo
+                            receita.custo = resultCusto.response.custo
                             delete receita.id_custo
                         } else
                             return resultCusto
@@ -603,7 +607,6 @@ const buscarReceitasPorIngredientes = async function (ingredientes) {
     }
 }
 
-
 const excluirReceita = async function (id) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -630,38 +633,6 @@ const excluirReceita = async function (id) {
 
     } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
-    }
-}
-
-const validarDadosAtualizacao = async function (receita) {
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
-
-    if (receita.titulo == undefined || receita.titulo == '' || receita.titulo == null || receita.titulo.length > 50) {
-        customMessage.ERROR_BAD_REQUEST.field = '[TITULO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.descricao == undefined || receita.descricao == '' || receita.descricao == null || receita.descricao.length > 200) {
-        customMessage.ERROR_BAD_REQUEST.field = '[DESCRICAO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.tempo == undefined || receita.tempo == '' || receita.tempo == null) {
-        customMessage.ERROR_BAD_REQUEST.field = '[TEMPO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.foto.length > 2000 || !/^https?:\/\/.+/.test(receita.foto)) {
-        customMessage.ERROR_BAD_REQUEST.field = '[FOTO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.id_porcao == undefined || receita.id_porcao == '' || receita.id_porcao == null || isNaN(receita.id_porcao) || receita.id_porcao <= 0) {
-        customMessage.ERROR_BAD_REQUEST.field = '[ID_PORCAO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.id_dificuldade == undefined || receita.id_dificuldade == '' || receita.id_dificuldade == null || isNaN(receita.id_dificuldade) || receita.id_dificuldade <= 0) {
-        customMessage.ERROR_BAD_REQUEST.field = '[ID_DIFICULDADE] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.id_custo == undefined || receita.id_custo == '' || receita.id_custo == null || isNaN(receita.id_custo) || receita.id_custo <= 0) {
-        customMessage.ERROR_BAD_REQUEST.field = '[ID_CUSTO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else if (receita.id_usuario == undefined || receita.id_usuario == '' || receita.id_usuario == null || isNaN(receita.id_usuario) || receita.id_usuario <= 0) {
-        customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
-        return customMessage.ERROR_BAD_REQUEST
-    } else {
-        return false
     }
 }
 
@@ -747,5 +718,6 @@ module.exports = {
     listarReceitas,
     buscarReceita,
     buscarReceitasPorIngredientes,
-    excluirReceita
+    excluirReceita,
+    atualizarReceita
 }

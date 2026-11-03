@@ -47,6 +47,7 @@ const corrigirNomeIngrediente = async function (nomeDigitado) {
         return nomeDigitado
 
     } catch (error) {
+        console.log(error)
         // Retorna false se ocorrer um erro na consulta ou no processamento
         return false
     }

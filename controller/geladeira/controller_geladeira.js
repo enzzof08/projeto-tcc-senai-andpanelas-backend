@@ -6,6 +6,15 @@ const controllerUsuario = require('../usuario/controller_usuario.js')
 
 const ingredienteDAO = require('../../model/DAO/ingrediente/ingrediente.js')
 
+const controllerDificuldade = require('../dificuldade/controller_dificuldade.js')
+
+const controllerCusto = require('../custo/controller_custo.js')
+
+const controllerPorcao = require('../porcao/controller_porcao.js')
+
+const controllerMdPreparo = require('../modo_preparo/controller_modo_preparo.js')
+
+const controllerReceitaCategoria = require('../receita/controller_receita_categoria.js')
 
 
 const inserirNovaGeladeiraIngrediente = async function (geladeiraIngrediente, contentType) {
@@ -21,19 +30,19 @@ const inserirNovaGeladeiraIngrediente = async function (geladeiraIngrediente, co
                 return validar
             } else {
 
-                    let nomeCorrigido = await ingredienteDAO.corrigirNomeIngrediente(
-                        geladeiraIngrediente.nome_ingrediente
-                    )
-                    console.log(nomeCorrigido)
+                let nomeCorrigido = await ingredienteDAO.corrigirNomeIngrediente(
+                    geladeiraIngrediente.nome_ingrediente
+                )
+                console.log(nomeCorrigido)
 
-                    // Verifica se ocorreu um erro na consulta ao catálogo
-                    if (nomeCorrigido === false) {
-                        return customMessage.ERROR_INTERNAL_SERVER_MODEL
-                    }
+                // Verifica se ocorreu um erro na consulta ao catálogo
+                if (nomeCorrigido === false) {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
 
-                    // Atualiza o nome com a correção encontrada
-                    geladeiraIngrediente.nome_ingrediente = nomeCorrigido
-                
+                // Atualiza o nome com a correção encontrada
+                geladeiraIngrediente.nome_ingrediente = nomeCorrigido
+
 
                 let result = await geladeiraDAO.insertGeladeiraIngrediente(await tratarDados(geladeiraIngrediente))
 
@@ -56,6 +65,10 @@ const inserirNovaGeladeiraIngrediente = async function (geladeiraIngrediente, co
         }
 
     } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            customMessage.ERROR_BAD_REQUEST.field = '[INGREDIENTE] JÁ CADASTRADO NA GELADEIRA'
+            return customMessage.ERROR_BAD_REQUEST
+        }
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
@@ -152,6 +165,121 @@ const buscarGeladeiraIngrediente = async function (id) {
 
                     return customMessage.DEFAULT_MESSAGE
                 } else {
+                    return customMessage.ERROR_NOT_FOUND
+                }
+            } else {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+        }
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (idUsuario == undefined || String(idUsuario).replaceAll('', '') == '' || idUsuario == null || isNaN(idUsuario) || idUsuario <= 0) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_GELADEIRA_INGREDIENTE] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+        } else {
+            let ingredientes = await geladeiraDAO.selectALLGeladeiraIngrediente(idUsuario)
+
+            if (ingredientes != undefined && !Array.isArray(ingredientes)) {
+                ingredientes = [ingredientes]
+            }
+
+            if (ingredientes) {
+
+                if (ingredientes.length > 0) {
+
+                    let result = await receitaDAO.selectReceitasPorIngredientes(ingredientes)
+                    if (result) {
+                        for (receita of result) {
+
+                            let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
+                            if (resultUsuario) {
+                                receita.usuario = resultUsuario.response.usuario
+                                delete receita.id_usuario
+                            } else
+                                return resultUsuario
+
+                            let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
+                            if (resultDificuldade) {
+                                receita.dificuldade = resultDificuldade.response.dificuldade
+                                delete receita.id_dificuldade
+                            } else
+                                return resultDificuldade
+
+
+                            let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
+                            if (resultCusto) {
+                                receita.custo = resultCusto.response.custo
+                                delete receita.id_custo
+                            } else
+                                return resultCusto
+
+
+                            let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
+                            if (resultPorcao) {
+                                receita.porcao = resultPorcao.response.porcao
+                                delete receita.id_porcao
+                            } else
+                                return resultPorcao
+
+
+
+                            let resultIngredientes = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
+                            if (resultIngredientes) {
+
+                                let ingredientesReceita = resultIngredientes.response.ingrediente
+                                let quantidadeEncontrada = 0
+
+                                for (const itemIngrediente of ingredientesReceita) {
+
+                                    if (ingredientesCorrigidos.includes(itemIngrediente.nome)) {
+                                        quantidadeEncontrada++
+                                    }
+                                }
+
+                                if (ingredientesReceita.length > 0) {
+
+                                    //Retornar o valor da compatibilidade (em numero inteiro)
+                                    receita.compatibilidade = Math.round(
+                                        ((quantidadeEncontrada / ingredientesReceita.length) * 100)
+                                    )
+
+                                } else {
+
+                                    receita.compatibilidade = 0
+                                }
+
+                            } else {
+                                return resultIngredientes
+                            }
+
+                        }
+
+                        // Ordenar as receitas de acordo com a compatibilidade
+                        result.sort((a, b) => b.compatibilidade - a.compatibilidade)
+
+
+                        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+                        customMessage.DEFAULT_MESSAGE.response.count = result.length
+                        customMessage.DEFAULT_MESSAGE.response.receitas = result
+
+                        return customMessage.DEFAULT_MESSAGE
+
+                    } else {
+                        customMessage.ERROR_NOT_FOUND.message = "Receitas não encontradas"
+                        return customMessage.ERROR_NOT_FOUND
+                    }
+                } else {
+                    customMessage.ERROR_NOT_FOUND.message = "Ingredientes não encontrados"
                     return customMessage.ERROR_NOT_FOUND
                 }
             } else {
