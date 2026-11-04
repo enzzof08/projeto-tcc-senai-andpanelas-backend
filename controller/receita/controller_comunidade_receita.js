@@ -1,6 +1,6 @@
 const configMessages = require('../modulo/configMessages')
 
-const comunidadeReceitaDAO = require('../model/comunidadeReceitaDAO') 
+const comunidadeReceitaDAO = require('../../model/DAO/comunidade_receita/comunidade_receita.js') 
 
 const inserirNovaComunidadeReceita = async function (comunidadeReceita){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -32,7 +32,7 @@ const inserirNovaComunidadeReceita = async function (comunidadeReceita){
     }
 }
 
-const buscarComunidadeReceita = async function (idReceita){
+const buscarComunidadePorReceita = async function (idReceita){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try{
@@ -47,7 +47,7 @@ const buscarComunidadeReceita = async function (idReceita){
                 }
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response = comunidadeReceita
+                customMessage.DEFAULT_MESSAGE.response.comunidade = result
 
                 return customMessage.DEFAULT_MESSAGE
             } else{
@@ -134,4 +134,10 @@ const validarDados = async function (comunidadeReceita){
     }    
    
 }
+
+module.exports = {
+    inserirNovaComunidadeReceita,
+    buscarComunidadePorReceita
+}
+
 

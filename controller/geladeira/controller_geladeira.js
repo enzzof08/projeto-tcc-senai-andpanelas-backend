@@ -12,9 +12,13 @@ const controllerCusto = require('../custo/controller_custo.js')
 
 const controllerPorcao = require('../porcao/controller_porcao.js')
 
+const controllerIngrediente = require('../ingrediente/controller_ingrediente.js')
+
 const controllerMdPreparo = require('../modo_preparo/controller_modo_preparo.js')
 
 const controllerReceitaCategoria = require('../receita/controller_receita_categoria.js')
+
+const receitaDAO = require('../../model/DAO/receita/receita.js')
 
 
 const inserirNovaGeladeiraIngrediente = async function (geladeiraIngrediente, contentType) {
@@ -186,6 +190,7 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
             return customMessage.ERROR_BAD_REQUEST
         } else {
             let ingredientes = await geladeiraDAO.selectALLGeladeiraIngrediente(idUsuario)
+            console.log('INGREDIENTES DA GELADEIRA:', ingredientes)
 
             if (ingredientes != undefined && !Array.isArray(ingredientes)) {
                 ingredientes = [ingredientes]
@@ -195,7 +200,8 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
 
                 if (ingredientes.length > 0) {
 
-                    let result = await receitaDAO.selectReceitasPorIngredientes(ingredientes)
+                    let result = await receitaDAO.selectReceitasPorIngredientesGeladeira(ingredientes)
+                    
                     if (result) {
                         for (receita of result) {
 
@@ -229,17 +235,15 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
                             } else
                                 return resultPorcao
 
-
-
                             let resultIngredientes = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
                             if (resultIngredientes) {
 
                                 let ingredientesReceita = resultIngredientes.response.ingrediente
                                 let quantidadeEncontrada = 0
-
+                                
                                 for (const itemIngrediente of ingredientesReceita) {
 
-                                    if (ingredientesCorrigidos.includes(itemIngrediente.nome)) {
+                                    if (ingredientesReceita.includes(itemIngrediente.nome)) {
                                         quantidadeEncontrada++
                                     }
                                 }
@@ -287,6 +291,7 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
             }
         }
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
@@ -316,5 +321,6 @@ const tratarDados = async function (ingrediente) {
 module.exports = {
     inserirNovaGeladeiraIngrediente,
     listarGeladeiraIngredientes,
-    excluirGeladeirasIngredientes
+    excluirGeladeirasIngredientes,
+    buscarGeladeiraUsuarioReceitas
 }

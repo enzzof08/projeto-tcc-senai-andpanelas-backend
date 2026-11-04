@@ -31,6 +31,14 @@ router.put('/:id', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
+router.get('/busca/nome', async (req, res) => {
+    let nome = req.query.nome
+
+    let result = await controllerReceita.buscarReceitasPorNome(nome)
+
+    res.status(result.status_code).json(result)
+})
+
 router.get('/', async function (request, response) {
 
     let result = await controllerReceita.listarReceitas()
