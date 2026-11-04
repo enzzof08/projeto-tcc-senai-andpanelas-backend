@@ -51,3 +51,34 @@ const selectDenunciaByIdUsuario = async function(idUsuario){
         return false
     }
 }
+
+const selectUsuarioByIdDenuncia = async function(idDenuncia){
+    try{
+        let sql = ` select tbl_usuario *
+                    from tbl_denuncia
+                        inner join tbl_denuncia_usuario
+                            on tbl_denuncia.id = tbl_denuncia_usuario.id_denuncia
+                        inner join tbl_usuario
+                            on tbl_usuario.id = tbl_denuncia_usuario.id_usuario
+                            
+                    where tbl_denuncia_usuario.id=${idDenuncia};`
+
+         let result = await knexConection.raw(sql)
+
+        if(Array.isArray(result)){
+            return result[0]
+        }else{
+            return false
+        }
+
+    } catch (error){
+        return false
+    }
+}
+
+module.exports = {
+insertDenunciaUsuario,
+selectDenunciaByIdUsuario,
+selectUsuarioByIdDenuncia
+
+}
