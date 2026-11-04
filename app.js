@@ -50,6 +50,33 @@ app.use('/v1/entrepanelas/comunidade', cors(), comunidadeRouter)
 const geladeiraRouter = require('./routes/geladeira.router.js')
 app.use('/v1/entrepanelas/geladeira', cors(), geladeiraRouter)
 
+const categoriaRouter = require('./routes/categoria.router.js')
+app.use('/v1/entrepanelas/categoria', cors(), categoriaRouter)
+
+const categoriaPrincipalRouter = require('./routes/categoria_principal.router.js')
+app.use('/v1/entrepanelas/categoria_principal', cors(), categoriaPrincipalRouter)
+
+const comunidadeReceitaRouter = require('./routes/comunidade_receita.router.js')
+app.use('/v1/entrepanelas/comunidade_receita', cors(), comunidadeReceitaRouter)
+
+const denunciaRouter = require('./routes/denuncia.router.js')
+app.use('/v1/entrepanelas/denuncia', cors(), denunciaRouter)
+
+const emAltaRouter = require('./routes/em_alta.router.js')
+app.use('/v1/entrepanelas/em_alta', cors(), emAltaRouter)
+
+const modoPreparoRouter = require('./routes/modo_preparo.router.js')
+app.use('/v1/entrepanelas/modo_preparo', cors(), modoPreparoRouter)
+
+const statusRouter = require('./routes/status.router.js')
+app.use('/v1/entrepanelas/status', cors(), statusRouter)
+
+const tagRouter = require('./routes/tag.router.js')
+app.use('/v1/entrepanelas/tag', cors(), tagRouter)
+
+const unidadeMedidaRouter = require('./routes/unidade_medida.router.js')
+app.use('/v1/entrepanelas/unidade_medida', cors(), unidadeMedidaRouter)
+
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
     console.log('API aguardando novas requisições...')

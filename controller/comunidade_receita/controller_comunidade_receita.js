@@ -135,3 +135,11 @@ const validarDados = async function (comunidadeReceita){
    
 }
 
+module.exports = {
+    inserirNovaComunidadeReceita,
+    buscarComunidadeReceita,
+    buscarReceitaComunidade,
+    excluirComunidadeReceita,
+    excluirReceitaComunidade
+}
+
