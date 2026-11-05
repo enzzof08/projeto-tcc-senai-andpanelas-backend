@@ -18,6 +18,16 @@ router.post('/', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
+router.get('/receitas/usuario/:id' , async function (request, response) {
+    let idUsuario = request.params.id
+
+    let result = await controllerGeladeira.buscarGeladeiraUsuarioReceitas(idUsuario)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+
 router.get('/:id', async function (request, response) {
     let idUsuario = request.params.id
 
@@ -35,5 +45,7 @@ router.delete('/:id', async function(request,response){
     response.status(result.status_code)
     response.json(result)
 })
+
+
 
 module.exports = router
