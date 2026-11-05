@@ -77,6 +77,12 @@ app.use('/v1/entrepanelas/tag', cors(), tagRouter)
 const unidadeMedidaRouter = require('./routes/unidade_medida.router.js')
 app.use('/v1/entrepanelas/unidade_medida', cors(), unidadeMedidaRouter)
 
+const denunciaUsuarioRouter = require('./routes/denuncia_usuario.router.js')
+app.use('/v1/entrepanelas/denuncia_usuario', cors(), denunciaUsuarioRouter)
+
+const seguidoresRouter = require('./routes/seguidores.routes.js')
+app.use('/v1/entrepanelas/seguidores', cors(), seguidoresRouter)
+
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
     console.log('API aguardando novas requisições...')

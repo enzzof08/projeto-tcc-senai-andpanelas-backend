@@ -97,3 +97,9 @@ const validarDados = async function (denunciaUsuario) {
         return false
     }
 }
+
+module.exports = {
+    inserirDenunciaUsuario,
+    buscarDenunciaByIdUsuario,
+    buscarUsuarioByIdDenuncia
+}
