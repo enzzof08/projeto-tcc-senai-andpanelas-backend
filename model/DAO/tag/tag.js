@@ -11,14 +11,14 @@ const insertTag = async function(tag){
         let sql = `insert into tbl_tag (
             nome_tag
         ) values (
-            '${tag.nome_tag}'
+            '${tag}'
             
         )`
 
         let result = await knexConection.raw(sql)
 
         if(result)
-            return true
+            return result[0].insertId
         else
             return false
     } catch (error) {
@@ -36,11 +36,28 @@ const updateTag = async function(tag){
         let result = await knexConection.raw(sql)
         
         if(result)
-            return true
+            return result[0].insertId
         else
             return false
 
     } catch (error){
+        return false
+    }
+}
+
+const selectTagByNome = async function (tag) {
+    try {
+        let sql = `SELECT * FROM tbl_tag WHERE nome_tag = '${tag}'`
+
+        let result = await knexConection.raw(sql)
+
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
         return false
     }
 }
@@ -86,5 +103,6 @@ module.exports = {
     insertTag,
     updateTag,
     selectAllTag,
-    selectByIdTag
+    selectByIdTag,
+    selectTagByNome
 }

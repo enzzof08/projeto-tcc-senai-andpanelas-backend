@@ -22,6 +22,9 @@ const controllerComunidadeReceita = require('./controller_comunidade_receita.js'
 
 const controllerTagReceita = require('../receita/controller_tag_receita.js')
 
+const controllerTag = require('../tag/controller_tag.js')
+
+const tagDAO = require('../../model/DAO/tag/tag.js')
 
 const inserirNovaReceita = async function (receita, contentType) {
 
@@ -121,7 +124,6 @@ const inserirNovaReceita = async function (receita, contentType) {
 
 
                         let resultCategoria = await controllerReceitaCategoria.inserirNovaReceitaCategoria(receitaCategoria)
-                        console.log(resultCategoria)
 
 
                         if (!resultCategoria.status) {
@@ -145,6 +147,49 @@ const inserirNovaReceita = async function (receita, contentType) {
                             console.log(resultComunidade)
 
                             if (!resultComunidade || !resultComunidade.status) {
+                                return customMessage.SUCCESS_CREATED_ITEM_WARNING
+                            }
+                        }
+                    }
+
+                    // TAGS
+                    if (receita.tags && receita.tags.length > 0) {
+
+                        for (const itemTag of receita.tags) {
+
+                            // Busca a tag pelo nome
+                            let resultTag = await tagDAO.selectTagByNome(itemTag.nome_tag)
+
+                            if (resultTag === false) {
+                                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                            }
+
+                            let idTag
+
+                            // Verifica se a tag já existe
+                            if (resultTag.length > 0) {
+
+                                idTag = resultTag[0].id
+
+                            } else {
+
+                                // Cadastra a tag caso não exista
+                                idTag = await tagDAO.insertTag(itemTag.nome_tag)
+
+                                if (!idTag) {
+                                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                                }
+                            }
+
+                            // Relaciona a tag com a receita
+                            let dadosTagReceita = {
+                                id_receita: receita.id,
+                                id_tag: idTag
+                            }
+
+                            let resultTagReceita = await controllerTagReceita.inserirNovaTagReceita(dadosTagReceita)
+
+                            if (!resultTagReceita) {
                                 return customMessage.SUCCESS_CREATED_ITEM_WARNING
                             }
                         }
@@ -174,7 +219,6 @@ const inserirNovaReceita = async function (receita, contentType) {
 
 }
 
-// Função para listar todas as receitas
 const listarReceitas = async function () {
 
     // Cria uma cópia das mensagens padronizadas
@@ -374,6 +418,78 @@ const atualizarReceita = async function (dados, id, contentType) {
                             }
                         }
 
+                        if (dados.comunidade !== undefined) {
+
+                            // Exclui as comunidades antigas
+                            await controllerComunidadeReceita.excluirComunidadeIdReceita(id)
+
+                            // Cadastra as novas comunidades
+                            for (const itemComunidade of dados.comunidade) {
+
+                                let dadosComunidade = {
+                                    id_receita: id,
+                                    id_comunidade: itemComunidade.id
+                                }
+
+                                let resultComunidade = await controllerComunidadeReceita.inserirNovaComunidadeReceita(
+                                    dadosComunidade
+                                )
+
+                                if (!resultComunidade || !resultComunidade.status) {
+                                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                                }
+                            }
+                        }
+
+
+                        if (dados.tags !== undefined) {
+
+                            // Exclui as tags antigas
+                            let resultRemoverTags = await controllerTagReceita.excluirTagsIdReceita(id)
+                            //console.log(resultRemoverTags)
+
+                            // Cadastra as novas tags
+                            for (const itemTag of dados.tags) {
+
+                                let resultTag = await tagDAO.selectTagByNome(itemTag.nome_tag)
+
+
+                                if (resultTag === false) {
+                                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                                }
+
+                                let idTag
+
+                                if (resultTag.length > 0) {
+                                    idTag = resultTag[0].id_tag
+                                } else {
+                                    let resultNovaTag = await controllerTag.inserirNovaTag(
+                                        itemTag.nome_tag,
+                                        'APPLICATION/JSON'
+                                    )
+
+                                    if (!resultNovaTag || !resultNovaTag.status) {
+                                        return resultNovaTag
+                                    }
+
+                                    idTag = resultNovaTag.response.id_tag
+                                }
+
+                                let dadosTagReceita = {
+                                    id_receita: id,
+                                    id_tag: idTag
+                                }
+
+                                let resultTagReceita = await controllerTagReceita.inserirNovaTagReceita(
+                                    dadosTagReceita
+                                )
+
+                                if (!resultTagReceita || !resultTagReceita.status) {
+                                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                                }
+                            }
+                        }
+
 
 
 
@@ -466,14 +582,24 @@ const buscarReceita = async function (idReceita) {
                     } else
                         return resultMdPreparo
 
+
+                    let resultComunidade = await controllerComunidadeReceita.buscarComunidadePorReceita(receita.id)
+                    if (resultComunidade.status) {
+                        receita.comunidade = resultComunidade.response.comunidade
+
+                    } else
+                        return resultComunidade
+
+
+                    let resultTag = await controllerTagReceita.buscarTagsIdReceita(receita.id)
+                    if (resultTag.status) {
+                        receita.tag = resultTag.response.tag
+
+                    } else
+                        return resultTag
+
                 }
 
-                let resultComunidade = await controllerComunidadeReceita.buscarComunidadePorReceita(receita.id)
-                if (resultComunidade.status) {
-                    receita.comunidade = resultComunidade.response.comunidade
-
-                } else
-                    return resultComunidade
 
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code

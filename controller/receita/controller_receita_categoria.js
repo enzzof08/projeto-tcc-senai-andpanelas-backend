@@ -37,7 +37,7 @@ const buscarCategoriasIdReceita = async function (idReceita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
     try {
         if (idReceita == undefined || String(idReceita).replaceAll(' ', '') == '' || idReceita == '' || idReceita == null || isNaN(idReceita) || idReceita <= 0) {
-            customMessage.ERROR_BAD_REQUEST.field = '[ID_FILME] INVÁLIDO'
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVÁLIDO'
             return customMessage.ERROR_BAD_REQUEST //400
         } else {
             let result = await receitaCtgnDAO.selectCategoriaByIdReceita(idReceita)
