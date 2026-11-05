@@ -5,7 +5,7 @@ const bodyParserJSON = bodyParser.json()
 
 const router = express.Router()
 
-const controllerComunidadeReceita = require('../controller/comunidade_receita/controller_comunidade_receita')
+const controllerComunidadeReceita = require('../controller/receita/controller_comunidade_receita.js')
 
 router.post('/', bodyParserJSON, async function (request, response) {
     let dados = request.body

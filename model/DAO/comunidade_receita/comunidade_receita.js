@@ -88,7 +88,7 @@ const selectReceitaByIdComunidade = async function(idComunidade){
 
 const deleteComunidadeByIdReceita = async function(idReceita){
     try{
-        let sql = `delete from tbl_comunidade_receita where id_receita={idReceita}`
+        let sql = `delete from tbl_comunidade_receita where id_receita=${idReceita}`
         let result = await knexConection.raw(sql)
 
         if(result){
@@ -104,7 +104,7 @@ const deleteComunidadeByIdReceita = async function(idReceita){
 
 const deleteReceitaByIdComunidade = async function(idComunidade){
     try{
-        let sql = `delete from tbl_comunidade_receita where id_comunidade={idComunidade}`
+        let sql = `delete from tbl_comunidade_receita where id_comunidade=${idComunidade}`
         let result = await knexConection.raw(sql)
 
         if(result){

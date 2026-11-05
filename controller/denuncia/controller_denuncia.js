@@ -1,6 +1,6 @@
 const configMessages = require('../modulo/configMessages')
 
-const denunciaDAO = require('../../model/DAO/denuncia')
+const denunciaDAO = require('../../model/DAO/denuncia/denuncia.js')
 
 const inserirDenuncia = async function(denuncia, contentType){
 
