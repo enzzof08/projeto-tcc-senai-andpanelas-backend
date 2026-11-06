@@ -66,6 +66,7 @@ const atualizarComunidade = async function (comunidade, id, contentType) {
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
                         customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
                         customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
+                        customMessage.DEFAULT_MESSAGE.response = comunidade
 
                         return customMessage.DEFAULT_MESSAGE
                     } else {

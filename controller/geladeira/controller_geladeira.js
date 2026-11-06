@@ -201,7 +201,7 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
                 if (ingredientes.length > 0) {
 
                     let result = await receitaDAO.selectReceitasPorIngredientesGeladeira(ingredientes)
-                    
+
                     if (result) {
                         for (receita of result) {
 
@@ -239,11 +239,15 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
                             if (resultIngredientes) {
 
                                 let ingredientesReceita = resultIngredientes.response.ingrediente
+                                console.log(ingredientesReceita)
+
                                 let quantidadeEncontrada = 0
-                                
+
                                 for (const itemIngrediente of ingredientesReceita) {
 
-                                    if (ingredientesReceita.includes(itemIngrediente.nome)) {
+                                    if (ingredientes.some(item =>
+                                        item.nome_ingrediente.toLowerCase() === itemIngrediente.nome.toLowerCase()
+                                    )) {
                                         quantidadeEncontrada++
                                     }
                                 }

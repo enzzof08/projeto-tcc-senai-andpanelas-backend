@@ -339,36 +339,52 @@ const atualizarReceita = async function (dados, id, contentType) {
                         //Ingredientes
                         if (dados.ingredientes !== undefined) {
 
-                            // Exclui os ingredientes antigos da receita
                             await controllerIngrediente.excluirIngredientesPorReceita(id)
 
-                            // Cadastra os novos ingredientes
-                            for (const itemIngrediente of dados.ingredientes) {
+                            // Corrige os nomes dos ingredientes usando o catálogo
+                            for (const ingrediente of dados.ingredientes) {
 
                                 let nomeCorrigido = await ingredienteDAO.corrigirNomeIngrediente(
-                                    itemIngrediente.nome
+                                    ingrediente.nome
                                 )
+                                console.log(nomeCorrigido)
 
+                                // Verifica se ocorreu um erro na consulta ao catálogo
                                 if (nomeCorrigido === false) {
                                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
                                 }
 
+                                // Atualiza o nome com a correção encontrada
+                                ingrediente.nome = nomeCorrigido
+
+
+                            }
+
+                            // Percorre os ingredientes recebidos na requisição
+                            for (const itemIngrediente of dados.ingredientes) {
+
+                                // Monta o objeto para cadastrar cada ingrediente
                                 let ingredienteReceita = {
-                                    nome: nomeCorrigido,
+                                    nome: itemIngrediente.nome,
                                     quantidade: itemIngrediente.quantidade,
-                                    id_receita: id,
+                                    id_receita: receita.id,
                                     id_unidade_medida: itemIngrediente.id_unidade_medida
                                 }
 
-                                let resultIngrediente = await controllerIngrediente.inserirIngrediente(
-                                    ingredienteReceita
-                                )
+                                // Chama a Controller de ingredientes
+                                let resultIngrediente =
+                                    await controllerIngrediente.inserirIngrediente(
+                                        ingredienteReceita
+                                    )
 
+                                // Verifica se o ingrediente foi cadastrado
                                 if (!resultIngrediente || !resultIngrediente.status) {
-                                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                                    return customMessage.SUCCESS_CREATED_ITEM_WARNING
                                 }
                             }
+
                         }
+
 
                         if (dados.modo_preparo !== undefined) {
 
@@ -393,7 +409,7 @@ const atualizarReceita = async function (dados, id, contentType) {
                                 }
                             }
                         }
-
+                        
 
                         if (dados.categoria !== undefined) {
 
@@ -446,13 +462,11 @@ const atualizarReceita = async function (dados, id, contentType) {
 
                             // Exclui as tags antigas
                             let resultRemoverTags = await controllerTagReceita.excluirTagsIdReceita(id)
-                            //console.log(resultRemoverTags)
 
                             // Cadastra as novas tags
                             for (const itemTag of dados.tags) {
 
                                 let resultTag = await tagDAO.selectTagByNome(itemTag.nome_tag)
-
 
                                 if (resultTag === false) {
                                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
@@ -461,12 +475,14 @@ const atualizarReceita = async function (dados, id, contentType) {
                                 let idTag
 
                                 if (resultTag.length > 0) {
-                                    idTag = resultTag[0].id_tag
+                                    idTag = resultTag[0].id
+    
                                 } else {
                                     let resultNovaTag = await controllerTag.inserirNovaTag(
                                         itemTag.nome_tag,
                                         'APPLICATION/JSON'
                                     )
+                                    console.log(resultNovaTag)
 
                                     if (!resultNovaTag || !resultNovaTag.status) {
                                         return resultNovaTag
@@ -483,6 +499,8 @@ const atualizarReceita = async function (dados, id, contentType) {
                                 let resultTagReceita = await controllerTagReceita.inserirNovaTagReceita(
                                     dadosTagReceita
                                 )
+
+                                console.log(resultTagReceita)
 
                                 if (!resultTagReceita || !resultTagReceita.status) {
                                     return customMessage.ERROR_INTERNAL_SERVER_MODEL

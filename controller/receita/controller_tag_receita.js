@@ -65,7 +65,7 @@ const excluirTagsIdReceita = async function (idReceita) {
     try {
 
         //Chamar a função do DAO para excluir o genero
-        let result = await receitaTagDAO.excluirTagsIdReceita(idReceita)
+        let result = await receitaTagDAO.deleteTagsByIdReceita(idReceita)
         console.log(result)
         if (result) {
             return customMessage.SUCCESS_DELETED_ITEM
@@ -75,18 +75,20 @@ const excluirTagsIdReceita = async function (idReceita) {
 
 
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
 
 const validarDados = async function (receitaTag) {
+    console.log(receitaTag)
     let customMessage = JSON.parse(JSON.stringify(configMessages))
     if (receitaTag.id_receita == undefined || receitaTag.id_receita == '' || receitaTag.id_receita == null || receitaTag.id_receita <= 0 || isNaN(receitaTag.id_receita)) {
         customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
     } else if (receitaTag.id_tag == undefined || receitaTag.id_tag == '' || receitaTag.id_tag == null || receitaTag.id_tag <= 0 || isNaN(receitaTag.id_tag)) {
-        customMessage.ERROR_BAD_REQUEST.field = '[ID_CATEGORIA] INVÁLIDO'
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_TAG] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
     } else {
         return false

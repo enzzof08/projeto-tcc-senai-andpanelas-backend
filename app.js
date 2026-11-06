@@ -45,10 +45,10 @@ const ingredienteRouter = require('./routes/ingrediente.router.js')
 app.use('/v1/entrepanelas/ingrediente', cors(), ingredienteRouter)
 
 const comunidadeRouter = require('./routes/comunidade.router.js')
-app.use('/v1/entrepanelas/comunidade', cors(), comunidadeRouter)
+app.use('/v1/entrepanelas/comunidades', cors(), comunidadeRouter)
 
 const geladeiraRouter = require('./routes/geladeira.router.js')
-app.use('/v1/entrepanelas/geladeira', cors(), geladeiraRouter)
+app.use('/v1/entrepanelas/usuarios/me/geladeira', cors(), geladeiraRouter)
 
 const categoriaRouter = require('./routes/categoria.router.js')
 app.use('/v1/entrepanelas/categoria', cors(), categoriaRouter)
@@ -82,6 +82,10 @@ app.use('/v1/entrepanelas/denuncia_usuario', cors(), denunciaUsuarioRouter)
 
 const seguidoresRouter = require('./routes/seguidores.routes.js')
 app.use('/v1/entrepanelas/seguidores', cors(), seguidoresRouter)
+
+const listaCompraRouter = require('./routes/lista_compra.router.js')
+app.use('/v1/entrepanelas/usuarios/me/lista-compras', cors(), listaCompraRouter)
+
 
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {

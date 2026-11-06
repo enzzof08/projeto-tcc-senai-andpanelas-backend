@@ -18,7 +18,7 @@ router.post('/', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
-router.get('/receitas/usuario/:id' , async function (request, response) {
+router.get('/receitas/compatibilidade/:id' , async function (request, response) {
     let idUsuario = request.params.id
 
     let result = await controllerGeladeira.buscarGeladeiraUsuarioReceitas(idUsuario)

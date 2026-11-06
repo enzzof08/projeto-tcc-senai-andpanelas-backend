@@ -6,7 +6,7 @@ use db_entre_panelas_2026;
 
 #SHOW TABLES;
 
-#SELECT * FROM tbl_categoria_principal;
+#SELECT * FROM tbl_status;
 
 create table tbl_usuario (
 	id			    int not null auto_increment primary key,
@@ -334,11 +334,13 @@ create table tbl_comunidade_receita (
     
     constraint FK_RECEITA_COMUNIDADE_RECEITA
     foreign key (id_receita)
-    references tbl_receita(id),
+    references tbl_receita(id)
+	ON DELETE CASCADE,
     
 	constraint FK_COMUNIDADE_COMUNIDADE_RECEITA
     foreign key (id_comunidade)
     references tbl_comunidade(id)
+	ON DELETE CASCADE
 );
 
 create table tbl_comunidade_usuario (
@@ -348,11 +350,13 @@ create table tbl_comunidade_usuario (
     
     constraint FK_COMUNIDADE_COMUNIDADE_USUARIO
     foreign key (id_comunidade)
-    references tbl_comunidade(id),
+    references tbl_comunidade(id)
+	ON DELETE CASCADE,
     
 	constraint FK_USUARIO_COMUNIDADE_USUARIO
     foreign key (id_usuario)
     references tbl_usuario(id)
+	ON DELETE CASCADE
 );
 
 create table tbl_curtida (

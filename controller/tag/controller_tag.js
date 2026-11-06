@@ -146,10 +146,11 @@ const buscarTag = async function (id) {
 }
 
 const validarDados = async function (tag) {
+    console.log(tag)
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    if (tag.nome_tag == undefined || tag.nome_tag == '' || tag.nome_tag == null) {
+    if (tag == undefined || tag== '' || tag == null) {
         customMessage.ERROR_BAD_REQUEST.field = '[NOME_TAG] INVALIDO'
         return customMessage.ERROR_BAD_REQUEST
     } else {
