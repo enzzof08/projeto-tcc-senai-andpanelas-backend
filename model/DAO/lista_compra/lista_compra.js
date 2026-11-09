@@ -27,6 +27,10 @@ const insertListaCompra = async function (listaCompra) {
 
     } catch (error) {
 
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'DUPLICADO'
+        }
+
         console.log(error)
         return false
     }
@@ -63,29 +67,26 @@ WHERE tbl_lista_compra.id_usuario = ${idUsuario};`
 const selectIngredientesListaCompra = async function (idUsuario, idReceita, status) {
     try {
         let sql = `SELECT
-    tbl_lista_compra.id,
-    tbl_ingrediente.id AS id_ingrediente,
-    tbl_ingrediente.nome,
-    tbl_ingrediente.quantidade,
-    tbl_lista_compra.id_status,
-    tbl_status.status
-FROM tbl_lista_compra
+            tbl_lista_compra.id,
+            tbl_ingrediente.id AS id_ingrediente,
+            tbl_ingrediente.nome,
+            tbl_ingrediente.quantidade,
+            tbl_lista_compra.id_status,
+            tbl_status.status
+        FROM tbl_lista_compra
 
-INNER JOIN tbl_ingrediente
-    ON tbl_lista_compra.id_ingrediente = tbl_ingrediente.id
+        INNER JOIN tbl_ingrediente
+            ON tbl_lista_compra.id_ingrediente = tbl_ingrediente.id
 
-INNER JOIN tbl_status
-    ON tbl_lista_compra.id_status = tbl_status.id
+        INNER JOIN tbl_status
+            ON tbl_lista_compra.id_status = tbl_status.id
 
-WHERE tbl_lista_compra.id_usuario = ${idUsuario}
-AND tbl_ingrediente.id_receita = ${idReceita};`
+        WHERE tbl_lista_compra.id_usuario = ${idUsuario}
+        AND tbl_ingrediente.id_receita = ${idReceita}`
 
-if (status != undefined && status != null) {
-    status = status.toLowerCase()
-}
-if (status != undefined && status != undefined && status != 'todos') {
-    sql += ` AND tbl_lista_compra.id_status = ${status}`
-}
+        if (status != undefined && status != null) {
+            sql += ` AND tbl_lista_compra.id_status = ${status}`
+        }
 
         let result = await knexConection.raw(sql)
 
@@ -94,12 +95,14 @@ if (status != undefined && status != undefined && status != 'todos') {
         } else {
             return false
         }
+
     } catch (error) {
+        console.log(error)
         return false
     }
 }
 
-const deleteListaCompraReceita = async function(idUsuario, idReceita) {
+const deleteListaCompraReceita = async function (idUsuario, idReceita) {
     try {
         let sql = `DELETE tbl_lista_compra
                    FROM tbl_lista_compra
@@ -130,7 +133,7 @@ const updateStatusListaCompra = async function (id, idUsuario, idStatus) {
 
         let result = await knexConection.raw(sql)
 
-        if (result)
+        if (result[0].affectedRows > 0)
             return true
         else
             return false

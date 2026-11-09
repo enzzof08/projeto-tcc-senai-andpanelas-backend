@@ -7,6 +7,8 @@ const router = express.Router()
 
 const controllerComunidade = require('../controller/comunidade/controller_comunidade.js')
 
+const controllerComunidadeReceita = require('../controller/receita/controller_comunidade_receita.js')
+
 router.post('/', bodyParserJSON, async function (request, response) {
     let dados = request.body
 
@@ -43,6 +45,15 @@ router.get('/:id', async function (request, response) {
     let id = request.params.id
 
     let result = await controllerComunidade.buscarComunidade(id)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/:id/receitas', async function (request, response) {
+    let id = request.params.id
+
+    let result = await controllerComunidadeReceita.buscarReceitaPorComunidade(id)
 
     response.status(result.status_code)
     response.json(result)
