@@ -89,7 +89,8 @@ const selectIngredientesPorIdReceita = async function (idReceita) {
             SELECT
                 tbl_ingrediente.nome,
                 tbl_ingrediente.quantidade,
-                tbl_unidade_medida.unidade
+                tbl_unidade_medida.unidade,
+                tbl_ingrediente.id
             FROM tbl_ingrediente
                 INNER JOIN tbl_unidade_medida
                     ON tbl_ingrediente.id_unidade_medida = tbl_unidade_medida.id

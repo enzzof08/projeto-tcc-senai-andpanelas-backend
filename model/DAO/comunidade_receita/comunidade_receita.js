@@ -86,6 +86,22 @@ const selectReceitaByIdComunidade = async function(idComunidade){
     }
 }
 
+const selectComunidadeReceita = async function(id){
+    try{
+        let sql = `select from tbl_comunidade_receita where id=${id}`
+        let result = await knexConection.raw(sql)
+
+        if(result){
+            return true
+        }else{
+            return false
+        }
+
+    } catch (error){
+        return false
+    }
+}
+
 const deleteComunidadeByIdReceita = async function(idReceita){
     try{
         let sql = `delete from tbl_comunidade_receita where id_receita=${idReceita}`
@@ -123,5 +139,6 @@ module.exports = {
     selectComunidadeByIdReceita,
     selectReceitaByIdComunidade,
     deleteComunidadeByIdReceita,
-    deleteReceitaByIdComunidade
+    deleteReceitaByIdComunidade,
+    selectComunidadeReceita
 }

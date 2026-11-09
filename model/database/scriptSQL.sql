@@ -252,7 +252,9 @@ create table tbl_lista_compra (
     
 	constraint FK_STATUS_LISTA_COMPRA
     foreign key (id_status)
-    references tbl_status(id)
+    references tbl_status(id),
+    
+    UNIQUE (id_usuario, id_ingrediente)
 );
 
 create table tbl_categoria_principal (
