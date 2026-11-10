@@ -49,6 +49,8 @@ create table tbl_seguindo_seguidor (
 	id_seguindo int not null,
     id_seguidor int not null,
     
+    UNIQUE (id_seguindo, id_seguidor),
+    
     constraint FK_USUARIO_SEGUINDO
     foreign key (id_seguindo)
     references tbl_usuario(id),
@@ -203,6 +205,8 @@ create table tbl_salvo (
 	data_dia 	date default (current_date),
     id_receita  int not null,
     id_usuario  int not null,
+    
+    unique (id_usuario, id_receita),
     
     constraint FK_RECEITA_SALVO
     foreign key (id_receita)
@@ -804,4 +808,26 @@ INSERT INTO tbl_categoria_principal (categoria_principal) VALUES
 insert into tbl_status (status) values
 ('comprado'),
 ('pendente');
+
+insert into tbl_usuario (
+id,
+nome,
+username,
+email,
+senha,
+data_nascimento,
+descricao,
+banner_url,
+foto_perfil
+) values (
+1,
+'Chefinho IA',
+'chefinho',
+'chefinho@entrepanelas.com',
+'$2b$10$e8T8e7wQx9z.mockHashForChefinhoDoNotLoginDirectly',
+'2026-01-01',
+'Seu assistente culinário inteligente do Entre Panelas! 🍳🤖',
+'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-oTt0q3TUctmgFN69Aq8HUbMCvL1t_7hPJSQu6F5XQPvx4NAq6M72tZs&s=10'
+);
 
