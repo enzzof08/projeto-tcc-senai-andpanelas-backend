@@ -7,7 +7,7 @@ const knexConection = knex(knexDatabaseConfig.development)
 const insertSeguidores = async function(seguidores){
     try{
 
-        let sql = `insert into tbl_seguisdores (
+        let sql = `insert into tbl_seguidores (
             id_seguindo,
             id_seguidor
             

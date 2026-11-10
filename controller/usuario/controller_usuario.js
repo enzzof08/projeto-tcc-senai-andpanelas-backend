@@ -168,6 +168,38 @@ const buscarUsuario = async function (id) {
     }
 }
 
+const buscarUsuariosPorNome = async function (nome) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (nome == undefined || nome == null || nome.trim() == '') {
+            customMessage.ERROR_BAD_REQUEST.field = '[NOME] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let result = await userDAO.selectUsuariosPorNome(nome)
+
+        if (result && result.length > 0) {
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.response.count = result.length
+            customMessage.DEFAULT_MESSAGE.response.receitas = result
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 
 const validarDados = async function (usuario) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -248,5 +280,6 @@ module.exports = {
     inserirNovoUsuario,
     loginUsuario,
     buscarUsuario,
-    atualizarUsuario
+    atualizarUsuario,
+    buscarUsuariosPorNome
 }
