@@ -89,6 +89,9 @@ app.use('/v1/entrepanelas/usuarios/me/lista-compras', cors(), listaCompraRouter)
 const comunidadeUsuarioRouter = require('./routes/comunidade_usuario.router.js')
 app.use('/v1/entrepanelas/comunidade_usuario', cors(), comunidadeUsuarioRouter)
 
+const MensagemRouter = require('./routes/mensagem.router.js')
+app.use('/v1/entrepanelas/mensagem', cors(), MensagemRouter)
+
 
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
