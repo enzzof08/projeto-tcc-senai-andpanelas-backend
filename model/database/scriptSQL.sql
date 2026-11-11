@@ -1,7 +1,6 @@
 #create database db_entre_panelas_2026;
 
-use db_entre_panelas_2026;
-
+USE db_entre_panelas_2026;
 #drop database db_entre_panelas_2026;
 
 #SHOW TABLES;
@@ -338,6 +337,8 @@ create table tbl_comunidade_receita (
 	id_receita    int not null,
     id_comunidade int not null,
     
+    UNIQUE (id_comunidade, id_receita),
+    
     constraint FK_RECEITA_COMUNIDADE_RECEITA
     foreign key (id_receita)
     references tbl_receita(id)
@@ -353,6 +354,8 @@ create table tbl_comunidade_usuario (
 	id			  int not null auto_increment primary key,
 	id_comunidade int not null,
     id_usuario    int not null,
+    
+    UNIQUE (id_comunidade, id_usuario),
     
     constraint FK_COMUNIDADE_COMUNIDADE_USUARIO
     foreign key (id_comunidade)

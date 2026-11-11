@@ -4,86 +4,116 @@ const knexDatabaseConfig = require('../../database_config/knexConfig')
 
 const knexConection = knex(knexDatabaseConfig.development)
 
-const insertSeguidores = async function(seguidores){
-    try{
-
-        let sql = `insert into tbl_seguidores (
+const insertSeguidor = async function(idSeguindo, idSeguidor){
+    try {
+        let sql = `INSERT INTO tbl_seguindo_seguidor (
             id_seguindo,
             id_seguidor
-            
-            
-        ) values (
-            '${seguidores.id_seguindo}', 
-            '${seguidores.id_seguidor}'
+        ) VALUES (
+            ?,
+            ?
         );`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [idSeguindo, idSeguidor])
 
-        if(result)
+        if (result[0].affectedRows > 0)
             return true
         else
             return false
 
-    } catch (error){
-        return false
-    }
-}
+    } catch (error) {
+        console.log(error)
 
-const selectAllSeguidores = async function(){
-
-    try{
-
-        let sql = 'select * from tbl_seguidores order by id desc'
-
-        let result = await knexConection.raw(sql)
-
-        if(Array.isArray(result)){
-            return result[0]
-        }else{
-            return false
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'DUPLICADO'
         }
 
-    } catch (error){
         return false
     }
 }
 
-const selectByIdSeguidores = async function(id){
-    try{
-        let sql = `select * from tbl_seguidores where id=${id}`
+const deleteSeguidor = async function(idSeguindo, idSeguidor){
+    try {
+        let sql = `DELETE FROM tbl_seguindo_seguidor
+        WHERE id_seguindo = ?
+        AND id_seguidor = ?;`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [idSeguindo, idSeguidor])
 
-        if(Array.isArray(result)){
-            return result[0]
-        }else{
-            return false
-        }
-
-    } catch (error){
-        return false
-    }
-}
-
-const deleteSeguidores = async function(id){
-    try{
-        let sql = `delete from tbl_seguidores where id=${id}`
-        let result = await knexConection.raw(sql)
-
-        if(result){
+        if (result[0].affectedRows > 0) {
             return true
-        }else{
+        } else {
             return false
         }
 
-    } catch (error){
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const selectSeguidores = async function(idUsuario){
+    try {
+        let sql = `SELECT id_seguidor
+        FROM tbl_seguindo_seguidor
+        WHERE id_seguindo = ?;`
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (result)
+            return result[0]
+        else
+            return false
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const selectSeguindo = async function(idUsuario){
+    try {
+        let sql = `SELECT id_seguindo
+        FROM tbl_seguindo_seguidor
+        WHERE id_seguidor = ?;`
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (result)
+            return result[0]
+        else
+            return false
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const selectVerificarSeguindo = async function(idSeguindo, idSeguidor){
+    try {
+        let sql = `SELECT id
+        FROM tbl_seguindo_seguidor
+        WHERE id_seguindo = ?
+        AND id_seguidor = ?;`
+
+        let result = await knexConection.raw(sql, [idSeguindo, idSeguidor])
+
+        if (result)
+            return result[0].length > 0
+        else
+            return false
+
+    } catch (error) {
+        console.log(error)
         return false
     }
 }
 
 module.exports ={
-    insertSeguidores,
-    selectAllSeguidores,
-    selectByIdSeguidores,
-    deleteSeguidores
+    insertSeguidor,
+    selectSeguidores,
+    selectSeguindo,
+    deleteSeguidor,
+    selectVerificarSeguindo
 }

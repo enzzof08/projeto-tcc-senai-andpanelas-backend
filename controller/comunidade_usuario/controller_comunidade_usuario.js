@@ -2,25 +2,27 @@ const configMessages = require('../modulo/configMessages')
 
 const comunidadeUsuarioDAO = require('../../model/DAO/comunidade_usuario/comunidade_usuario')
 
-const inserirNovaComunidadeUsuario = async function (comunidadeUsuario){
+const inserirNovaComunidadeUsuario = async function (idUser, idComunidade){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try{
 
-        let validar = await validarDados(comunidadeUsuario)
+        let validar = await validarDados(idUser, idComunidade)
 
         if(validar){
             return validar
         }else{
-            let result = await comunidadeUsuarioDAO.insertComunidadeUsuario(comunidadeUsuario)
+            let result = await comunidadeUsuarioDAO.insertComunidadeUsuario(idUser, idComunidade)
+
+            if (result === 'DUPLICADO') {
+                customMessage.ERROR_BAD_REQUEST.field = 'USUARIO JA PARTICIPA DESTA COMUNIDADE'
+                return customMessage.ERROR_BAD_REQUEST
+            }
 
             if(result){
-                comunidadeUsuario.id = result
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
-
-                customMessage.DEFAULT_MESSAGE.response = comunidadeUsuario
 
                 return customMessage.DEFAULT_MESSAGE
             }else{
@@ -29,11 +31,12 @@ const inserirNovaComunidadeUsuario = async function (comunidadeUsuario){
         }
 
     }catch(error){
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const buscarComunidadePorUsuario = async function(idUsuario){
+const buscarComunidadesPorUsuario = async function(idUsuario){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try{
@@ -60,7 +63,7 @@ const buscarComunidadePorUsuario = async function(idUsuario){
     }
 }
 
-const buscarUsuarioPorComunidade = async function (idComunidade){
+const buscarUsuariosPorComunidade = async function (idComunidade){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try{
@@ -68,7 +71,7 @@ const buscarUsuarioPorComunidade = async function (idComunidade){
             customMessage.ERROR_BAD_REQUEST.field = '[ID_COMUNIDADE] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
         }else{
-            let result = await comunidadeUsuarioDAO.selectComunidadeByIdUsuario(idComunidade)
+            let result = await comunidadeUsuarioDAO.selectUsuarioByIdComunidade(idComunidade)
             if(result){
                 if(result == false){
                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
@@ -76,7 +79,7 @@ const buscarUsuarioPorComunidade = async function (idComunidade){
 
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response = comunidadeReceita
+                customMessage.DEFAULT_MESSAGE.response = result
 
                 return customMessage.DEFAULT_MESSAGE
             }else{
@@ -85,50 +88,42 @@ const buscarUsuarioPorComunidade = async function (idComunidade){
         }
 
     }catch (error){
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const excluirComunidadeUsuario = async function (idUsuario){
+const excluirComunidadeUsuario = async function (idUsuario, idComunidade) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
-        let result = await comunidadeUsuarioDAO.deleteComunidadeByIdUsuario(idUsuario)
+    try {
+        let validar = await validarDados(idUsuario, idComunidade)
 
-        if(result){
-            return customMessage.SUCCESS_DELETED_ITEM
-        }else{
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (validar) {
+            return validar
         }
-    } catch(error){
-        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
-    }
-}
 
-const excluirUsuarioComunidade = async function (idComunidade){
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+        let result = await comunidadeUsuarioDAO.deleteComunidadeUsuario( idUsuario, idComunidade)
 
-    try{
-        let result = await comunidadeUsuarioDAO.deleteUsuarioByIdComunidade(idComunidade)
         if (result) {
             return customMessage.SUCCESS_DELETED_ITEM
         } else {
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            return customMessage.ERROR_NOT_FOUND
         }
 
-
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
-    
 }
 
-const validarDados = async function (comunidadeUsuario) {
-    if (comunidadeUsuario.id_usuario == undefined || comunidadeUsuario.id_usuario == '' || comunidadeUsuario.id_usuario == null || comunidadeReceita.id_usuario <= 0 || isNaN(comunidadeUsuario.id_usuario)) {
+
+const validarDados = async function (idUser, idComunidade) {
+    if (idUser == undefined || idUser == '' || idUser == null || idUser <= 0 || isNaN(idUser)) {
         customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
-    } else if (comunidadeUsuario.id_comunidade == undefined || comunidadeUsuario.id_comunidade == '' || comunidadeUsuario.id_comunidade == null || comunidadeUsuario.id_comunidade <= 0 || isNaN(comunidadeUsuario.id_comunidade)) {
+    } else if (idComunidade == undefined || idComunidade == '' || idComunidade == null || idComunidade <= 0 || isNaN(idComunidade)) {
         customMessage.ERROR_BAD_REQUEST.field = '[ID_COMUNIDADE] INVÁLIDO'
         return customMessage.ERROR_BAD_REQUEST
     } else {
@@ -139,8 +134,8 @@ const validarDados = async function (comunidadeUsuario) {
 
 module.exports ={
     inserirNovaComunidadeUsuario,
-    buscarComunidadePorUsuario,
-    buscarUsuarioPorComunidade,
+    buscarComunidadesPorUsuario,
+    buscarUsuariosPorComunidade,
     excluirComunidadeUsuario,
-    excluirUsuarioComunidade
+    excluirComunidadeUsuario
 }
