@@ -2,25 +2,30 @@ const configMessages = require('../modulo/configMessages')
 
 const seguidoresDAO = require('../../model/DAO/seguidores/seguidores')
 
-const inserirNovoSeguidor = async function(seguidores, contentType){
+const inserirNovoSeguidor = async function (idSeguindo, idSeguidor) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
-
-        if(validar){
+    try {
+        let validar = await validarDados(idSeguindo, idSeguidor)
+        if (validar) {
             return validar
-        }else{
+        } else {
 
-            let result = await seguidoresDAO.insertSeguidores(seguidores)
+            let result = await seguidoresDAO.insertSeguidor(idSeguindo, idSeguidor)
 
-            if(result){
+            if (result === 'DUPLICADO') {
+                customMessage.ERROR_BAD_REQUEST.field = 'USUARIO JA SEGUE ESTE PERFIL'
+                return customMessage.ERROR_BAD_REQUEST
+            }
+
+            if (result) {
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
 
                 return customMessage.DEFAULT_MESSAGE
-            }else{
+            } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
 
@@ -31,113 +36,154 @@ const inserirNovoSeguidor = async function(seguidores, contentType){
     }
 }
 
-const listarSeguidores = async function(){
+const excluirSeguidor = async function (idSeguindo, idSeguidor) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
-        let result = await seguidoresDAO.selectAllSeguidores()
+    try {
+        let validar = await validarDados(idSeguindo, idSeguidor)
 
-        if(result){
+        if (validar) {
+            return validar
+        }
 
-            if(result.length > 0){
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response.seguidores = result
+        let result = await seguidoresDAO.deleteSeguidor(idSeguindo, idSeguidor)
+        
+        if (result) {
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+            customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
 
-                return customMessage.DEFAULT_MESSAGE
-            }else{
-                return customMessage.ERROR_NOT_FOUND            
-            }
-        }else{
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
             return customMessage.ERROR_INTERNAL_SERVER_MODEL
         }
 
-    }catch (error){
+    } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const buscarSeguidores = async function(id){
+const listarSeguidores = async function(idUsuario) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
+    try {
+        let validar = await validarIdUsuario(idUsuario)
 
-        if(id == undefined || String(id).trim() == '' || id == null || isNaN(id) || id <= 0){
-            customMessage.ERROR_BAD_REQUEST.field = '[ID] INVALIDO'
-            return customMessage.ERROR_BAD_REQUEST
-        }else{
-            let result = await seguidoresDAO.selectByIdSeguidores(id)
+        if (validar) {
+            return validar
+        }
 
-            if(result){
+        let result = await seguidoresDAO.selectSeguidores(idUsuario)
 
-                if(result.length > 0){
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                    customMessage.DEFAULT_MESSAGE.response.seguidores = result
+        if (result !== false) {
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.response.seguidores = result
 
-                    return customMessage.DEFAULT_MESSAGE
-                }else{
-                    return customMessage.ERROR_NOT_FOUND
-                }
-
-            }else{
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
-            }
+            return customMessage.DEFAULT_MESSAGE
+        } else {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
         }
 
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const excluirSeguidores = async function (id){
-    let customMessage = JSON.parse(JSON.stringify(messages))
+const listarSeguindo = async function(idUsuario) {
 
-    try{
-        let resultBuscarSeguidores = await buscarSeguidores(id)
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-        if (resultBuscarSeguidores.status){
-            let result = await seguidoresDAO.deleteSeguidores(id)
-            if(result){
-                customMenssagen.DEFAULT_MESSAGE.status = customMenssagen.SUCCESS_DELETE_ITEM.status
-                customMenssagen.DEFAULT_MESSAGE.status_code = customMenssagen.SUCCESS_DELETE_ITEM.status_code
-                customMenssagen.DEFAULT_MESSAGE.message = customMenssagen.SUCCESS_DELETE_ITEM.message
+    try {
+        let validar = await validarIdUsuario(idUsuario)
 
-                return customMenssagen.DEFAULT_MESSAGE
-
-            }else{
-                return customMenssagen.ERROR_INTERNAL_SERVER_MODEL
-            }
-
-        } else {
-            return resultBuscarFilme
+        if (validar) {
+            return validar
         }
 
-    } catch (error){
+        let result = await seguidoresDAO.selectSeguindo(idUsuario)
+
+        if (result !== false) {
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.response.seguindo = result
+
+            return customMessage.DEFAULT_MESSAGE
+        } else {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
+
+    } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const validarDados = async function(seguidores){
+const verificarSeguindo = async function(idSeguindo, idSeguidor) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        let validar = await validarDados(idSeguindo, idSeguidor)
+
+        if (validar) {
+            return validar
+        }
+
+        let result = await seguidoresDAO.selectVerificarSeguindo(idSeguindo, idSeguidor)
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.segue_usuario = result
+
+        return customMessage.DEFAULT_MESSAGE
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const validarDados = async function (idSeguindo, idSeguidor) {
 
     let customMenssagen = JSON.parse(JSON.stringify(configMessages))
 
-    if(seguidores.id_seguindo == undefined || isNaN(seguidores.id_seguindo)){
+    if (idSeguindo == undefined || idSeguindo == null || isNaN(idSeguindo) || !Number.isInteger(Number(idSeguindo)) || idSeguindo <= 0) {
         customMenssagen.ERROR_BAD_REQUEST.field = '[ID_SEGUINDO] INVALIDO'
         return customMenssagen.ERROR_BAD_REQUEST
-    }else if(seguidores.id_seguidor == undefined || isNaN(seguidores.id_seguidor)){
+
+    } else if (idSeguidor == undefined || idSeguidor == null || isNaN(idSeguidor) || !Number.isInteger(Number(idSeguidor)) || idSeguidor <= 0) {
         customMenssagen.ERROR_BAD_REQUEST.field = '[ID_SEGUIDOR] INVALIDO'
         return customMenssagen.ERROR_BAD_REQUEST
-    }else{
+
+    } else if (Number(idSeguindo) == Number(idSeguidor)) {
+        customMenssagen.ERROR_BAD_REQUEST.field = 'UM USUARIO NAO PODE SEGUIR A SI MESMO'
+        return customMenssagen.ERROR_BAD_REQUEST
+
+    } else {
         return false
     }
 }
 
-module.exports ={
+const validarIdUsuario = async function(idUsuario) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    if (idUsuario == undefined || idUsuario == null || idUsuario == '' || isNaN(idUsuario) || !Number.isInteger(Number(idUsuario)) || idUsuario <= 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVALIDO'
+        return customMessage.ERROR_BAD_REQUEST
+    }
+
+    return false
+}
+
+module.exports = {
     inserirNovoSeguidor,
+    excluirSeguidor,
     listarSeguidores,
-    buscarSeguidores,
-    excluirSeguidores
+    listarSeguindo,
+    verificarSeguindo
 }

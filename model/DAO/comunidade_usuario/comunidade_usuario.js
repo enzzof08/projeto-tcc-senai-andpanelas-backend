@@ -4,115 +4,108 @@ const knexDatabaseConfig = require('../../database_config/knexConfig')
 
 const knexConection = knex(knexDatabaseConfig.development)
 
-const insertComunidadeUsuario = async function (comunidadeUsuario){
-    try{
-        let sql = `insert into tbl_comunidade_usuario (
+const insertComunidadeUsuario = async function (idUser, idComunidade) {
+    try {
+        let sql = `INSERT INTO tbl_comunidade_usuario (
             id_comunidade,
             id_usuario
-        )values(
-            '${comunidadeUsuario.id_comunidade}',
-            '${comuniudadeUsuario.id_usuario}'
-        );`
+        ) VALUES (?, ?);`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [idComunidade, idUser])
 
-        if(result){
-            return true
-        }else{
+        if (result[0].affectedRows > 0) {
+            return result[0].insertId
+        } else {
             return false
         }
 
-    }catch (error){
+    } catch (error) {
+        console.log(error)
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'DUPLICADO'
+        }
+        
         return false
     }
 }
 
 const selectComunidadeByIdUsuario = async function(idUsuario){
-    try{
+    try {
         let sql = `
-            select tbl_comunidade *
-                    from tbl_usuario
-                        inner join tbl_comunidade_usuario
-                            on tbl_usuario.id = tbl_comunidade_usuario.id_usuario
-                        inner join tbl_comunidade
-                            on tbl_comunidade.id = tbl_comunidade_usuario.id_comunidade
-                            
-                    where tbl_comunidade_usuario.id=${idUsuario};`
-                    
-                    
-        let result = await knexConection.raw(sql)
-        
-        if(Array.isArray(result)){
+            SELECT tbl_comunidade.*
+            FROM tbl_usuario
+                INNER JOIN tbl_comunidade_usuario
+                    ON tbl_usuario.id = tbl_comunidade_usuario.id_usuario
+                INNER JOIN tbl_comunidade
+                    ON tbl_comunidade.id = tbl_comunidade_usuario.id_comunidade
+            WHERE tbl_comunidade_usuario.id_usuario = ?;
+        `
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (Array.isArray(result)) {
             return result[0]
-        }else{
+        } else {
             return false
         }
 
-    }catch (error){
+    } catch (error) {
+        console.log(error)
         return false
     }
 }
 
 const selectUsuarioByIdComunidade = async function(idComunidade){
-    try{
-        let sql = ` select tbl_usuario *
-                    from tbl_comunidade
-                        inner join tbl_comunidade_usuario
-                            on tbl_comunidade.id = tbl_comunidade_usuario.id_comunidade
-                        inner join tbl_usuario
-                            on tbl_usuario.id = tbl_comunidade_usuario.id_usuario
-                            
-                    where tbl_comunidade_usuario.id=${idComunidade};`
+    try {
+        let sql = `
+            SELECT tbl_usuario.*
+            FROM tbl_comunidade
+                INNER JOIN tbl_comunidade_usuario
+                    ON tbl_comunidade.id = tbl_comunidade_usuario.id_comunidade
+                INNER JOIN tbl_usuario
+                    ON tbl_usuario.id = tbl_comunidade_usuario.id_usuario
+            WHERE tbl_comunidade_usuario.id_comunidade = ?;
+        `
 
-        let result = await knexConection.raw(sql)
-        
-        if(Array.isArray(result)){
+        let result = await knexConection.raw(sql, [idComunidade])
+
+        if (Array.isArray(result)) {
             return result[0]
-        }else{
+        } else {
             return false
         }
 
-    }catch (error){
+    } catch (error) {
+        console.log(error)
         return false
     }
 }
 
-const deleteComunidadeByIdUsuario = async function(idUsuario){
-    try{
-        let sql = `delete from tbl_comunidade_usuario where id_usuario=${idUsuario}`
-        let result = await knexConection.raw(sql)
+const deleteComunidadeUsuario = async function(idUsuario, idComunidade){
+    try {
+        let sql = `DELETE FROM tbl_comunidade_usuario
+        WHERE id_usuario = ?
+        AND id_comunidade = ?;`
 
-        if(result){
+        let result = await knexConection.raw(sql, [idUsuario, idComunidade])
+
+        if (result[0].affectedRows > 0) {
             return true
-        }else{
+        } else {
             return false
         }
 
-    } catch (error){
+    } catch (error) {
+        console.log(error)
         return false
     }
 }
 
-const deleteUsuarioByIdComunidade = async function(idComunidade){
-    try{
-        let sql = `delete from tbl_comunidade_usuario where id_comunidade=${idComunidade}`
-        let result = await knexConection.raw(sql)
-
-        if(result){
-            return true
-        }else{
-            return false
-        }
-
-    } catch (error){
-        return false
-    }
-}
 
 module.exports = {
     insertComunidadeUsuario,
     selectComunidadeByIdUsuario,
     selectUsuarioByIdComunidade,
-    deleteComunidadeByIdUsuario,
-    deleteUsuarioByIdComunidade
+    deleteComunidadeUsuario
 }

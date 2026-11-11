@@ -23,6 +23,12 @@ const inserirNovaComunidadeReceita = async function (comunidadeReceita) {
             return validar
         } else {
             let result = await comunidadeReceitaDAO.insertComunidadeReceita(comunidadeReceita)
+
+            if (result === 'DUPLICADO') {
+                customMessage.ERROR_BAD_REQUEST.field = 'RECEITA JA ESTÁ NESSA COMUNIDADE'
+                return customMessage.ERROR_BAD_REQUEST
+            }
+
             if (result) {
                 comunidadeReceita.id = result
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
