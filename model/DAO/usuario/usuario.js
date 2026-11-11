@@ -112,11 +112,35 @@ const selectUsuarioById = async function (id) {
     }
 }
 
+const selectUsuariosPorNome = async function (nome) {
+    try {
+
+        let sql = `
+            SELECT *
+            FROM tbl_usuario
+            WHERE titulo LIKE '%${nome}%';
+        `
+
+        let result = await knexConection.raw(sql)
+
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 
 
 module.exports = {
     insertUsuario,
     selectUsuarioByEmail,
     updateUsuario,
-    selectUsuarioById
+    selectUsuarioById,
+    selectUsuariosPorNome
 }
