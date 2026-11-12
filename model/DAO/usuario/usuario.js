@@ -10,6 +10,7 @@ const knexConection = knex(knexDatabaseConfig.development)
 const insertUsuario = async function (usuario) {
     try {
         const foto_perfil = usuario.foto_perfil ?? ''
+
         let sql = `INSERT INTO tbl_usuario (
             nome,
             username,
@@ -18,23 +19,36 @@ const insertUsuario = async function (usuario) {
             data_nascimento,
             foto_perfil
         ) VALUES (
-            '${usuario.nome}',
-            '${usuario.username}',
-            '${usuario.email}',
-            '${usuario.senha}',
-            '${usuario.data_nascimento}',
-            if('${foto_perfil}' = '', NULL, '${foto_perfil}')
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            NULLIF(?, '')
         );`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [
+            usuario.nome,
+            usuario.username,
+            usuario.email,
+            usuario.senha,
+            usuario.data_nascimento,
+            foto_perfil
+        ])
 
-        if (result) {
+        if (result[0].affectedRows > 0) {
             return result[0].insertId
         } else {
             return false
         }
 
     } catch (error) {
+        console.log(error)
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'DUPLICADO'
+        }
+
         return false
     }
 }
@@ -57,16 +71,40 @@ const selectUsuarioByEmail = async function (email) {
     }
 }
 
-const updateUsuario = async function (usuario) {
+const selectAllUsuarios = async function(){
+    try {
+        let sql = `SELECT
+            id,
+            nome,
+            username,
+            descricao,
+            foto_perfil
+        FROM tbl_usuario
+        WHERE username <> ?
+        ORDER BY id DESC;`
+
+        let result = await knexConection.raw(sql, ['chefinho'])
+
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const updateUsuario = async function (usuario, id) {
     try {
         let sql = `UPDATE tbl_usuario SET
         nome = '${usuario.nome}',
         username = '${usuario.username}',
-        email = '${usuario.email}',
         descricao = '${usuario.descricao}',
         banner_url = '${usuario.banner_url}',
-        foto_perfil = '${usuario.foto_perfil}',
-        data_nascimento = '${usuario.data_nascimento}'
+        foto_perfil = '${usuario.foto_perfil}'
     WHERE id = ${id};`
 
         let result = await knexConection.raw(sql)
@@ -116,12 +154,21 @@ const selectUsuariosPorNome = async function (nome) {
     try {
 
         let sql = `
-            SELECT *
+            SELECT
+                id,
+                nome,
+                username,
+                descricao,
+                foto_perfil
             FROM tbl_usuario
-            WHERE titulo LIKE '%${nome}%';
+            WHERE username LIKE ?
+            AND username <> ?;
         `
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [
+            `%${nome}%`,
+            'chefinho'
+        ])
 
         if (Array.isArray(result)) {
             return result[0]
@@ -136,11 +183,11 @@ const selectUsuariosPorNome = async function (nome) {
 }
 
 
-
 module.exports = {
     insertUsuario,
     selectUsuarioByEmail,
     updateUsuario,
     selectUsuarioById,
-    selectUsuariosPorNome
+    selectUsuariosPorNome,
+    selectAllUsuarios
 }

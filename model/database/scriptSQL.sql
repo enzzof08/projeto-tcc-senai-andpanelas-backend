@@ -16,8 +16,9 @@ create table tbl_usuario (
     data_nascimento date not null,
     descricao	    varchar(200),
     banner_url      varchar(2000),
-    foto_perfil     varchar(2000)
+    foto_perfil     varchar(2000),
     
+    CONSTRAINT UK_USUARIO_EMAIL UNIQUE (email)
 );
 
 create table tbl_em_alta (
