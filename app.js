@@ -32,7 +32,7 @@ const custoRouter = require('./routes/custo.router.js')
 app.use('/v1/entrepanelas/custo', cors(), custoRouter)
 
 const usuarioRouter = require('./routes/usuario.router.js')
-app.use('/v1/entrepanelas/usuario', cors(), usuarioRouter)
+app.use('/v1/entrepanelas/usuarios', cors(), usuarioRouter)
 
 const receitaRouter = require('./routes/receita.router.js')
 app.use('/v1/entrepanelas/receita', cors(), receitaRouter)

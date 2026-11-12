@@ -54,9 +54,15 @@ const deleteSeguidor = async function(idSeguindo, idSeguidor){
 
 const selectSeguidores = async function(idUsuario){
     try {
-        let sql = `SELECT id_seguidor
-        FROM tbl_seguindo_seguidor
-        WHERE id_seguindo = ?;`
+        let sql = `SELECT
+            u.id,
+            u.nome,
+            u.username,
+            u.foto_perfil
+        FROM tbl_seguindo_seguidor AS s
+        INNER JOIN tbl_usuario AS u
+            ON u.id = s.id_seguidor
+        WHERE s.id_seguindo = ?;`
 
         let result = await knexConection.raw(sql, [idUsuario])
 
@@ -73,9 +79,15 @@ const selectSeguidores = async function(idUsuario){
 
 const selectSeguindo = async function(idUsuario){
     try {
-        let sql = `SELECT id_seguindo
-        FROM tbl_seguindo_seguidor
-        WHERE id_seguidor = ?;`
+        let sql = `SELECT
+            u.id,
+            u.nome,
+            u.username,
+            u.foto_perfil
+        FROM tbl_seguindo_seguidor AS s
+        INNER JOIN tbl_usuario AS u
+            ON u.id = s.id_seguindo
+        WHERE s.id_seguidor = ?;`
 
         let result = await knexConection.raw(sql, [idUsuario])
 

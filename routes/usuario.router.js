@@ -7,6 +7,7 @@ const router = express.Router()
 
 const controllerUsuario = require('../controller/usuario/controller_usuario.js')
 const controllerSeguidor = require('../controller/seguidores/controller_seguidores.js')
+const controllerReceita = require('../controller/receita/controller_receita.js')
 
 router.post('/registro', bodyParserJSON, async function (request, response) {
     let dados = request.body
@@ -30,10 +31,59 @@ router.post('/login', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
-router.get('/:id', async function (request, response) {
-    let id = request.params.id
+router.get('/', async function (request, response) {
 
-    let result = await controllerUsuario.buscarUsuario(id)
+    let result = await controllerUsuario.listarTodosUsuarios()
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/:idUserPerfil', async function (request, response) {
+    let idUserPerfil = request.params.idUserPerfil
+    let idUserLogado = request.query.idUserLogado
+
+    let result = await controllerUsuario.buscarUsuario(idUserPerfil, idUserLogado)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/me/:idUserPerfil', async function (request, response) {
+    let idUserPerfil = request.params.idUserPerfil
+
+    let result = await controllerUsuario.buscarUsuario(idUserPerfil)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/busca/username', async function (request, response) {
+    let username = request.query.nome
+
+    let result = await controllerUsuario.buscarUsuariosPorNome(username)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.put('/me/:idUserPerfil', bodyParserJSON, async function (request, response) {
+    let idUserPerfil = request.params.idUserPerfil
+    let dados = request.body
+    let contentType = request.headers['content-type']
+
+    let result = await controllerUsuario.atualizarUsuario(dados, idUserPerfil, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+// BUSCAR RECEITAS DO USUARIO
+router.get('/:idUsuario/receitas', async function (request, response) {
+
+    let idUsuario = request.params.idUsuario
+
+    let result = await controllerReceita.buscarReceitasPorUsuario(idUsuario)
 
     response.status(result.status_code)
     response.json(result)

@@ -2,6 +2,8 @@ const configMessages = require('../modulo/configMessages.js')
 
 const userDAO = require('../../model/DAO/usuario/usuario.js')
 
+const controllerSeguidores = require('../seguidores/controller_seguidores.js')
+
 const bcrypt = require('bcrypt')
 
 const inserirNovoUsuario = async function (dados, contentType) {
@@ -20,7 +22,13 @@ const inserirNovoUsuario = async function (dados, contentType) {
                 dados.senha = senhaHash
 
                 let result = await userDAO.insertUsuario(await tratarDados(dados))
- 
+
+                if (result === 'DUPLICADO') {
+                    customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] JÁ CADASTRADO'
+                    return customMessage.ERROR_BAD_REQUEST
+                }
+
+
                 if (result) {
                     dados.id = result
                     dados.senha = undefined
@@ -114,9 +122,10 @@ const atualizarUsuario = async function (dados, id, contentType) {
 
                     dadosAtualizados.id = id
 
-                    let result = await userDAO.updateUsuario(dadosAtualizados)
-
+                    let result = await userDAO.updateUsuario(dadosAtualizados, id)
+                    console.log(result)
                     if (result) {
+
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
                         customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
                         customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
@@ -136,19 +145,34 @@ const atualizarUsuario = async function (dados, id, contentType) {
             return customMessage.ERROR_CONTENT_TYPE // 415
         }
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER // 500
     }
 }
 
 
-
-const buscarUsuario = async function (id) {
+// User logado é quem esta visitando o outro perfil
+const buscarUsuario = async function (idUserPerfil, idUserLogado) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
 
-        let result = await userDAO.selectUsuarioById(id)
+        let result = await userDAO.selectUsuarioById(idUserPerfil)
+
+        if (idUserLogado != undefined) {
+
+            let resultVerificar = await controllerSeguidores.verificarSeguindo(
+                idUserPerfil,
+                idUserLogado
+            )
+
+            if (resultVerificar.status) {
+                result.segue_usuario = resultVerificar.response.segue_usuario
+            } else {
+                return resultVerificar
+            }
+        }
 
         if (result) {
 
@@ -164,6 +188,33 @@ const buscarUsuario = async function (id) {
         }
 
     } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const listarTodosUsuarios = async function () {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        let result = await userDAO.selectAllUsuarios()
+
+        if (result && result.length > 0) {
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.response.count = result.length
+            customMessage.DEFAULT_MESSAGE.response.usuarios = result
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+    } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
@@ -281,5 +332,6 @@ module.exports = {
     loginUsuario,
     buscarUsuario,
     atualizarUsuario,
-    buscarUsuariosPorNome
+    buscarUsuariosPorNome,
+    listarTodosUsuarios
 }
