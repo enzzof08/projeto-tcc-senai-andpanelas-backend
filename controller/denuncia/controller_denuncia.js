@@ -2,6 +2,8 @@ const configMessages = require('../modulo/configMessages')
 
 const denunciaDAO = require('../../model/DAO/denuncia/denuncia.js')
 
+const controllerChefinho = require('../chefinho/controller_chefinho.js')
+
 const inserirDenuncia = async function(denuncia, contentType){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -89,7 +91,58 @@ const validarDados = async function(denuncia){
     }
 }
 
+const inserirDenunciaComunidade = async function (idComunidade, dados, contentType) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+            return customMessage.ERROR_CONTENT_TYPE
+        }
+
+        let motivo = typeof dados.motivo == 'string' ? dados.motivo.trim() : ''
+        let detalhe = typeof dados.detalhe == 'string' && dados.detalhe.trim() != '' ? dados.detalhe.trim() : null
+
+        if (isNaN(idComunidade) || motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !dados.id_usuario || isNaN(dados.id_usuario)) {
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let comunidade = await denunciaDAO.selectComunidadeById(idComunidade)
+
+        if (!comunidade) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        await denunciaDAO.insertDenunciaComunidade(idComunidade, { motivo, detalhe, id_usuario: dados.id_usuario })
+
+        let total = await denunciaDAO.selectTotalDenunciasComunidade(idComunidade)
+
+        let apagada = false
+
+        if (total > 15) {
+            await denunciaDAO.deleteComunidadeComDenuncias(idComunidade)
+            apagada = true
+        } else if (total > 10) {
+            let apagar = await controllerChefinho.avaliarComunidade(comunidade, motivo, detalhe)
+
+            if (apagar === true) {
+                await denunciaDAO.deleteComunidadeComDenuncias(idComunidade)
+                apagada = true
+            }
+        }
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
+        customMessage.DEFAULT_MESSAGE.response = { total_denuncias: total, comunidade_apagada: apagada }
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 module.exports = {
     inserirDenuncia,
-    listarDenuncia
+    listarDenuncia,
+    inserirDenunciaComunidade
 }
