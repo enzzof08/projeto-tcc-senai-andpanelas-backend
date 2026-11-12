@@ -1,7 +1,6 @@
 #create database db_entre_panelas_2026;
 
-use db_entre_panelas_2026;
-
+USE db_entre_panelas_2026;
 #drop database db_entre_panelas_2026;
 
 #SHOW TABLES;
@@ -17,8 +16,9 @@ create table tbl_usuario (
     data_nascimento date not null,
     descricao	    varchar(200),
     banner_url      varchar(2000),
-    foto_perfil     varchar(2000)
+    foto_perfil     varchar(2000),
     
+    CONSTRAINT UK_USUARIO_EMAIL UNIQUE (email)
 );
 
 create table tbl_em_alta (
@@ -48,6 +48,8 @@ create table tbl_seguindo_seguidor (
 	id			int not null auto_increment primary key,
 	id_seguindo int not null,
     id_seguidor int not null,
+    
+    UNIQUE (id_seguindo, id_seguidor),
     
     constraint FK_USUARIO_SEGUINDO
     foreign key (id_seguindo)
@@ -204,6 +206,8 @@ create table tbl_salvo (
     id_receita  int not null,
     id_usuario  int not null,
     
+    unique (id_usuario, id_receita),
+    
     constraint FK_RECEITA_SALVO
     foreign key (id_receita)
     references tbl_receita(id),
@@ -334,6 +338,8 @@ create table tbl_comunidade_receita (
 	id_receita    int not null,
     id_comunidade int not null,
     
+    UNIQUE (id_comunidade, id_receita),
+    
     constraint FK_RECEITA_COMUNIDADE_RECEITA
     foreign key (id_receita)
     references tbl_receita(id)
@@ -349,6 +355,8 @@ create table tbl_comunidade_usuario (
 	id			  int not null auto_increment primary key,
 	id_comunidade int not null,
     id_usuario    int not null,
+    
+    UNIQUE (id_comunidade, id_usuario),
     
     constraint FK_COMUNIDADE_COMUNIDADE_USUARIO
     foreign key (id_comunidade)
@@ -805,24 +813,3 @@ insert into tbl_status (status) values
 ('comprado'),
 ('pendente');
 
-insert into tbl_usuario (
-    id, 
-    nome, 
-    username, 
-    email, 
-    senha, 
-    data_nascimento, 
-    descricao, 
-    banner_url, 
-    foto_perfil
-) values (
-    999,
-    'Chefinho IA',
-    'chefinho',
-    'chefinho@entrepanelas.com',
-    '$2b$10$e8T8e7wQx9z.mockHashForChefinhoDoNotLoginDirectly', 
-    '2026-01-01',
-    'Seu assistente culinário inteligente do Entre Panelas! 🍳🤖',
-    'https://res.cloudinary.com/demo/image/upload/sample.jpg',
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-oTt0q3TUctmgFN69Aq8HUbMCvL1t_7hPJSQu6F5XQPvx4NAq6M72tZs&s=10'
-);

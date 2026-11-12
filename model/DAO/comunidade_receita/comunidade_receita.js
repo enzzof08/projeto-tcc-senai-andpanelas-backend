@@ -24,6 +24,11 @@ const insertComunidadeReceita = async function (comunidadeReceita){
 
     }catch (error){
         console.log(error)
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'DUPLICADO'
+        }
+        
         return false
     }
 }

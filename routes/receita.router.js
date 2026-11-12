@@ -6,6 +6,9 @@ const bodyParserJSON = bodyParser.json()
 const router = express.Router()
 
 const controllerReceita = require('../controller/receita/controller_receita.js')
+const controllerCurtida = require('../controller/curtida/controller_curtida.js')
+const controllerSalvo = require('../controller/salvar/controller_salvar.js')
+
 
 router.post('/', bodyParserJSON, async function (request, response) {
     let dados = request.body
@@ -49,8 +52,9 @@ router.get('/', async function (request, response) {
 
 router.get('/:id', async function (request, response) {
     let id = request.params.id
+    let idUsuario = request.query.usuario
 
-    let result = await controllerReceita.buscarReceita(id)
+    let result = await controllerReceita.buscarReceita(id, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
@@ -71,6 +75,48 @@ router.delete('/:id', async function(request,response){
     let id = request.params.id
 
     let result = await controllerReceita.excluirReceita(id)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+//INTERACOES
+router.post('/:idUser/:idReceita/curtir', bodyParserJSON, async function (request, response) {
+    let idUser = request.params.idUser
+    let idReceita = request.params.idReceita
+
+    let result = await controllerCurtida.inserirCurtida(idUser, idReceita)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.delete('/:idUser/:idReceita/curtir' , async function (request, response) {
+    let idUser = request.params.idUser
+    let idReceita = request.params.idReceita
+
+    let result = await controllerCurtida.excluirCurtida(idUser, idReceita)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.post('/:idUser/:idReceita/salvar', bodyParserJSON, async function (request, response) {
+    let idUser = request.params.idUser
+    let idReceita = request.params.idReceita
+
+    let result = await controllerSalvo.inserirSalvo(idUser, idReceita)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+
+router.delete('/:idUser/:idReceita/salvar' , async function (request, response) {
+    let idUser = request.params.idUser
+    let idReceita = request.params.idReceita
+
+    let result = await controllerSalvo.excluirSalvo(idUser, idReceita)
 
     response.status(result.status_code)
     response.json(result)
