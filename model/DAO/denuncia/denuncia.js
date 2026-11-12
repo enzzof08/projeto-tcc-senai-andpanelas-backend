@@ -49,7 +49,54 @@ const selectAllDenuncia = async function(){
     }
 }
 
+const selectComunidadeById = async function (idComunidade) {
+    return await knexConection('tbl_comunidade')
+        .select('nome', 'descricao', 'foto_url', 'banner_url', 'id_categoria_principal')
+        .where({ id: idComunidade })
+        .first()
+}
+
+const insertDenunciaComunidade = async function (idComunidade, denuncia) {
+    return await knexConection.transaction(async function (trx) {
+        let [idDenuncia] = await trx('tbl_denuncia').insert({
+            motivo: denuncia.motivo,
+            detalhe: denuncia.detalhe,
+            id_usuario: denuncia.id_usuario
+        })
+
+        await trx('tbl_denuncia_comunidade').insert({
+            id_comunidade: idComunidade,
+            id_denuncia: idDenuncia
+        })
+    })
+}
+
+const selectTotalDenunciasComunidade = async function (idComunidade) {
+    let resultado = await knexConection('tbl_denuncia_comunidade')
+        .where({ id_comunidade: idComunidade })
+        .count({ total: '*' })
+        .first()
+
+    return Number(resultado.total)
+}
+
+const deleteComunidadeComDenuncias = async function (idComunidade) {
+    return await knexConection.transaction(async function (trx) {
+        let idsDenuncia = await trx('tbl_denuncia_comunidade')
+            .where({ id_comunidade: idComunidade })
+            .pluck('id_denuncia')
+
+        await trx('tbl_denuncia_comunidade').where({ id_comunidade: idComunidade }).del()
+        await trx('tbl_denuncia').whereIn('id', idsDenuncia).del()
+        await trx('tbl_comunidade').where({ id: idComunidade }).del()
+    })
+}
+
 module.exports = {
     insertDenuncia,
-    selectAllDenuncia
+    selectAllDenuncia,
+    selectComunidadeById,
+    insertDenunciaComunidade,
+    selectTotalDenunciasComunidade,
+    deleteComunidadeComDenuncias
 }

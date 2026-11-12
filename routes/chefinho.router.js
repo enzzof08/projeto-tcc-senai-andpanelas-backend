@@ -7,6 +7,17 @@ const router = express.Router()
 
 const controllerChefinho = require('../controller/chefinho/controller_chefinho.js')
 
+router.post('/', bodyParserJSON, async function (request, response) {
+    let dados = request.body
+
+    let contentType = request.headers['content-type']
+
+    let result = await controllerChefinho.inserirConversa(dados, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 router.get('/', async function (request, response) {
     let result = await controllerChefinho.listarConversasDoUsuario()
 
@@ -25,7 +36,7 @@ router.get('/:id', async function (request, response) {
 
 router.delete('/:id', async function (request, response) {
     let id = request.params.id
-    
+
     let result = await controllerChefinho.deletarConversa(id)
 
     response.status(result.status_code)
@@ -33,15 +44,16 @@ router.delete('/:id', async function (request, response) {
 })
 
 router.post('/:id/mensagens', bodyParserJSON, async function (request, response) {
+    let id = request.params.id
+
     let dados = request.body
 
     let contentType = request.headers['content-type']
 
-    let result = await controllerChefinho.inserirNovaMensagemConversa(dados, contentType)
+    let result = await controllerChefinho.inserirNovaMensagemConversa(id, dados, contentType)
 
     response.status(result.status_code)
     response.json(result)
 })
-
 
 module.exports = router

@@ -25,4 +25,17 @@ router.get('/', async function (request, response) {
     response.json(result)
 })
 
+router.post('/comunidade/:id', bodyParserJSON, async function (request, response) {
+    let id = request.params.id
+
+    let dados = request.body
+
+    let contentType = request.headers['content-type']
+
+    let result = await controllerDenuncia.inserirDenunciaComunidade(id, dados, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 module.exports = router
