@@ -279,14 +279,39 @@ const selectReceitasPorUsuario = async function(idUsuario) {
 const selectReceitasSalvasUsuario = async function(idUsuario) {
     try {
         let sql = `SELECT
-            r.*
-        FROM tbl_salvo AS s
-        INNER JOIN tbl_receita AS r
-            ON r.id = s.id_receita
-        WHERE s.id_usuario = ?
-        ORDER BY s.id DESC;`
+            tbl_receita.*
+        FROM tbl_salvo
+        INNER JOIN tbl_receita
+            ON tbl_receita.id = tbl_salvo.id_receita
+        WHERE tbl_salvo.id_usuario = ?
+        ORDER BY tbl_salvo.id DESC;`
 
         let result = await knexConection.raw(sql, [idUsuario])
+
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const selectReceitasPorCategoria = async function(idCategoria){
+    try {
+        let sql = `
+            SELECT DISTINCT tbl_receita.*
+            FROM tbl_receita
+                INNER JOIN tbl_receita_categoria
+                    ON tbl_receita.id = tbl_receita_categoria.id_receita
+            WHERE tbl_receita_categoria.id_categoria = ?
+            ORDER BY tbl_receita.id DESC;
+        `
+
+        let result = await knexConection.raw(sql, [idCategoria])
 
         if (Array.isArray(result)) {
             return result[0]
@@ -310,5 +335,6 @@ module.exports = {
     selectReceitasPorIngredientesGeladeira,
     selectReceitasPorNome,
     selectReceitasPorUsuario,
-    selectReceitasSalvasUsuario
+    selectReceitasSalvasUsuario,
+    selectReceitasPorCategoria
 }

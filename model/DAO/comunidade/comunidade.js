@@ -63,35 +63,53 @@ const updateComunidade = async function(comunidade){
 
 const selectAllComunidade = async function(){
 
-    try{
-        let sql = 'select * from tbl_comunidade order by id desc'
+    try {
+        let sql = `
+            SELECT
+                tbl_comunidade.*,
+                tbl_categoria_principal.categoria_principal
+            FROM tbl_comunidade
+                INNER JOIN tbl_categoria_principal
+                    ON tbl_categoria_principal.id = tbl_comunidade.id_categoria_principal
+            ORDER BY tbl_comunidade.id DESC;
+        `
 
         let result = await knexConection.raw(sql)
 
-        if(Array.isArray(result)){
+        if (Array.isArray(result)) {
             return result[0]
-        }else{
+        } else {
             return false
         }
 
-    } catch (error){
+    } catch (error) {
+        console.log(error)
         return false
     }
 }
 
 const selectComunidadeById = async function(idComunidade){
-    try{
-        let sql = `select * from tbl_comunidade where id = ${idComunidade}`
+    try {
+        let sql = `
+            SELECT
+                tbl_comunidade.*,
+                tbl_categoria_principal.categoria_principal
+            FROM tbl_comunidade
+                INNER JOIN tbl_categoria_principal
+                    ON tbl_categoria_principal.id = tbl_comunidade.id_categoria_principal
+            WHERE tbl_comunidade.id = ?;
+        `
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [idComunidade])
 
-        if(Array.isArray(result)){
-            return result [0]
-        }else{
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
             return false
         }
 
-    } catch (error){
+    } catch (error) {
+        console.log(error)
         return false
     }
 }

@@ -9,12 +9,14 @@ const controllerComunidade = require('../controller/comunidade/controller_comuni
 const controllerComunidadeReceita = require('../controller/receita/controller_comunidade_receita.js')
 const controllerComunidadeUsuario = require('../controller/comunidade_usuario/controller_comunidade_usuario.js')
 
-router.post('/', bodyParserJSON, async function (request, response) {
+router.post('/:idUser', bodyParserJSON, async function (request, response) {
     let dados = request.body
+
+    let idUser = request.params.idUser
 
     let contentType = request.headers['content-type']
 
-    let result = await controllerComunidade.inserirNovaComunidade(dados, contentType)
+    let result = await controllerComunidade.inserirNovaComunidade(dados, idUser, contentType)
 
     response.status(result.status_code)
     response.json(result)
@@ -35,16 +37,18 @@ router.put('/:id', bodyParserJSON, async function (request, response) {
 
 router.get('/', async function (request, response) {
 
-    let result = await controllerComunidade.listarComunidade()
+    let idUser = request.query.idUser
+    let result = await controllerComunidade.listarComunidade(idUser)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 router.get('/:id', async function (request, response) {
-    let id = request.params.id
+    let idComunidade = request.params.id
+    let idUser = request.query.idUser
 
-    let result = await controllerComunidade.buscarComunidade(id)
+    let result = await controllerComunidade.buscarComunidade(idUser, idComunidade)
 
     response.status(result.status_code)
     response.json(result)

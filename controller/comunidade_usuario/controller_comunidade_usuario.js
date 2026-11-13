@@ -118,6 +118,33 @@ const excluirComunidadeUsuario = async function (idUsuario, idComunidade) {
     }
 }
 
+const verificarComunidadeUsuario = async function(idUsuario, idComunidade){
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        let validar = await validarDados(idUsuario, idComunidade)
+
+        if (validar) {
+            return validar
+        }
+
+        let result = await comunidadeUsuarioDAO.selectVerificarComunidadeUsuario(
+            idUsuario,
+            idComunidade
+        )
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.participando = result
+
+        return customMessage.DEFAULT_MESSAGE
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
 
 const validarDados = async function (idUser, idComunidade) {
     if (idUser == undefined || idUser == '' || idUser == null || idUser <= 0 || isNaN(idUser)) {
@@ -137,5 +164,6 @@ module.exports ={
     buscarComunidadesPorUsuario,
     buscarUsuariosPorComunidade,
     excluirComunidadeUsuario,
-    excluirComunidadeUsuario
+    excluirComunidadeUsuario,
+    verificarComunidadeUsuario
 }

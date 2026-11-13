@@ -3,8 +3,9 @@ const configMessages = require('../modulo/configMessages')
 const comunidadeDAO = require('../../model/DAO/comunidade/comunidade')
 
 const controllerCategoriaPrincipal = require('../categoria_principal/controller_categoria_principal')
+const controllerComunidadeUsuario = require('../comunidade_usuario/controller_comunidade_usuario.js')
 
-const inserirNovaComunidade = async function (comunidade, contentType) {
+const inserirNovaComunidade = async function (comunidade, idUsuario, contentType) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -18,8 +19,19 @@ const inserirNovaComunidade = async function (comunidade, contentType) {
             } else {
 
                 let result = await comunidadeDAO.insertComunidade(await tratarDados(comunidade))
-                console.log(result)
+
                 if (result) {
+
+                    // Associa o criador à comunidade
+                    let resultComunidadeUsuario = await controllerComunidadeUsuario.inserirNovaComunidadeUsuario(
+                        idUsuario,
+                        result
+                    )
+
+                    if (!resultComunidadeUsuario.status) {
+                        return resultComunidadeUsuario
+                    }
+
                     comunidade.id = result
 
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
@@ -28,6 +40,7 @@ const inserirNovaComunidade = async function (comunidade, contentType) {
                     customMessage.DEFAULT_MESSAGE.response = comunidade
 
                     return customMessage.DEFAULT_MESSAGE
+
                 } else {
                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
                 }
@@ -61,7 +74,7 @@ const atualizarComunidade = async function (comunidade, id, contentType) {
                     comunidade.id = Number(id)
 
                     let result = await comunidadeDAO.updateComunidade(await tratarDados(comunidade))
-                    
+
                     if (result) {
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
                         customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
@@ -88,25 +101,30 @@ const atualizarComunidade = async function (comunidade, id, contentType) {
     }
 }
 
-const listarComunidade = async function () {
+const listarComunidade = async function (idUsuario) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
         let result = await comunidadeDAO.selectAllComunidade()
 
+
+
+
         if (result) {
             if (result.length > 0) {
-                for (comunidade of result) {
 
-                    let resultCategoriaPrincipal = await controllerCategoriaPrincipal.buscarCategoriaPrincipal(comunidade.id_categoria_principal)
-                    if (resultCategoriaPrincipal && resultCategoriaPrincipal.status) {
-                        comunidade.categoria_principal = resultCategoriaPrincipal.response.categoriaPrincipal
-                        delete comunidade.id_categoria_principal
-                    } else
-                        return resultCategoriaPrincipal
-
+                if (idUsuario != undefined) {
+                    for (comunidade of result) {
+        
+                        let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUsuario, comunidade.id)
+                        if (resultParticipando.status) {
+                            comunidade.participando = resultParticipando.response.participando
+                        } else
+                            return resultUsuario
+                    }
                 }
+
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                 customMessage.DEFAULT_MESSAGE.response.count = result.length
@@ -126,29 +144,35 @@ const listarComunidade = async function () {
     }
 }
 
-const buscarComunidade = async function (id) {
+const buscarComunidade = async function (idUser, idComunidade) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        if (id == undefined || String(id).replaceAll('', '') == '' || id == null || isNaN(id) || id <= 0) {
+        if (idComunidade == undefined || String(idComunidade).replaceAll('', '') == '' || idComunidade == null || isNaN(idComunidade) || idComunidade <= 0) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_COMUNIDADE] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+
+        }else if(idUser !== undefined && (idUser == null || idUser == '' || isNaN(idUser) || !Number.isInteger(Number(idUser)) || idUser <= 0 || String(idComunidade).replaceAll('', '') == '')){
             customMessage.ERROR_BAD_REQUEST.field = '[ID] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
+
         } else {
-            let result = await comunidadeDAO.selectComunidadeById(id)
+            let result = await comunidadeDAO.selectComunidadeById(idComunidade)
 
             if (result) {
+
                 if (result.length > 0) {
 
-                    for (comunidade of result) {
-
-                        let resultCategoriaPrincipal = await controllerCategoriaPrincipal.buscarCategoriaPrincipal(comunidade.id_categoria_principal)
-                        if (resultCategoriaPrincipal && resultCategoriaPrincipal.status) {
-                            comunidade.categoria_principal = resultCategoriaPrincipal.response.categoriaPrincipal
-                            delete comunidade.id_categoria_principal
-                        } else
-                            return resultCategoriaPrincipal
-                            
+                    if (idUser != undefined) {
+                        for (comunidade of result) {
+            
+                            let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUser, comunidade.id)
+                            if (resultParticipando.status) {
+                                comunidade.participando = resultParticipando.response.participando
+                            } else
+                                return resultUsuario
+                        }
                     }
 
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
@@ -164,6 +188,7 @@ const buscarComunidade = async function (id) {
             }
         }
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
