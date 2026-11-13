@@ -813,3 +813,25 @@ insert into tbl_status (status) values
 ('comprado'),
 ('pendente');
 
+insert into tbl_usuario (
+    id, 
+    nome, 
+    username, 
+    email, 
+    senha, 
+    data_nascimento, 
+    descricao, 
+    banner_url, 
+    foto_perfil
+) values (
+    1,
+    'Chefinho IA',
+    'chefinho',
+    'chefinho@entrepanelas.com',
+    '$2b$10$e8T8e7wQx9z.mockHashForChefinhoDoNotLoginDirectly', 
+    '2026-01-01',
+    'Seu assistente culinário inteligente do Entre Panelas! 🍳🤖',
+    'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-oTt0q3TUctmgFN69Aq8HUbMCvL1t_7hPJSQu6F5XQPvx4NAq6M72tZs&s=10'
+);
+
