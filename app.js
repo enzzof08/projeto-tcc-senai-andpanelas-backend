@@ -95,6 +95,9 @@ app.use('/v1/entrepanelas/mensagem', cors(), mensagemRouter)
 const chefinhoconversaRouter = require('./routes/chefinho_conversa.router.js')
 app.use('/v1/entrepanelas/chefinho_conversa', cors(), chefinhoconversaRouter)
 
+const comentarioRouter = require('./routes/comentario.router.js')
+app.use('/v1/entrepanelas/comentario', cors(), comentarioRouter)
+
 
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
