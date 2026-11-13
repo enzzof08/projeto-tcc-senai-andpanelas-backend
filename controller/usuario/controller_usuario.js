@@ -3,6 +3,7 @@ const configMessages = require('../modulo/configMessages.js')
 const userDAO = require('../../model/DAO/usuario/usuario.js')
 
 const controllerSeguidores = require('../seguidores/controller_seguidores.js')
+const usuarioDAO = require('../../model/DAO/usuario/usuario.js')
 
 const bcrypt = require('bcrypt')
 
@@ -152,29 +153,58 @@ const atualizarUsuario = async function (dados, id, contentType) {
 
 
 // User logado é quem esta visitando o outro perfil
+// User logado é quem está visitando o outro perfil
 const buscarUsuario = async function (idUserPerfil, idUserLogado) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
 
-        let result = await userDAO.selectUsuarioById(idUserPerfil)
-
-        if (idUserLogado != undefined) {
-
-            let resultVerificar = await controllerSeguidores.verificarSeguindo(
-                idUserPerfil,
-                idUserLogado
-            )
-
-            if (resultVerificar.status) {
-                result.segue_usuario = resultVerificar.response.segue_usuario
-            } else {
-                return resultVerificar
-            }
-        }
+        let result = await usuarioDAO.selectUsuarioById(idUserPerfil)
 
         if (result) {
+
+            let resultReceitas = await usuarioDAO.selectQtdReceitasUsuario(idUserPerfil)
+
+            if (resultReceitas) {
+                result.qtd_receitas = resultReceitas.qtd_receitas
+            } else {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+
+            let resultSalvos = await usuarioDAO.selectQtdSalvosUsuario(idUserPerfil)
+
+            if (resultSalvos) {
+                result.qtd_salvos = resultSalvos.qtd_salvos
+            } else {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            let resultSeguindo = await usuarioDAO.selectQtdSeguindoUsuario(idUserPerfil)
+
+            if (resultSeguindo) {
+                result.qtd_seguindo = resultSeguindo.qtd_seguindo
+            } else {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+
+            // Verifica se o usuário logado segue o perfil visitado
+            if (idUserLogado != undefined) {
+
+                let resultVerificar = await controllerSeguidores.verificarSeguindo(
+                    idUserPerfil,
+                    idUserLogado
+                )
+
+                if (resultVerificar.status) {
+                    result.segue_usuario = resultVerificar.response.segue_usuario
+                } else {
+                    return resultVerificar
+                }
+            }
+
 
             customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
             customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
@@ -188,10 +218,10 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
         }
 
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
-
 const listarTodosUsuarios = async function () {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
