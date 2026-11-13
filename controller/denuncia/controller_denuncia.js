@@ -4,6 +4,8 @@ const denunciaDAO = require('../../model/DAO/denuncia/denuncia.js')
 
 const controllerChefinho = require('../chefinho/controller_chefinho.js')
 
+const bcrypt = require('bcrypt')
+
 const inserirDenuncia = async function(denuncia, contentType){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -141,8 +143,125 @@ const inserirDenunciaComunidade = async function (idComunidade, dados, contentTy
     }
 }
 
+const FOTO_BLOQUEADA = 'https://i.pinimg.com/originals/a9/c1/03/a9c10358112c550006d0db9b0f48d301.jpg'
+const BANNER_BLOQUEADO = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1PUaUb0c3ErJOjlNJd3XPKFynVrpxvjXw9uaHjKZEuA&s=10'
+
+const montarDenuncia = function (dados) {
+    let motivo = typeof dados.motivo == 'string' ? dados.motivo.trim() : ''
+    let detalhe = typeof dados.detalhe == 'string' && dados.detalhe.trim() != '' ? dados.detalhe.trim() : null
+
+    if (motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !dados.id_usuario || isNaN(dados.id_usuario)) {
+        return null
+    }
+
+    return { motivo, detalhe, id_usuario: dados.id_usuario }
+}
+
+const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+            return customMessage.ERROR_CONTENT_TYPE
+        }
+
+        let denuncia = montarDenuncia(dados)
+
+        if (isNaN(idReceita) || !denuncia) {
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let receita = await denunciaDAO.selectReceitaCompleta(idReceita)
+
+        if (!receita) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        await denunciaDAO.insertDenunciaVinculada('tbl_denuncia_receita', 'id_receita', idReceita, denuncia)
+
+        let total = await denunciaDAO.selectTotalDenuncias('tbl_denuncia_receita', 'id_receita', idReceita)
+
+        let apagada = false
+
+        if (total > 15) {
+            apagada = true
+        } else if (total > 10) {
+            let apagar = await controllerChefinho.avaliarDenuncia('receita', { motivo: denuncia.motivo, detalhe: denuncia.detalhe, receita })
+            apagada = apagar === true
+        }
+
+        if (apagada) {
+            await denunciaDAO.deleteReceitaComDenuncias(idReceita)
+        }
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
+        customMessage.DEFAULT_MESSAGE.response = { total_denuncias: total, receita_apagada: apagada }
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const inserirDenunciaUsuario = async function (idUsuario, dados, contentType) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+            return customMessage.ERROR_CONTENT_TYPE
+        }
+
+        let denuncia = montarDenuncia(dados)
+
+        if (isNaN(idUsuario) || !denuncia) {
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let usuario = await denunciaDAO.selectUsuarioParaModeracao(idUsuario)
+
+        if (!usuario) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        await denunciaDAO.insertDenunciaVinculada('tbl_denuncia_usuario', 'id_usuario', idUsuario, denuncia)
+
+        let total = await denunciaDAO.selectTotalDenuncias('tbl_denuncia_usuario', 'id_usuario', idUsuario)
+
+        let bloqueado = false
+
+        if (total > 20) {
+            bloqueado = true
+        } else if (total > 15) {
+            let apagar = await controllerChefinho.avaliarDenuncia('perfil', { motivo: denuncia.motivo, detalhe: denuncia.detalhe, dados_usuario: usuario })
+            bloqueado = apagar === true
+        }
+
+        if (bloqueado) {
+            await denunciaDAO.atualizarUsuario(idUsuario, {
+                email: `bloqueado${idUsuario}@entrepanelas.invalid`,
+                senha: await bcrypt.hash(crypto.randomUUID(), 10),
+                foto_perfil: FOTO_BLOQUEADA,
+                banner_url: BANNER_BLOQUEADO
+            })
+        }
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
+        customMessage.DEFAULT_MESSAGE.response = { total_denuncias: total, perfil_bloqueado: bloqueado }
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 module.exports = {
     inserirDenuncia,
     listarDenuncia,
-    inserirDenunciaComunidade
+    inserirDenunciaComunidade,
+    inserirDenunciaReceita,
+    inserirDenunciaUsuario
 }
