@@ -40,7 +40,6 @@ app.use('/v1/entrepanelas/receita', cors(), receitaRouter)
 const porcaoRouter = require('./routes/porcao.router.js')
 app.use('/v1/entrepanelas/porcao', cors(), porcaoRouter)
 
-
 const ingredienteRouter = require('./routes/ingrediente.router.js')
 app.use('/v1/entrepanelas/ingrediente', cors(), ingredienteRouter)
 
@@ -91,12 +90,6 @@ app.use('/v1/entrepanelas/comunidade_usuario', cors(), comunidadeUsuarioRouter)
 
 const mensagemRouter = require('./routes/mensagem.router.js')
 app.use('/v1/entrepanelas/mensagem', cors(), mensagemRouter)
-
-const chefinhoconversaRouter = require('./routes/chefinho_conversa.router.js')
-app.use('/v1/entrepanelas/chefinho_conversa', cors(), chefinhoconversaRouter)
-
-const comentarioRouter = require('./routes/comentario.router.js')
-app.use('/v1/entrepanelas/comentario', cors(), comentarioRouter)
 
 
 //API rodando na porta desejada

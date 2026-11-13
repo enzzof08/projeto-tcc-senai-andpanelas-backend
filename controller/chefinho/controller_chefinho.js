@@ -109,8 +109,29 @@ const avaliarComunidade = async function (comunidade, motivo, detalhe) {
     }
 }
 
+const avaliarDenuncia = async function (tipo, corpo) {
+    try {
+        let resposta = await fetch(`${process.env.CHEFINHO_URL}/v1/chefinho/moderacao/${tipo}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.CHEFINHO_API_KEY
+            },
+            body: JSON.stringify(corpo),
+            signal: AbortSignal.timeout(TIMEOUT_CHEFINHO)
+        })
+
+        let retorno = await resposta.json()
+
+        return retorno.success ? retorno.response_ia.apagar : null
+    } catch (error) {
+        return null
+    }
+}
+
 module.exports = {
     inserirConversa,
     inserirNovaMensagemConversa,
-    avaliarComunidade
+    avaliarComunidade,
+    avaliarDenuncia
 }

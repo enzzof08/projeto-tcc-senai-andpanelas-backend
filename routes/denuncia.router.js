@@ -38,4 +38,30 @@ router.post('/comunidade/:id', bodyParserJSON, async function (request, response
     response.json(result)
 })
 
+router.post('/receita/:id', bodyParserJSON, async function (request, response) {
+    let id = request.params.id
+
+    let dados = request.body
+
+    let contentType = request.headers['content-type']
+
+    let result = await controllerDenuncia.inserirDenunciaReceita(id, dados, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.post('/usuario/:id', bodyParserJSON, async function (request, response) {
+    let id = request.params.id
+
+    let dados = request.body
+
+    let contentType = request.headers['content-type']
+
+    let result = await controllerDenuncia.inserirDenunciaUsuario(id, dados, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 module.exports = router
