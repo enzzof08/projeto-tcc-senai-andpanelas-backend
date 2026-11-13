@@ -182,6 +182,71 @@ const selectUsuariosPorNome = async function (nome) {
     }
 }
 
+const selectQtdSeguindoUsuario = async function(idUsuario) {
+    try {
+        let sql = `
+            SELECT COUNT(*) AS qtd_seguindo
+            FROM tbl_seguindo_seguidor
+            WHERE id_seguidor = ?;
+        `
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (Array.isArray(result)) {
+            return result[0][0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const selectQtdSalvosUsuario = async function(idUsuario) {
+    try {
+        let sql = `
+            SELECT COUNT(*) AS qtd_salvos
+            FROM tbl_salvo
+            WHERE id_usuario = ?;
+        `
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (Array.isArray(result)) {
+            return result[0][0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const selectQtdReceitasUsuario = async function(idUsuario) {
+    try {
+        let sql = `
+            SELECT COUNT(*) AS qtd_receitas
+            FROM tbl_receita
+            WHERE id_usuario = ?;
+        `
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (Array.isArray(result)) {
+            return result[0][0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
 
 module.exports = {
     insertUsuario,
@@ -189,5 +254,8 @@ module.exports = {
     updateUsuario,
     selectUsuarioById,
     selectUsuariosPorNome,
-    selectAllUsuarios
+    selectAllUsuarios,
+    selectQtdSeguindoUsuario,
+    selectQtdReceitasUsuario,
+    selectQtdSalvosUsuario
 }

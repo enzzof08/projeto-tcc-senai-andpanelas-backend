@@ -8,6 +8,7 @@ const router = express.Router()
 const controllerUsuario = require('../controller/usuario/controller_usuario.js')
 const controllerSeguidor = require('../controller/seguidores/controller_seguidores.js')
 const controllerReceita = require('../controller/receita/controller_receita.js')
+const controllerComunidadeUsuario = require('../controller/comunidade_usuario/controller_comunidade_usuario.js')
 
 router.post('/registro', bodyParserJSON, async function (request, response) {
     let dados = request.body
@@ -78,17 +79,43 @@ router.put('/me/:idUserPerfil', bodyParserJSON, async function (request, respons
     response.json(result)
 })
 
+
 // BUSCAR RECEITAS DO USUARIO
 router.get('/:idUsuario/receitas', async function (request, response) {
 
     let idUsuario = request.params.idUsuario
+    let idUserLogado = request.query.idUserLogado
 
-    let result = await controllerReceita.buscarReceitasPorUsuario(idUsuario)
+    let result = await controllerReceita.buscarReceitasPorUsuario(idUsuario, idUserLogado)
 
     response.status(result.status_code)
     response.json(result)
 })
 
+
+// BUSCAR RECEITAS SALVAS DO USUARIO
+router.get('/:idUsuario/receitas/salvas', async function (request, response) {
+
+    let idUsuario = request.params.idUsuario
+    let idUserLogado = request.query.idUserLogado
+
+    let result = await controllerReceita.buscarReceitasSalvasUsuario(idUsuario, idUserLogado)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+
+// BUSCAR COMUNIDADES QUE USUARIO PARTICIPA
+router.get('/:idUsuario/comunidades', async function (request, response) {
+
+    let idUsuario = request.params.idUsuario
+
+    let result = await controllerComunidadeUsuario.buscarComunidadesPorUsuario(idUsuario)
+
+    response.status(result.status_code)
+    response.json(result)
+})
 
 // SEGUIR INTERACOES
 router.post('/:idSeguidor/:idSeguindo/seguir', async function (request, response) {
