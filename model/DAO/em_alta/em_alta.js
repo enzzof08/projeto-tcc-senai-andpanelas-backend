@@ -6,24 +6,21 @@ const knexConection = knex(knexDatabaseConfig.development)
 
 const insertEmAlta = async function(emAlta){
     try {
-        let sql = `insert into tbl_em_alta (
-            pesquisa,
-            data
-        ) values (
-            '${emAlta.pesquisa}',
-            '${emAlta.data}' 
-        );`
+        let sql = `INSERT INTO tbl_em_alta (
+            pesquisa
+        ) VALUES (?);`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [emAlta])
 
-        if(result)
+        if (result[0].affectedRows > 0)
             return true
-       else
+        else
             return false
 
-    } catch (error){
+    } catch (error) {
+        console.log(error)
         return false
-    }   
+    }
 }
 
 const updateEmAlta = async function(emAlta){
@@ -76,9 +73,33 @@ const deleteEmAlta = async function(id){
     }
 }
 
+const selectMaisPesquisados = async function(){
+    try {
+        let sql = `SELECT
+            pesquisa
+        FROM tbl_em_alta
+        GROUP BY pesquisa
+        ORDER BY COUNT(*) DESC
+        LIMIT 6;`
+
+        let result = await knexConection.raw(sql)
+
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 module.exports = {
     insertEmAlta,
     updateEmAlta,
     selectAllEmAlta,
-    deleteEmAlta
+    deleteEmAlta,
+    selectMaisPesquisados
 }

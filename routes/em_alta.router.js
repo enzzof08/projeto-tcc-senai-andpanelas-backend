@@ -18,26 +18,34 @@ router.post('/', bodyParserJSON, async function (request, response) {
     response.json(result)
 })
 
-router.put('/:id', bodyParserJSON, async function (request, response) {
-    let dados = request.body
+// router.put('/:id', bodyParserJSON, async function (request, response) {
+//     let dados = request.body
 
-    let contentType = request.headers['content-type']
+//     let contentType = request.headers['content-type']
 
-    let id = request.params.id
+//     let id = request.params.id
 
-    let result = await controllerEmAlta.atualizarEmAlta(dados,id ,contentType)
+//     let result = await controllerEmAlta.atualizarEmAlta(dados,id ,contentType)
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
 router.get('/', async function (request, response) {
 
-    let result = await controllerEmAlta.listarEmAlta()
+    let result = await controllerEmAlta.listarMaisPesquisados()
 
     response.status(result.status_code)
     response.json(result)
 })
+
+// router.get('/', async function (request, response) {
+
+//     let result = await controllerEmAlta.listarEmAlta()
+
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
 router.delete('/:id', async function(request,response){
     let id = request.params.id
