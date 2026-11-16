@@ -11,7 +11,7 @@ const insertDenunciaUsuario = async function (denunciaUsuario){
             id_usuario
         )values(
             '${denunciaUsuario.id_usuario}',
-            '${denunciaUsuario.id_categoria}'
+            '${denunciaUsuario.id_comunidade}'
         );`
 
         let result = await knexConection.raw(sql)

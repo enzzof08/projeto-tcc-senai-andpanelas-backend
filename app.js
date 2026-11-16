@@ -91,6 +91,9 @@ app.use('/v1/entrepanelas/comunidade_usuario', cors(), comunidadeUsuarioRouter)
 const mensagemRouter = require('./routes/mensagem.router.js')
 app.use('/v1/entrepanelas/mensagem', cors(), mensagemRouter)
 
+const denunciaComunidadeRouter = require('./routes/denuncia_comunidade.router.js')
+app.use('/v1/entrepanelas/denuncia_comunidade', cors(), denunciaComunidadeRouter)
+
 
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {

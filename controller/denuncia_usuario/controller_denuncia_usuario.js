@@ -17,7 +17,7 @@ const inserirDenunciaUsuario = async function (denunciaUsuario){
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
-                customMessage.DEFAULT_MESSAGE.response = receitaCategoria
+                customMessage.DEFAULT_MESSAGE.response = denunciaUsuario
 
                 return customMessage.DEFAULT_MESSAGE
             }else{
@@ -65,7 +65,7 @@ const buscarUsuarioByIdDenuncia = async function (idDenuncia) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_DENUNCIA] INVÁLIDO'
             return customMessage.ERROR_BAD_REQUEST
         } else {
-            let result = await denunciaUsuarioDAO.selectUsuarioByIdDenuncia(idUsuario)
+            let result = await denunciaUsuarioDAO.selectUsuarioByIdDenuncia(idDenuncia)
             if (result) {
                 if (result === false) {
                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
