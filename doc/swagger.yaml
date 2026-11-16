@@ -731,6 +731,16 @@ components:
       - top_1
       - top_2
       - top_3
+    IngredienteNomeBuscaRequest:
+      type: object
+      description: Ingrediente informado pelo usuário apenas pelo nome na busca por ingredientes.
+      properties:
+        nome:
+          type: string
+          maxLength: 35
+          example: Frango
+      required:
+      - nome
     IngredienteBuscaRequest:
       type: object
       description: Ingrediente informado pelo usuário na busca tradicional por ingredientes.
@@ -2380,9 +2390,7 @@ paths:
       tags:
       - Receitas
       summary: Buscar receitas por ingredientes
-      description: Recebe um ou mais ingredientes com suas quantidades e unidades de medida. Retorna receitas da base 
-        com percentual de compatibilidade e, quando a base não oferece uma opção adequada, sugestões completas geradas 
-        pelo Chefinho IA.
+      description: Recebe um ou mais ingredientes pelo nome. Retorna receitas da base com percentual de compatibilidade e, quando a base não oferece uma opção adequada, sugestões completas geradas pelo Chefinho IA.
       requestBody:
         required: true
         content:
@@ -2394,21 +2402,15 @@ paths:
                   type: array
                   minItems: 1
                   items:
-                    $ref: '#/components/schemas/IngredienteBuscaRequest'
-                  description: Ingredientes e medidas informados pelo usuário.
+                    $ref: '#/components/schemas/IngredienteNomeBuscaRequest'
+                  description: Ingredientes informados pelo usuário pelo nome.
               required:
               - ingredientes
             example:
               ingredientes:
               - nome: Frango
-                quantidade: '600'
-                id_unidade_medida: 1
               - nome: Limão siciliano
-                quantidade: '3'
-                id_unidade_medida: 5
               - nome: Azeite
-                quantidade: '50'
-                id_unidade_medida: 3
       responses:
         '200':
           description: Busca por ingredientes realizada com sucesso.
@@ -3526,26 +3528,10 @@ paths:
                 nome_ingrediente:
                   type: string
                   maxLength: 35
-                quantidade:
-                  type: integer
-                  minimum: 1
-                id_unidade_medida:
-                  type: integer
-                  enum:
-                  - 1
-                  - 2
-                  - 3
-                  - 4
-                  - 5
-                  description: 1=g, 2=kg, 3=ml, 4=L, 5=un
               required:
               - nome_ingrediente
-              - quantidade
-              - id_unidade_medida
             example:
               nome_ingrediente: Alho
-              quantidade: 2
-              id_unidade_medida: 5
       responses:
         '201':
           description: Ingrediente adicionado com sucesso
