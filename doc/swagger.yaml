@@ -2463,6 +2463,224 @@ paths:
                 status_code: 500
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela busca de 
                   receitas por ingredientes. A solicitação não pôde ser concluída.
+  /receita/busca/sugestao:
+    post:
+      tags:
+      - Chefinho
+      summary: Sugerir receita com Chefinho a partir da busca por nome
+      description: Recebe o termo pesquisado e as receitas encontradas pela busca por nome e repassa ao Chefinho, que verifica
+        se existe uma receita relevante que não está na lista. Envia no máximo 50 itens de encontrados_db ao Chefinho.
+        Quando o Chefinho retorna erro, o back devolve o mesmo status e o mesmo corpo ao front.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pesquisa_usuario:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: Termo pesquisado pelo usuário.
+                encontrados_db:
+                  type: array
+                  default: []
+                  description: Receitas encontradas pela busca por nome. Apenas as 50 primeiras são enviadas ao Chefinho.
+                  items:
+                    type: object
+                    properties:
+                      titulo:
+                        type: string
+                      descricao:
+                        type: string
+                        nullable: true
+                      foto:
+                        type: string
+                        nullable: true
+                      video:
+                        type: string
+                        nullable: true
+                      tempo:
+                        type: string
+                        nullable: true
+                      custo:
+                        type: string
+                        nullable: true
+                      dificuldade:
+                        type: string
+                        nullable: true
+                      porcao:
+                        oneOf:
+                        - type: string
+                        - type: number
+                        nullable: true
+                    required:
+                    - titulo
+              required:
+              - pesquisa_usuario
+            example:
+              pesquisa_usuario: frango
+              encontrados_db:
+              - titulo: Filé de frango
+                descricao: Filé de frango grelhado.
+                foto: https://exemplo.com/frango.jpg
+                video: ''
+                tempo: '00:20:00'
+                custo: Baixo
+                dificuldade: Fácil
+                porcao: 2
+      responses:
+        '200':
+          description: Pesquisa analisada. Se possui_sugestao for false, receita vem null.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    response:
+                      type: object
+                      properties:
+                        possui_sugestao:
+                          type: boolean
+                        receita:
+                          type: object
+                          nullable: true
+                          properties:
+                            titulo:
+                              type: string
+                            descricao:
+                              type: string
+                            tempo:
+                              type: string
+                              example: 00:30:00
+                            custo:
+                              type: string
+                            dificuldade:
+                              type: string
+                            porcao:
+                              type: integer
+                            ingredientes:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  nome:
+                                    type: string
+                                  quantidade:
+                                    type: string
+                                  id_unidade_medida:
+                                    type: string
+                            modo_preparo:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  metodo_preparo:
+                                    type: string
+                                  ordem_preparo:
+                                    type: integer
+                            categorias:
+                              type: array
+                              items:
+                                type: string
+                            tags:
+                              type: array
+                              items:
+                                type: string
+                            foto:
+                              type: string
+                              format: uri
+                            video:
+                              type: string
+                              format: uri
+                              nullable: true
+              example:
+                api_description: API para controlar o projeto EntrePanelas
+                development: 4tech
+                version: 1.0.4.26
+                status: true
+                status_code: 200
+                message: Pesquisa analisada com sucesso.
+                response:
+                  possui_sugestao: true
+                  receita:
+                    titulo: Macarrão com frango
+                    descricao: Macarrão cremoso com frango desfiado.
+                    tempo: '00:30:00'
+                    custo: Baixo
+                    dificuldade: Fácil
+                    porcao: 4
+                    ingredientes:
+                    - nome: Macarrão
+                      quantidade: '500'
+                      id_unidade_medida: g
+                    modo_preparo:
+                    - metodo_preparo: Cozinhe o macarrão em água com sal.
+                      ordem_preparo: 1
+                    categorias:
+                    - Almoço
+                    tags:
+                    - '#Rápido'
+                    foto: https://upload.wikimedia.org/wikipedia/commons/thumb/exemplo.jpg/800px-exemplo.jpg
+                    video: null
+        '400':
+          description: Termo de pesquisa ausente ou inválido, ou encontrados_db com formato inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Não foi possível processar a requisição devido a erros de entrada
+        '502':
+          description: Erro repassado do Chefinho sem alteração. Por exemplo, AI_RESPONSE_INVALID, ou TOOL_ERROR quando nenhuma foto válida foi encontrada.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Corpo de erro no formato do Chefinho.
+              example:
+                status_code: 502
+                success: false
+                agent:
+                  name: Chefinho
+                  version: 1.0.0
+                message: Não foi possível gerar uma sugestão com foto válida.
+                response_ia: null
+                error:
+                  code: TOOL_ERROR
+                  message: Nenhuma foto válida foi encontrada para a receita sugerida.
+                  details: null
+        '503':
+          description: Serviço de IA indisponível. Corpo repassado do Chefinho sem alteração (AI_SERVICE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Corpo de erro no formato do Chefinho.
+        '504':
+          description: Tempo esgotado ao consultar o Chefinho. Corpo repassado do Chefinho sem alteração (AI_TIMEOUT).
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Corpo de erro no formato do Chefinho.
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: Não foi possível processar a requisição devido a um erro interno no servidor [CONTROLLER]
   /receitas/{id}:
     get:
       tags:
@@ -4760,7 +4978,9 @@ paths:
                 status_code: 500
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
                   usuários que um usuário segue". A solicitação não pôde ser concluída.
-  /chefinho/conversas:
+  /conversas:
+    servers:
+    - url: /v1/chefinho
     get:
       tags:
       - Chefinho
@@ -4818,7 +5038,90 @@ paths:
                 status_code: 500
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela operação "Listar
                   conversas do usuário com Chefinho". A solicitação não pôde ser concluída.
-  /chefinho/conversas/{id}:
+    post:
+      tags:
+      - Chefinho
+      summary: Criar conversa com Chefinho
+      description: Cria uma nova conversa do usuário com o assistente Chefinho e retorna o id gerado.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                  maxLength: 100
+                  description: Título da conversa. Não pode ser vazio após remover os espaços das pontas.
+                id_usuario:
+                  type: integer
+                  description: Id do usuário dono da conversa.
+              required:
+              - titulo
+              - id_usuario
+            example:
+              titulo: Teste de front
+              id_usuario: 1
+      responses:
+        '201':
+          description: Conversa criada com sucesso.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  properties:
+                    response:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+              example:
+                api_description: API para controlar o projeto EntrePanelas
+                development: 4tech
+                version: 1.0.4.26
+                status: true
+                status_code: 201
+                message: Item inserido com sucesso!
+                response:
+                  id: 5
+        '400':
+          description: Dados de entrada inválidos (título vazio ou com mais de 100 caracteres, ou id_usuario ausente ou não numérico).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 400
+                message: Não foi possível processar a requisição devido a erros de entrada
+        '415':
+          description: O Content-Type da requisição não é application/json.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 415
+                message: Não foi possível processar os dados encaminhados, pois o formato não é suportado pelo servidor, apenas deve ser utilizado JSON.
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: false
+                status_code: 500
+                message: Não foi possível processar a requisição devido a um erro interno no servidor [CONTROLLER]
+  /conversas/{id}:
+    servers:
+    - url: /v1/chefinho
     get:
       tags:
       - Chefinho
@@ -4936,7 +5239,9 @@ paths:
                 status_code: 500
                 message: O servidor encontrou uma falha interna no controller ou model responsável pela operação 
                   "Deletar uma conversa". A solicitação não pôde ser concluída.
-  /chefinho/conversas/{id}/mensagens:
+  /conversas/{id}/mensagens:
+    servers:
+    - url: /v1/chefinho
     post:
       tags:
       - Chefinho

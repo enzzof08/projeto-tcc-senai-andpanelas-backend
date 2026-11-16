@@ -8,6 +8,7 @@ const router = express.Router()
 const controllerReceita = require('../controller/receita/controller_receita.js')
 const controllerCurtida = require('../controller/curtida/controller_curtida.js')
 const controllerSalvo = require('../controller/salvar/controller_salvar.js')
+const controllerChefinho = require('../controller/chefinho/controller_chefinho.js')
 
 
 router.post('/', bodyParserJSON, async function (request, response) {
@@ -29,6 +30,17 @@ router.put('/:id', bodyParserJSON, async function (request, response) {
     let id = request.params.id
 
     let result = await controllerReceita.atualizarReceita(dados,id ,contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.post('/busca/sugestao', bodyParserJSON, async function (request, response) {
+    let dados = request.body
+
+    let contentType = request.headers['content-type']
+
+    let result = await controllerChefinho.sugerirReceita(dados, contentType)
 
     response.status(result.status_code)
     response.json(result)
