@@ -35,7 +35,7 @@ const usuarioRouter = require('./routes/usuario.router.js')
 app.use('/v1/entrepanelas/usuarios', cors(), usuarioRouter)
 
 const receitaRouter = require('./routes/receita.router.js')
-app.use('/v1/entrepanelas/receita', cors(), receitaRouter)
+app.use('/v1/entrepanelas/receitas', cors(), receitaRouter)
 
 const porcaoRouter = require('./routes/porcao.router.js')
 app.use('/v1/entrepanelas/porcao', cors(), porcaoRouter)

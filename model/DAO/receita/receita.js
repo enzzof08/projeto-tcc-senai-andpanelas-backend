@@ -325,6 +325,42 @@ const selectReceitasPorCategoria = async function(idCategoria){
     }
 }
 
+const selectReceitasMaisCurtidasSemana = async function(){
+    try {
+        let sql = `SELECT
+            tbl_receita.*,
+            resultado.qtd_curtidas_semana
+        FROM tbl_receita
+
+        INNER JOIN (
+            SELECT
+                id_receita,
+                COUNT(*) AS qtd_curtidas_semana
+            FROM tbl_curtida
+            WHERE date_dia >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            AND date_dia <= CURDATE()
+            GROUP BY id_receita
+        ) AS resultado
+
+        ON tbl_receita.id = resultado.id_receita
+
+        ORDER BY resultado.qtd_curtidas_semana DESC
+        LIMIT 3;`
+
+        let result = await knexConection.raw(sql)
+
+        if (Array.isArray(result)) {
+            return result[0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 module.exports = {
     insertReceita,
     selectALLReceita,
@@ -336,5 +372,6 @@ module.exports = {
     selectReceitasPorNome,
     selectReceitasPorUsuario,
     selectReceitasSalvasUsuario,
-    selectReceitasPorCategoria
+    selectReceitasPorCategoria,
+    selectReceitasMaisCurtidasSemana
 }
