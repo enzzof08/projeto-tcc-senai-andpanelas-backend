@@ -6,6 +6,8 @@ const LIMITE_HISTORICO = 10
 const LIMITE_PERGUNTA = 2000
 const LIMITE_TITULO = 100
 const TIMEOUT_CHEFINHO = 60000
+const LIMITE_PESQUISA = 200
+const LIMITE_ENCONTRADOS = 50
 
 const chamarChatChefinho = async function (historico, perguntaAtual) {
     let resposta = await fetch(`${process.env.CHEFINHO_URL}/v1/chefinho/chat`, {
@@ -89,6 +91,55 @@ const inserirNovaMensagemConversa = async function (idConversa, dados, contentTy
     }
 }
 
+const sugerirReceita = async function (dados, contentType) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+            return customMessage.ERROR_CONTENT_TYPE
+        }
+
+        let pesquisaUsuario = typeof dados.pesquisa_usuario == 'string' ? dados.pesquisa_usuario.trim() : ''
+        let encontrados = Array.isArray(dados.encontrados_db) ? dados.encontrados_db : []
+
+        if (pesquisaUsuario == '' || pesquisaUsuario.length > LIMITE_PESQUISA) {
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let resposta = await fetch(`${process.env.CHEFINHO_URL}/v1/chefinho/pesquisa`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.CHEFINHO_API_KEY
+            },
+            body: JSON.stringify({
+                pesquisa_usuario: pesquisaUsuario,
+                encontrados_db: encontrados.slice(0, LIMITE_ENCONTRADOS)
+            }),
+            signal: AbortSignal.timeout(TIMEOUT_CHEFINHO)
+        })
+
+        let retorno = await resposta.json()
+
+        if (!retorno.success) {
+            return retorno
+        }
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.message = retorno.message
+        customMessage.DEFAULT_MESSAGE.response = retorno.response_ia
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        if (error.name == 'TimeoutError' || error.name == 'AbortError') {
+            return { status: false, status_code: 504, message: 'O Chefinho demorou para responder. Tente novamente.' }
+        }
+
+        return { status: false, status_code: 502, message: 'O Chefinho não conseguiu responder agora. Tente novamente.' }
+    }
+}
+
 const avaliarComunidade = async function (comunidade, motivo, detalhe) {
     try {
         let resposta = await fetch(`${process.env.CHEFINHO_URL}/v1/chefinho/moderacao/comunidade`, {
@@ -133,5 +184,6 @@ module.exports = {
     inserirConversa,
     inserirNovaMensagemConversa,
     avaliarComunidade,
-    avaliarDenuncia
+    avaliarDenuncia,
+    sugerirReceita
 }
