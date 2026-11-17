@@ -2,155 +2,179 @@ const configMessages = require('../modulo/configMessages')
 
 const emAltaDAO = require('../../model/DAO/em_alta/em_alta')
 
-const inserirNovoEmAlta = async function(emAlta, contentType){
+const inserirNovoEmAlta = async function (emAlta) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
 
-        if(String(contentType).toUpperCase() == 'APPLICATION/JSON'){
+        let validar = await validarDados(emAlta)
 
-            let validar = await validarDados(emAlta)
+        if (validar) {
+            return validar
+        } else {
+            let result = await emAltaDAO.insertEmAlta(emAlta)
 
-            if(validar){
-                return validar
-            }else{
-                let result = await emAltaDAO.insertEmAlta(emAlta)
+            if (result) {
+                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
+                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
 
-                if(result){
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
-                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
-
-                    return customMessage.DEFAULT_MESSAGE
-                }else{
-                    return customMessage.ERROR_CONTENT_TYPE
-                }
-
+                return customMessage.DEFAULT_MESSAGE
+            } else {
+                return customMessage.ERROR_CONTENT_TYPE
             }
+
         }
 
-    } catch (error){
+
+    } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 
 }
 
-const atualizarEmAlta = async function(emAlta, id, contentType){
+const atualizarEmAlta = async function (emAlta, id, contentType) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
 
-        if(String(contentType).toUpperCase() == 'APPLICATION/JSON'){
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
 
             let resultBuscarEmAlta = await buscarEmAlta(id)
 
-            if(resultBuscarEmAlta.status){
+            if (resultBuscarEmAlta.status) {
 
                 let validar = await validarDados(emAlta)
 
-                if(!validar){
+                if (!validar) {
 
                     emAlta.id = Number(id)
 
                     let result = await emAltaDAO.updateEmAlta(emAlta)
-                    if(result){
+                    if (result) {
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATED_ITEM.status
                         customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATED_ITEM.status_code
                         customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATED_ITEM.message
 
                         return customMessage.DEFAULT_MESSAGE
-                    }else{
+                    } else {
                         return customMessage.ERROR_INTERNAL_SERVER_MODEL
                     }
-                }else{
+                } else {
                     return validar
                 }
-            }else{
+            } else {
                 return resultBuscarEmAlta
             }
-        }else{
+        } else {
             return customMessage.ERROR_CONTENT_TYPE
         }
-    }catch (error){
+    } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const listarEmAlta = async function(){
+const listarMaisPesquisados = async function(){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
+    try {
+
+        let result = await emAltaDAO.selectMaisPesquisados()
+
+        if (result !== false) {
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.response.count = result.length
+            customMessage.DEFAULT_MESSAGE.response.pesquisas = result
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const listarEmAlta = async function () {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
 
         let result = await emAltaDAO.selectAllEmAlta()
 
-        if(result){
+        if (result) {
 
-            if(result.length > 0){
+            if (result.length > 0) {
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                 customMessage.DEFAULT_MESSAGE.response.count = result.length
                 customMessage.DEFAULT_MESSAGE.response.emAlta = result
 
                 return customMessage.DEFAULT_MESSAGE
-            }else{
+            } else {
                 return customMessage.ERROR_NOT_FOUND
             }
-        
-        }else{
+
+        } else {
             return customMessage.ERROR_INTERNAL_SERVER_MODEL
         }
 
-    }catch (error){
+    } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const excluirEmAlta = async function(id){
+const excluirEmAlta = async function (id) {
     let customMessage = JSON.parse(JSON.stringify(messages))
 
     try {
 
         let resultBuscarEmAlta = await buscarEmAlta(id)
 
-        if(resultBuscarEmAlta.status){
+        if (resultBuscarEmAlta.status) {
             let result = await emAltaDAO.deleteEmAlta(id)
-            if(result){
+            if (result) {
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
 
                 return customMessage.DEFAULT_MESSAGE
-            }else{
+            } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
-        }else{
+        } else {
             return resultBuscarEmAlta
         }
-    }catch (error){
+    } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const validarDados = async function(emAlta){
+const validarDados = async function (emAlta) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    if(emAlta.pesquisa == undefined || emAlta.pesquisa == '' || emAlta.pesquisa == null){
+    if (emAlta == undefined || emAlta == '' || emAlta == null) {
         customMessage.ERROR_BAD_REQUEST.field = '[PESQUISA] INVALIDA'
         return customMessage.ERROR_BAD_REQUEST
-    }else if(emAlta.data == undefined || emAlta.data == '' || emAlta.data == null || emAlta.data.length != 10){
-        customMessage.ERROR_BAD_REQUEST.field = '[DATA] INVALIDA'
-    }else{
+    } else {
         return false
-    }    
+    }
 }
 
 module.exports = {
     inserirNovoEmAlta,
     atualizarEmAlta,
     listarEmAlta,
-    excluirEmAlta
+    excluirEmAlta,
+    listarMaisPesquisados
 }

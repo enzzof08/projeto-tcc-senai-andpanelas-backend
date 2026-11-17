@@ -2,103 +2,81 @@ const configMessages = require('../modulo/configMessages')
 
 const comentarioDAO = require('../../model/DAO/comentario/comentario')
 
-const inserirComentario =  async function(comentario, contentType){
+const inserirComentario = async function(comentario, contentType){
 
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
-
-    try{
-        if(String(contentType).toUpperCase() == 'APPLICATION/JSON'){
-
-            let validar = await validarDados(comentario)
-
-            if(validar){
-                return validar
-            }else{
-                let result = await comentarioDAO.insertComentario(comentario)
-
-                if(result){
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCESS_CREATED_ITEM.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCESS_CREATED_ITEM.status_code
-                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCESS_CREATED_ITEM.message
-
-                    return customMessage.DEFAULT_MESSAGE
-
-                }else{
-                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
-                }
-
-            }
-
-        }else{
-            return customMessage.ERROR_CONTENT_TYPE
-        }
-
-    }catch{
-        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
-    }
-}
-
-const atualizarComentario = async function(comentario, id, contentType){
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
-
-    try{
-        if(String(contentType).toUpperCase() == 'APPLICATION/JSON'){
-            let resultBuscarComentario = await buscarComentario(id)
-
-            if(resultBuscarComentario.status){
-                let validar = await validarDados(comentario)
-
-                if(!validar){
-                    comentario.id = Number(id)
-
-                    let result = await comentarioDAO.updateComentario(comentario)
-                    if(result){
-                        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATED_ITEM.status
-                        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATED_ITEM.status_code
-                        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATED_ITEM.message
-
-                        return customMessage.DEFAULT_MESSAGE
-                    }else{
-                        return customMessage.ERROR_INTERNAL_SERVER_MODEL
-                    }
-
-                }else{
-                    return validar
-                }
-
-            }else{
-                return resultBuscarComentario
-            }
-
-        }else{
-            return customMessage.ERROR_CONTENT_TYPE
-        }
-
-    }catch (error){
-        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
-    }
-}
-
-const buscarComentarioPelaReceita = async function (idReceita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        if (idReceita == undefined || String(idReceita).replaceAll(' ', '') == '' || idReceita == null || isNaN(idReceita) || idReceita <= 0) {
+
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+            let validar = await validarDados(comentario)
+
+            if (validar) {
+                return validar
+            } else {
+
+                let result = await comentarioDAO.insertComentario(comentario)
+
+                if (result) {
+
+                    comentario.id = result
+
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
+                    customMessage.DEFAULT_MESSAGE.response = comentario
+
+                    return customMessage.DEFAULT_MESSAGE
+
+                } else {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
+            }
+
+        } else {
+            return customMessage.ERROR_CONTENT_TYPE
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const buscarComentarioPelaReceita = async function(idReceita){
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (idReceita == undefined || idReceita == null || idReceita == '' || isNaN(idReceita) || !Number.isInteger(Number(idReceita)) || idReceita <= 0) {
+
             customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
+
         } else {
+
             let result = await comentarioDAO.selectComentariosPorReceita(idReceita)
-            
+
             if (result) {
+
                 if (result.length > 0) {
-                    
+
                     for (let comentario of result) {
-                        let resultUsuario = await controllerUsuario.buscarUsuario(comentario.id_usuario)
-                        if (resultUsuario.status) {
-                            comentario.usuario = resultUsuario.response.usuario
-                            delete comentario.id_usuario
+
+                        comentario.usuario = {
+                            id: comentario.id_usuario,
+                            nome: comentario.nome,
+                            username: comentario.username,
+                            foto_perfil: comentario.foto_perfil
                         }
+
+                        delete comentario.id_usuario
+                        delete comentario.nome
+                        delete comentario.username
+                        delete comentario.foto_perfil
+
                     }
 
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
@@ -107,70 +85,145 @@ const buscarComentarioPelaReceita = async function (idReceita) {
                     customMessage.DEFAULT_MESSAGE.response.comentarios = result
 
                     return customMessage.DEFAULT_MESSAGE
+
                 } else {
                     return customMessage.ERROR_NOT_FOUND
                 }
+
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
         }
+
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const excluirComentario = async function(id){
+const atualizarComentario = async function(comentario, idComentario, idUsuario, contentType){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
-        let resultBuscarComentario = await buscarComentario(id)
+    try {
 
-        if (resultBuscarComentario.status){
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
 
-            let result = await comentarioDAO.deleteComentario(id)
+            if (comentario == undefined || comentario == null || comentario.comentario == undefined || comentario.comentario == null || typeof comentario.comentario != 'string' || comentario.comentario.trim() == '') {
 
-            if(result){
+                customMessage.ERROR_BAD_REQUEST.field = '[COMENTARIO] INVALIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            } else if (idComentario == undefined || idComentario == null || idComentario == '' || isNaN(idComentario) || !Number.isInteger(Number(idComentario)) || idComentario <= 0) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[ID_COMENTARIO] INVALIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            } else if (idUsuario == undefined || idUsuario == null || idUsuario == '' || isNaN(idUsuario) || !Number.isInteger(Number(idUsuario)) || idUsuario <= 0) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVALIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            } else {
+
+                let dadosAtualizados = {
+                    id: Number(idComentario),
+                    id_usuario: Number(idUsuario),
+                    comentario: comentario.comentario.trim()
+                }
+
+                let result = await comentarioDAO.updateComentario(dadosAtualizados)
+
+                if (result) {
+
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATED_ITEM.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATED_ITEM.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATED_ITEM.message
+
+                    return customMessage.DEFAULT_MESSAGE
+
+                } else {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
+            }
+
+        } else {
+            return customMessage.ERROR_CONTENT_TYPE
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const excluirComentario = async function(idComentario, idUsuario){
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (idComentario == undefined || idComentario == null || idComentario == '' || isNaN(idComentario) || !Number.isInteger(Number(idComentario)) || idComentario <= 0) {
+
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_COMENTARIO] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+
+        } else if (idUsuario == undefined || idUsuario == null || idUsuario == '' || isNaN(idUsuario) || !Number.isInteger(Number(idUsuario)) || idUsuario <= 0) {
+
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+
+        } else {
+
+            let result = await comentarioDAO.deleteComentario(idComentario, idUsuario)
+
+            if (result) {
+
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
 
                 return customMessage.DEFAULT_MESSAGE
 
-            }else{
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            } else {
+                return customMessage.ERROR_NOT_FOUND
             }
-
-        }else{
-            return resultBuscarComentario
         }
 
-    }catch(error){
+    } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const validarDados = async function (comentario){
+const validarDados = async function(comentario){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    if (comentario.comentario == undefined || comentario.comentario == '' || comentario.comentario == null) {
-        customMessage.ERROR_BAD_REQUEST.field = '[COMENTARIO] INVÁLIDO'
+    if (comentario == undefined || comentario == null) {
+        customMessage.ERROR_BAD_REQUEST.field = '[COMENTARIO] INVALIDO'
         return customMessage.ERROR_BAD_REQUEST
-    }else if(comentario.id_receita == undefined || isNaN(comentario.id_receita) || comentario.id_receita.length < 0){
+
+    } else if (comentario.comentario == undefined || comentario.comentario == null || typeof comentario.comentario != 'string' || comentario.comentario.trim() == '') {
+        customMessage.ERROR_BAD_REQUEST.field = '[COMENTARIO] INVALIDO'
+        return customMessage.ERROR_BAD_REQUEST
+
+    } else if (comentario.id_receita == undefined || comentario.id_receita == null || isNaN(comentario.id_receita) || !Number.isInteger(Number(comentario.id_receita)) || comentario.id_receita <= 0) {
         customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVALIDO'
         return customMessage.ERROR_BAD_REQUEST
-    }else if(comentario.id_usuario == undefined || isNaN(comentario.id_usuario) || comentario.id_usuario.length < 0){
-        customMessage.ERROR_BAD_REQUEST.field = '[ID_RECEITA] INVALIDO'
+
+    } else if (comentario.id_usuario == undefined || comentario.id_usuario == null || isNaN(comentario.id_usuario) || !Number.isInteger(Number(comentario.id_usuario)) || comentario.id_usuario <= 0) {
+        customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVALIDO'
         return customMessage.ERROR_BAD_REQUEST
-    }else{
+
+    } else {
         return false
     }
 }
 
-module.exports ={
+module.exports = {
     inserirComentario,
-    atualizarComentario,
     buscarComentarioPelaReceita,
+    atualizarComentario,
     excluirComentario
 }
