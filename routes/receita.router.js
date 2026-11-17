@@ -8,6 +8,7 @@ const router = express.Router()
 const controllerReceita = require('../controller/receita/controller_receita.js')
 const controllerCurtida = require('../controller/curtida/controller_curtida.js')
 const controllerSalvo = require('../controller/salvar/controller_salvar.js')
+const controllerComentario = require('../controller/comentario/controller_comentario.js')
 
 
 

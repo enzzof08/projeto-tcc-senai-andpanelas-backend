@@ -61,8 +61,6 @@ const buscarComentarioPelaReceita = async function(idReceita){
 
             if (result) {
 
-                if (result.length > 0) {
-
                     for (let comentario of result) {
 
                         comentario.usuario = {
@@ -86,9 +84,6 @@ const buscarComentarioPelaReceita = async function(idReceita){
 
                     return customMessage.DEFAULT_MESSAGE
 
-                } else {
-                    return customMessage.ERROR_NOT_FOUND
-                }
 
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
@@ -136,9 +131,9 @@ const atualizarComentario = async function(comentario, idComentario, idUsuario, 
 
                 if (result) {
 
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATED_ITEM.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATED_ITEM.status_code
-                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATED_ITEM.message
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
 
                     return customMessage.DEFAULT_MESSAGE
 

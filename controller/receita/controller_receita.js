@@ -30,6 +30,7 @@ const tagDAO = require('../../model/DAO/tag/tag.js')
 
 const controllerCutir = require('../curtida/controller_curtida.js')
 const controllerSalvar = require('../salvar/controller_salvar.js')
+const controllerComentario = require('../comentario/controller_comentario.js')
 
 const inserirNovaReceita = async function (receita, contentType) {
 
@@ -688,6 +689,12 @@ const buscarReceita = async function (idReceita, idUsuario) {
                             return resultVerificarSalvo
                         }
                     }
+
+                    let resultComentario = await controllerComentario.buscarComentarioPelaReceita(receita.id)
+                    if (resultComentario.status) {
+                        receita.comentarios = resultComentario.response.comentarios
+                    } else
+                        return resultComentario
 
                 }
 
