@@ -4,8 +4,6 @@ const denunciaDAO = require('../../model/DAO/denuncia/denuncia.js')
 
 const controllerChefinho = require('../chefinho/controller_chefinho.js')
 
-const bcrypt = require('bcrypt')
-
 const inserirDenuncia = async function(denuncia, contentType){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
