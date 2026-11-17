@@ -17,8 +17,24 @@ create table tbl_usuario (
     descricao	    varchar(200),
     banner_url      varchar(2000),
     foto_perfil     varchar(2000),
-    
+    email_verificado boolean not null default false,
+
     CONSTRAINT UK_USUARIO_EMAIL UNIQUE (email)
+);
+
+create table tbl_codigo_verificacao (
+    id                  int not null auto_increment primary key,
+    id_usuario          int not null,
+    finalidade          enum('verificar_email', 'recuperar_senha') not null,
+    codigo_hash         varchar(255) not null,
+    data_expiracao      datetime not null,
+    tentativas          int not null default 0,
+    criado_em           datetime default current_timestamp,
+
+    CONSTRAINT UK_CODIGO_USUARIO_FINALIDADE UNIQUE (id_usuario, finalidade),
+
+    FOREIGN KEY (id_usuario) REFERENCES tbl_usuario(id)
+    ON DELETE CASCADE
 );
 
 create table tbl_em_alta (
@@ -279,16 +295,16 @@ create table tbl_comunidade (
     references tbl_categoria_principal(id)
 );
 
-create table tbl_denuncia (
-	id				int not null auto_increment primary key,
-	data_hora		datetime default current_timestamp,
-    motivo			varchar(50) not null,
-    detalhe			varchar(200),
-    id_usuario		int not null,
-    
-    constraint FK_USUARIO_DENUNCIA
-    foreign key (id_usuario)
-    references tbl_usuario(id)
+CREATE TABLE tbl_denuncia (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+    motivo VARCHAR(50) NOT NULL,
+    detalhe VARCHAR(200),
+    id_usuario INT NOT NULL,
+
+    CONSTRAINT FK_USUARIO_DENUNCIA
+    FOREIGN KEY (id_usuario)
+    REFERENCES tbl_usuario(id)
 );
 
 create table tbl_denuncia_comunidade (
@@ -390,7 +406,6 @@ create table tbl_catalogo_ingredientes (
 	id				  int not null auto_increment primary key,
 	ingrediente			  varchar(35) not null
 );
-
 
 
 insert into tbl_catalogo_ingredientes (ingrediente) values

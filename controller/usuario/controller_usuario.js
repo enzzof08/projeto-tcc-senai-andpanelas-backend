@@ -4,13 +4,18 @@ const userDAO = require('../../model/DAO/usuario/usuario.js')
 
 const controllerSeguidores = require('../seguidores/controller_seguidores.js')
 const usuarioDAO = require('../../model/DAO/usuario/usuario.js')
+const codigoVerificacaoService = require('../../service/codigoVerificacaoService.js')
+const codigoVerificacaoDAO = require('../../model/DAO/codigo_verificacao/codigoVerificacao.js')
+const emailService = require('../../service/emailService.js')
 
 const bcrypt = require('bcrypt')
+
 
 const inserirNovoUsuario = async function (dados, contentType) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+
         if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
 
             let validar = await validarDados(dados)
@@ -29,28 +34,128 @@ const inserirNovoUsuario = async function (dados, contentType) {
                     return customMessage.ERROR_BAD_REQUEST
                 }
 
-
                 if (result) {
+
+                    // Gera o código de verificação
+                    const codigo = codigoVerificacaoService.gerarCodigo()
+
+                    // Gera o hash do código
+                    const codigoHash = await codigoVerificacaoService.gerarHashCodigo(codigo)
+
+                    // Define a data de expiração
+                    const dataExpiracao = codigoVerificacaoService.gerarDataExpiracao()
+
+                    // Armazena o código no banco
+                    let resultCodigo = await codigoVerificacaoDAO.insertCodigoVerificacao({
+                        id_usuario: result,
+                        finalidade: 'verificar_email',
+                        codigo_hash: codigoHash,
+                        data_expiracao: dataExpiracao
+                    })
+
+                    if (!resultCodigo) {
+                        return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                    }
+
+                    // Envia o código por e-mail
+                    let emailEnviado = false
+
+                    try {
+
+                        await emailService.enviarCodigo(
+                            dados.email,
+                            codigo,
+                            'verificar_email'
+                        )
+
+                        emailEnviado = true
+
+                    } catch (error) {
+
+                        console.log('Erro ao enviar código:', error)
+
+                    }
+
                     dados.id = result
                     dados.senha = undefined
+
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
                     customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
                     customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
-                    customMessage.DEFAULT_MESSAGE.response = dados
+
+                    customMessage.DEFAULT_MESSAGE.response = {
+                        id: result,
+                        nome: dados.nome,
+                        username: dados.username,
+                        email: dados.email,
+                        email_verificado: false,
+                        email_enviado: emailEnviado
+                    }
 
                     return customMessage.DEFAULT_MESSAGE
+
                 } else {
                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
                 }
             }
+
         } else {
             return customMessage.ERROR_CONTENT_TYPE
         }
-    } catch (error) {
-        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
-    }
 
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
+    }
 }
+
+
+// const inserirNovoUsuario = async function (dados, contentType) {
+//     let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+//     try {
+//         if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+//             let validar = await validarDados(dados)
+
+//             if (validar) {
+//                 return validar
+//             } else {
+
+//                 const senhaHash = await bcrypt.hash(dados.senha, 10)
+//                 dados.senha = senhaHash
+
+//                 let result = await userDAO.insertUsuario(await tratarDados(dados))
+
+//                 if (result === 'DUPLICADO') {
+//                     customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] JÁ CADASTRADO'
+//                     return customMessage.ERROR_BAD_REQUEST
+//                 }
+
+
+//                 if (result) {
+//                     dados.id = result
+//                     dados.senha = undefined
+//                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
+//                     customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
+//                     customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
+//                     customMessage.DEFAULT_MESSAGE.response = dados
+
+//                     return customMessage.DEFAULT_MESSAGE
+//                 } else {
+//                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
+//                 }
+//             }
+//         } else {
+//             return customMessage.ERROR_CONTENT_TYPE
+//         }
+//     } catch (error) {
+//         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+//     }
+
+// }
 
 const loginUsuario = async function (dados, contentType) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
