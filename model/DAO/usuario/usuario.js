@@ -248,6 +248,27 @@ const selectQtdReceitasUsuario = async function(idUsuario) {
     }
 }
 
+const updateEmailVerificado = async function(idUsuario) {
+
+    try {
+
+        let sql = `update tbl_usuario
+        set email_verificado = true
+        where id = ?`
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        return true
+
+    } catch (error) {
+
+        console.log(error)
+        return false
+
+    }
+
+}
+
 module.exports = {
     insertUsuario,
     selectUsuarioByEmail,
@@ -257,5 +278,6 @@ module.exports = {
     selectAllUsuarios,
     selectQtdSeguindoUsuario,
     selectQtdReceitasUsuario,
-    selectQtdSalvosUsuario
+    selectQtdSalvosUsuario,
+    updateEmailVerificado
 }
