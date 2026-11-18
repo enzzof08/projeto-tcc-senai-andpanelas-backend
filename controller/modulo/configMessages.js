@@ -17,12 +17,13 @@ const DEFAULT_MESSAGE = {
 
 //Mensagens de ERRO do projeto de EntrePanelas
 const ERROR_BAD_REQUEST                = {status: false, status_code: 400, message: 'Não foi possível processar a requisição devido a erros de entrada'}
-const ERROR_UNAUTHORIZED              = {status: false, status_code: 401, message: 'Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.'}
+const ERROR_UNAUTHORIZED               = {status: false, status_code: 401, message: 'Acesso não autorizado porque o usuário não está autenticado ou o token de acesso não foi informado.'}
 const ERROR_NOT_FOUND                  = {status: false, status_code: 404, message: 'Não foram encontrados dados para retorno.'}
 const ERROR_CONFLICT                   = {status: false, status_code: 409, message: 'Não foi possível concluir a operação porque os dados informados entram em conflito com dados já existentes.'}
 const ERROR_CONTENT_TYPE               = {status: false, status_code: 415, message: 'Não foi possível processar os dados encaminhados, pois o formato não é suportado pelo servidor, apenas deve ser utilizado JSON.'}
 const ERROR_INTERNAL_SERVER_MODEL      = {status: false, status_code: 500, message: 'Não foi possível processar a requisição devido a um erro interno no servidor [MODEL]'}
 const ERROR_INTERNAL_SERVER_CONTROLLER = {status: false, status_code: 500, message: 'Não foi possível processar a requisição devido a um erro interno no servidor [CONTROLLER]'}
+const ERROR_INVALID_TOKEN              = { status: false, status_code: 401, message: "Token de autenticação não informado, inválido ou expirado." }
 
 //Mensagens de SUCESSO do projeto de EntrePanelas
 const SUCCESS_RESPONSE                = {status: true, status_code: 200, message: 'Ação concluida com sucesso!'}
@@ -41,6 +42,7 @@ module.exports = {
     ERROR_CONTENT_TYPE,
     ERROR_INTERNAL_SERVER_MODEL,
     ERROR_INTERNAL_SERVER_CONTROLLER,
+    ERROR_INVALID_TOKEN,
     SUCCESS_RESPONSE,
     SUCCESS_UPDATE_ITEM,
     SUCCESS_DELETED_ITEM,
