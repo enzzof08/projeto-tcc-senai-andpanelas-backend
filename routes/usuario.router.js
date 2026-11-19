@@ -10,27 +10,6 @@ const controllerSeguidor = require('../controller/seguidores/controller_seguidor
 const controllerReceita = require('../controller/receita/controller_receita.js')
 const controllerComunidadeUsuario = require('../controller/comunidade_usuario/controller_comunidade_usuario.js')
 
-router.post('/registro', bodyParserJSON, async function (request, response) {
-    let dados = request.body
-
-    let contentType = request.headers['content-type']
-
-    let result = await controllerUsuario.inserirNovoUsuario(dados, contentType)
-
-    response.status(result.status_code)
-    response.json(result)
-})
-
-router.post('/login', bodyParserJSON, async function (request, response) {
-    let dados = request.body
-
-    let contentType = request.headers['content-type']
-
-    let result = await controllerUsuario.loginUsuario(dados, contentType)
-
-    response.status(result.status_code)
-    response.json(result)
-})
 
 router.get('/', async function (request, response) {
 
