@@ -1,3 +1,5 @@
+const auth = require('../middleware/auth.js')
+
 const express = require('express')
 const bodyParser = require('body-parser')
 
@@ -7,12 +9,13 @@ const router = express.Router()
 
 const controllerEmAlta = require('../controller/em_alta/controller_em_alta')
 
-router.post('/', bodyParserJSON, async function (request, response) {
+router.post('/', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUsuario = request.id_usuario
     let dados = request.body
 
     let contentType = request.headers['content-type']
 
-    let result = await controllerEmAlta.inserirNovoEmAlta(dados, contentType)
+    let result = await controllerEmAlta.inserirNovoEmAlta(dados, contentType, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
@@ -47,10 +50,11 @@ router.get('/', async function (request, response) {
 //     response.json(result)
 // })
 
-router.delete('/:id', async function(request,response){
+router.delete('/:id', auth.verifyToken, async function(request,response){
+    let idUsuario = request.id_usuario
     let id = request.params.id
 
-    let result = await controllerEmAlta.excluirEmAlta(id)
+    let result = await controllerEmAlta.excluirEmAlta(id, idUsuario)
 
     response.status(result.status_code)
     response.json(result)

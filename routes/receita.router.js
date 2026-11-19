@@ -1,3 +1,5 @@
+const auth = require('../middleware/auth.js')
+
 const express = require('express')
 const bodyParser = require('body-parser')
 
@@ -12,36 +14,39 @@ const controllerComentario = require('../controller/comentario/controller_coment
 
 
 
-router.post('/', bodyParserJSON, async function (request, response) {
+router.post('/', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUsuario = request.id_usuario
     let dados = request.body
 
     let contentType = request.headers['content-type']
 
-    let result = await controllerReceita.inserirNovaReceita(dados, contentType)
+    let result = await controllerReceita.inserirNovaReceita(dados, contentType, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.put('/:id', bodyParserJSON, async function (request, response) {
+router.put('/:id', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUsuario = request.id_usuario
     let dados = request.body
 
     let contentType = request.headers['content-type']
 
     let id = request.params.id
 
-    let result = await controllerReceita.atualizarReceita(dados, id, contentType)
+    let result = await controllerReceita.atualizarReceita(dados, id, contentType, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.post('/busca/sugestao', bodyParserJSON, async function (request, response) {
+router.post('/busca/sugestao', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUsuario = request.id_usuario
     let dados = request.body
 
     let contentType = request.headers['content-type']
 
-    let result = await controllerChefinho.sugerirReceita(dados, contentType)
+    let result = await controllerChefinho.sugerirReceita(dados, contentType, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
@@ -104,52 +109,57 @@ router.get('/populares/semana', async function (request, response) {
     response.json(result)
 })
 
-router.delete('/:id', async function (request, response) {
+router.delete('/:id', auth.verifyToken, async function (request, response) {
+    let idUsuario = request_usuario
     let id = request.params.id
 
-    let result = await controllerReceita.excluirReceita(id)
+    let result = await controllerReceita.excluirReceita(id, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 //INTERACOES
-router.post('/:idUser/:idReceita/curtir', bodyParserJSON, async function (request, response) {
+router.post('/:idUser/:idReceita/curtir', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUsuario = request.id_usuario
     let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerCurtida.inserirCurtida(idUser, idReceita)
+    let result = await controllerCurtida.inserirCurtida(idUser, idReceita, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.delete('/:idUser/:idReceita/curtir', async function (request, response) {
+router.delete('/:idUser/:idReceita/curtir', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
     let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerCurtida.excluirCurtida(idUser, idReceita)
+    let result = await controllerCurtida.excluirCurtida(idUser, idReceita, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.post('/:idUser/:idReceita/salvar', bodyParserJSON, async function (request, response) {
+router.post('/:idUser/:idReceita/salvar', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUsuario = request.id_usuario
     let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerSalvo.inserirSalvo(idUser, idReceita)
+    let result = await controllerSalvo.inserirSalvo(idUser, idReceita, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 
-router.delete('/:idUser/:idReceita/salvar', async function (request, response) {
+router.delete('/:idUser/:idReceita/salvar', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
     let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerSalvo.excluirSalvo(idUser, idReceita)
+    let result = await controllerSalvo.excluirSalvo(idUser, idReceita, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
@@ -159,7 +169,8 @@ router.delete('/:idUser/:idReceita/salvar', async function (request, response) {
 // COMENTARIOS RECEITA
 // Inserir novo comentário
 // Inserir novo comentário
-router.post('/:idReceita/comentarios', bodyParserJSON, async function (request, response) {
+router.post('/:idReceita/comentarios', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    
 
     let idReceita = request.params.idReceita
     let idUsuario = request.query.idUsuario
@@ -169,7 +180,7 @@ router.post('/:idReceita/comentarios', bodyParserJSON, async function (request, 
     comentario.id_receita = idReceita
     comentario.id_usuario = idUsuario
 
-    let result = await controllerComentario.inserirComentario(comentario, contentType)
+    let result = await controllerComentario.inserirComentario(comentario, contentType, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
@@ -187,7 +198,7 @@ router.get('/:idReceita/comentarios', async function (request, response) {
 })
 
 // Atualizar comentário
-router.put('/comentarios/:idComentario', bodyParserJSON, async function (request, response) {
+router.put('/comentarios/:idComentario', auth.verifyToken, bodyParserJSON, async function (request, response) {
 
     let idComentario = request.params.idComentario
     let idUsuario = request.query.idUsuario
@@ -206,7 +217,7 @@ router.put('/comentarios/:idComentario', bodyParserJSON, async function (request
 })
 
 // Excluir comentário
-router.delete('/comentarios/:idComentario', async function (request, response) {
+router.delete('/comentarios/:idComentario', auth.verifyToken, async function (request, response) {
 
     let idComentario = request.params.idComentario
     let idUsuario = request.query.idUsuario
