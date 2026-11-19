@@ -29,9 +29,25 @@ const inserirNovoUsuario = async function (dados, contentType) {
 
                 let result = await userDAO.insertUsuario(await tratarDados(dados))
 
-                if (result === 'DUPLICADO') {
+                if (result === 'EMAIL_DUPLICADO') {
+
                     customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] JÁ CADASTRADO'
                     return customMessage.ERROR_BAD_REQUEST
+
+                }
+
+                if (result === 'USERNAME_DUPLICADO') {
+
+                    customMessage.ERROR_BAD_REQUEST.field = '[USERNAME] JÁ CADASTRADO'
+                    return customMessage.ERROR_BAD_REQUEST
+
+                }
+
+                if (result === 'DUPLICADO') {
+
+                    customMessage.ERROR_BAD_REQUEST.field = '[DADOS] JÁ CADASTRADOS'
+                    return customMessage.ERROR_BAD_REQUEST
+
                 }
 
                 if (result) {
@@ -266,7 +282,6 @@ const verificarEmail = async function (dados, idUsuario, contentType) {
 
 }
 
-
 const reenviarCodigo = async function (idUsuario) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -389,6 +404,7 @@ const loginUsuario = async function (dados, contentType) {
                 return validar
             } else {
                 let result = await userDAO.selectUsuarioByEmail(dados.email)
+
                 if (result) {
 
                     const senhaValida = await bcrypt.compare(dados.senha, result.senha)
@@ -402,7 +418,7 @@ const loginUsuario = async function (dados, contentType) {
                             return customMessage.ERROR_UNAUTHORIZED
 
                         }
-                        
+
                         dados.senha = undefined
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                         customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
@@ -427,6 +443,333 @@ const loginUsuario = async function (dados, contentType) {
         }
     } catch (error) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+
+}
+
+const esqueciSenha = async function (dados, contentType) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        // Verifica o Content-Type
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+            // Valida o e-mail
+            if (
+                dados == undefined ||
+                dados == null ||
+                typeof dados.email !== 'string' ||
+                dados.email.trim() == '' ||
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dados.email.trim())
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] INVÁLIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Busca o usuário pelo e-mail
+            let resultUsuario = await userDAO.selectUsuarioByEmail(dados.email.trim())
+
+            if (resultUsuario) {
+
+                // Gera um novo código
+                const codigo = codigoVerificacaoService.gerarCodigo()
+
+                const codigoHash = await codigoVerificacaoService.gerarHashCodigo(codigo)
+
+                const dataExpiracao = codigoVerificacaoService.gerarDataExpiracao()
+
+                // Insere ou atualiza o código de recuperação no banco
+                let result = await codigoVerificacaoDAO.insertCodigoVerificacao({
+                    id_usuario: resultUsuario.id,
+                    finalidade: 'recuperar_senha',
+                    codigo_hash: codigoHash,
+                    data_expiracao: dataExpiracao
+                })
+
+                if (!result) {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
+
+                // Envia o código por e-mail
+                try {
+
+                    await emailService.enviarCodigo(
+                        resultUsuario.email,
+                        codigo,
+                        'recuperar_senha'
+                    )
+
+                } catch (error) {
+
+                    console.log('Erro ao enviar código:', error)
+
+                }
+
+            }
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.message = 'SE O E-MAIL ESTIVER CADASTRADO, VOCÊ RECEBERÁ UM CÓDIGO PARA RECUPERAR SUA SENHA'
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+
+            return customMessage.ERROR_CONTENT_TYPE
+
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
+    }
+
+}
+
+const verificarCodigoRecuperacao = async function (dados, contentType) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+            // Valida os dados
+            if (
+                dados == undefined ||
+                dados == null ||
+                typeof dados.email !== 'string' ||
+                dados.email.trim() == '' ||
+                dados.codigo == undefined ||
+                dados.codigo == null ||
+                String(dados.codigo).trim() == ''
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[DADOS] INVÁLIDOS'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Busca o usuário pelo e-mail
+            let resultUsuario = await userDAO.selectUsuarioByEmail(dados.email.trim())
+
+            if (!resultUsuario) {
+                return customMessage.ERROR_UNAUTHORIZED
+            }
+
+            // Busca o código de recuperação
+            let resultCodigo = await codigoVerificacaoDAO.selectCodigoVerificacao(
+                resultUsuario.id,
+                'recuperar_senha'
+            )
+
+            if (resultCodigo === false) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            if (!resultCodigo || resultCodigo.length == 0) {
+                return customMessage.ERROR_UNAUTHORIZED
+            }
+
+            // Verifica se o código expirou
+            let dataExpiracao = new Date(resultCodigo[0].data_expiracao)
+
+            if (isNaN(dataExpiracao.getTime()) || Date.now() > dataExpiracao.getTime()) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] EXPIRADO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Verifica o limite de tentativas
+            if (Number(resultCodigo[0].tentativas) >= 5) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] LIMITE DE TENTATIVAS ATINGIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Compara o código informado com o hash armazenado
+            const codigoValido = await bcrypt.compare(
+                String(dados.codigo).trim(),
+                resultCodigo[0].codigo_hash
+            )
+
+            if (!codigoValido) {
+
+                // Incrementa a quantidade de tentativas
+                let resultTentativas = await codigoVerificacaoDAO.incrementarTentativasCodigo(
+                    resultUsuario.id,
+                    'recuperar_senha'
+                )
+
+                if (!resultTentativas) {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
+
+                return customMessage.ERROR_UNAUTHORIZED
+
+            }
+
+            // Código confirmado com sucesso
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.message = 'CÓDIGO CONFIRMADO COM SUCESSO'
+            customMessage.DEFAULT_MESSAGE.response = {
+                codigo_verificado: true
+            }
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+
+            return customMessage.ERROR_CONTENT_TYPE
+
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
+    }
+
+}
+
+const redefinirSenha = async function (dados, contentType) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+            // Valida os dados
+            if (
+                dados == undefined ||
+                dados == null ||
+                dados.email == undefined ||
+                dados.email == null ||
+                dados.email == '' ||
+                dados.codigo == undefined ||
+                dados.codigo == null ||
+                dados.codigo == '' ||
+                typeof dados.nova_senha != 'string' ||
+                dados.nova_senha.trim() == '' ||
+                dados.nova_senha.length > 15
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[DADOS] INVÁLIDOS'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Busca o usuário pelo e-mail
+            let resultUsuario = await userDAO.selectUsuarioByEmail(dados.email)
+
+            if (!resultUsuario) {
+                return customMessage.ERROR_UNAUTHORIZED
+            }
+
+            // Busca o código de recuperação
+            let resultCodigo = await codigoVerificacaoDAO.selectCodigoVerificacao(
+                resultUsuario.id,
+                'recuperar_senha'
+            )
+
+            if (resultCodigo === false) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            if (!resultCodigo || resultCodigo.length == 0) {
+                return customMessage.ERROR_UNAUTHORIZED
+            }
+
+            // Verifica se o código expirou
+            let dataExpiracao = new Date(resultCodigo[0].data_expiracao)
+
+            if (isNaN(dataExpiracao.getTime()) || Date.now() > dataExpiracao.getTime()) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] EXPIRADO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Verifica o limite de tentativas
+            if (Number(resultCodigo[0].tentativas) >= 5) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] LIMITE DE TENTATIVAS ATINGIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Confere se o código está correto
+            const codigoValido = await bcrypt.compare(
+                String(dados.codigo).trim(),
+                resultCodigo[0].codigo_hash
+            )
+
+            if (!codigoValido) {
+
+                let resultTentativas = await codigoVerificacaoDAO.incrementarTentativasCodigo(
+                    resultUsuario.id,
+                    'recuperar_senha'
+                )
+
+                if (!resultTentativas) {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
+
+                return customMessage.ERROR_UNAUTHORIZED
+
+            }
+
+            // Gera o hash da nova senha
+            const senhaHash = await bcrypt.hash(dados.nova_senha, 10)
+
+            // Atualiza a senha do usuário
+            let resultSenha = await userDAO.updateSenhaUsuario(
+                resultUsuario.id,
+                senhaHash
+            )
+
+            if (!resultSenha) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            // Exclui o código utilizado
+            let resultExcluir = await codigoVerificacaoDAO.deleteCodigoVerificacao(
+                resultUsuario.id,
+                'recuperar_senha'
+            )
+
+            if (!resultExcluir) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.message = 'SENHA ALTERADA COM SUCESSO'
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+
+            return customMessage.ERROR_CONTENT_TYPE
+
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
     }
 
 }
@@ -506,11 +849,10 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
 
+            let resultSeguidores = await usuarioDAO.selectQtdSeguidoresUsuario(idUserPerfil)
 
-            let resultSalvos = await usuarioDAO.selectQtdSalvosUsuario(idUserPerfil)
-
-            if (resultSalvos) {
-                result.qtd_salvos = resultSalvos.qtd_salvos
+            if (resultSeguidores) {
+                result.qtd_seguidores = resultSeguidores.qtd_seguidores
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
@@ -556,6 +898,7 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
+
 const listarTodosUsuarios = async function () {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -699,5 +1042,8 @@ module.exports = {
     buscarUsuariosPorNome,
     listarTodosUsuarios,
     reenviarCodigo,
-    verificarEmail
+    verificarEmail,
+    esqueciSenha,
+    verificarCodigoRecuperacao,
+    redefinirSenha
 }

@@ -19,7 +19,8 @@ create table tbl_usuario (
     foto_perfil     varchar(2000),
     email_verificado boolean not null default false,
 
-    CONSTRAINT UK_USUARIO_EMAIL UNIQUE (email)
+    CONSTRAINT UK_USUARIO_EMAIL UNIQUE (email),
+    CONSTRAINT UK_USUARIO_USERNAME UNIQUE (username)
 );
 
 create table tbl_codigo_verificacao (

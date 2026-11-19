@@ -46,6 +46,15 @@ const insertUsuario = async function (usuario) {
         console.log(error)
 
         if (error.code === 'ER_DUP_ENTRY') {
+
+            if (error.message.includes('UK_USUARIO_EMAIL')) {
+                return 'EMAIL_DUPLICADO'
+            }
+
+            if (error.message.includes('UK_USUARIO_USERNAME')) {
+                return 'USERNAME_DUPLICADO'
+            }
+
             return 'DUPLICADO'
         }
 
@@ -55,18 +64,25 @@ const insertUsuario = async function (usuario) {
 
 const selectUsuarioByEmail = async function (email) {
     try {
-        let sql = `SELECT id, email, senha
-                   FROM tbl_usuario
-                   WHERE email = '${email}'`
 
-        let result = await knexConection.raw(sql)
+        let sql = `SELECT
+                       id,
+                       email,
+                       senha,
+                       email_verificado
+                   FROM tbl_usuario
+                   WHERE email = ?`
+
+        let result = await knexConection.raw(sql, [email])
 
         if (result[0].length > 0) {
             return result[0][0]
         } else {
             return false
         }
+
     } catch (error) {
+        console.log(error)
         return false
     }
 }
@@ -204,12 +220,13 @@ const selectQtdSeguindoUsuario = async function(idUsuario) {
     }
 }
 
-const selectQtdSalvosUsuario = async function(idUsuario) {
+const selectQtdSeguidoresUsuario = async function(idUsuario) {
     try {
+
         let sql = `
-            SELECT COUNT(*) AS qtd_salvos
-            FROM tbl_salvo
-            WHERE id_usuario = ?;
+            SELECT COUNT(*) AS qtd_seguidores
+            FROM tbl_seguindo_seguidor
+            WHERE id_seguindo = ?;
         `
 
         let result = await knexConection.raw(sql, [idUsuario])
@@ -269,6 +286,30 @@ const updateEmailVerificado = async function(idUsuario) {
 
 }
 
+const updateSenhaUsuario = async function (idUsuario, senha) {
+
+    try {
+
+        let sql = `UPDATE tbl_usuario SET
+            senha = ?
+        WHERE id = ?`
+
+        let result = await knexConection.raw(sql, [
+            senha,
+            idUsuario
+        ])
+
+        return true
+
+    } catch (error) {
+
+        console.log(error)
+        return false
+
+    }
+
+}
+
 module.exports = {
     insertUsuario,
     selectUsuarioByEmail,
@@ -278,6 +319,7 @@ module.exports = {
     selectAllUsuarios,
     selectQtdSeguindoUsuario,
     selectQtdReceitasUsuario,
-    selectQtdSalvosUsuario,
-    updateEmailVerificado
+    selectQtdSeguidoresUsuario,
+    updateEmailVerificado,
+    updateSenhaUsuario
 }
