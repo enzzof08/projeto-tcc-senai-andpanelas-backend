@@ -7,6 +7,7 @@ const usuarioDAO = require('../../model/DAO/usuario/usuario.js')
 const codigoVerificacaoService = require('../../service/codigoVerificacaoService.js')
 const codigoVerificacaoDAO = require('../../model/DAO/codigo_verificacao/codigoVerificacao.js')
 const emailService = require('../../service/emailService.js')
+const jwtService = require('../../middleware/middlewareJWT.js')
 
 const bcrypt = require('bcrypt')
 
@@ -418,6 +419,8 @@ const loginUsuario = async function (dados, contentType) {
                             return customMessage.ERROR_UNAUTHORIZED
 
                         }
+                        
+                        let token = jwtService.createJWT(result.id)
 
                         dados.senha = undefined
                         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
@@ -427,7 +430,8 @@ const loginUsuario = async function (dados, contentType) {
                             id: result.id,
                             nome: result.nome,
                             username: result.username,
-                            email: result.email
+                            email: result.email,
+                            token: token
                         }
 
                         return customMessage.DEFAULT_MESSAGE //201
