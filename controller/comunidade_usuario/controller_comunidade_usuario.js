@@ -2,7 +2,7 @@ const configMessages = require('../modulo/configMessages')
 
 const comunidadeUsuarioDAO = require('../../model/DAO/comunidade_usuario/comunidade_usuario')
 
-const inserirNovaComunidadeUsuario = async function (idUser, idComunidade){
+const inserirNovaComunidadeUsuario = async function (idUser, idComunidade, ehCriador = false){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try{
@@ -12,7 +12,7 @@ const inserirNovaComunidadeUsuario = async function (idUser, idComunidade){
         if(validar){
             return validar
         }else{
-            let result = await comunidadeUsuarioDAO.insertComunidadeUsuario(idUser, idComunidade)
+            let result = await comunidadeUsuarioDAO.insertComunidadeUsuario(idUser, idComunidade, ehCriador)
 
             if (result === 'DUPLICADO') {
                 customMessage.ERROR_BAD_REQUEST.field = 'USUARIO JA PARTICIPA DESTA COMUNIDADE'
@@ -93,6 +93,53 @@ const buscarUsuariosPorComunidade = async function (idComunidade){
     }
 }
 
+const buscarCriadorPorComunidade = async function (idComunidade) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (
+            idComunidade == undefined ||
+            idComunidade == null ||
+            idComunidade == '' ||
+            isNaN(idComunidade) ||
+            !Number.isInteger(Number(idComunidade)) ||
+            Number(idComunidade) <= 0
+        ) {
+
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_COMUNIDADE] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+
+        } else {
+
+            let result = await comunidadeUsuarioDAO.selectCriadorByIdComunidade(idComunidade)
+
+            if (result === false) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            if (!result) {
+                return customMessage.ERROR_NOT_FOUND
+            }
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.response = result
+
+            return customMessage.DEFAULT_MESSAGE
+
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
+    }
+
+}
+
 const excluirComunidadeUsuario = async function (idUsuario, idComunidade) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -165,5 +212,6 @@ module.exports ={
     buscarUsuariosPorComunidade,
     excluirComunidadeUsuario,
     excluirComunidadeUsuario,
-    verificarComunidadeUsuario
+    verificarComunidadeUsuario,
+    buscarCriadorPorComunidade
 }

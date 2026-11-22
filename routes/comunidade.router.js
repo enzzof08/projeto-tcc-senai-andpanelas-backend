@@ -11,16 +11,16 @@ const controllerComunidade = require('../controller/comunidade/controller_comuni
 const controllerComunidadeReceita = require('../controller/receita/controller_comunidade_receita.js')
 const controllerComunidadeUsuario = require('../controller/comunidade_usuario/controller_comunidade_usuario.js')
 
-router.post('/:idUser', auth.verifyToken, bodyParserJSON, async function (request, response) {
-    let idUsuario = request.id_usuario
+router.post('/', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let idUser = request.id_usuario
 
     let dados = request.body
 
-    let idUser = request.params.idUser
+    //let idUser = request.params.idUser
 
     let contentType = request.headers['content-type']
 
-    let result = await controllerComunidade.inserirNovaComunidade(dados, idUser, contentType, idUsuario)
+    let result = await controllerComunidade.inserirNovaComunidade(dados, idUser, contentType)
 
     response.status(result.status_code)
     response.json(result)
@@ -82,12 +82,12 @@ router.get('/:id/receitas', async function (request, response) {
 
 
 //USUARIO INTERACOES
-router.post('/:idUser/:idComunidade/entrar', auth.verifyToken, async function (request, response) {
-    let idUsuario = request.id_usuario
+router.post('/:idUser/:idComunidade/entrar' , async function (request, response) {
+    //let idUsuario = request.id_usuario
     let idUser = request.params.idUser
     let idComunidade = request.params.idComunidade
 
-    let result = await controllerComunidadeUsuario.inserirNovaComunidadeUsuario(idUser, idComunidade, idUsuario)
+    let result = await controllerComunidadeUsuario.inserirNovaComunidadeUsuario(idUser, idComunidade)
 
     response.status(result.status_code)
     response.json(result)

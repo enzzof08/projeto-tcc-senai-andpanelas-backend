@@ -9,12 +9,11 @@ const router = express.Router()
 
 const controllerListaCompra = require('../controller/lista_compra/controller_lista_compra.js')
 
-router.post('/receita/:idUsuario/:idReceita', auth.verifyToken, bodyParserJSON, async function (request, response) {
+router.post('/receita/:idReceita', auth.verifyToken, bodyParserJSON, async function (request, response) {
     let idUsuario = request.id_usuario
     let receita = request.params.idReceita
-    let usuario = request.params.idUsuario
 
-    let result = await controllerListaCompra.inserirListaCompra(usuario, receita, idUsuario)
+    let result = await controllerListaCompra.inserirListaCompra(idUsuario, receita)
 
     response.status(result.status_code)
     response.json(result)

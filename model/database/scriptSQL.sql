@@ -372,6 +372,7 @@ create table tbl_comunidade_usuario (
 	id			  int not null auto_increment primary key,
 	id_comunidade int not null,
     id_usuario    int not null,
+    eh_criador      BOOLEAN NOT NULL DEFAULT FALSE,
     
     UNIQUE (id_comunidade, id_usuario),
     

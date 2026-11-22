@@ -218,12 +218,14 @@ const verificarEmail = async function (dados, idUsuario, contentType) {
                                 )
 
                                 if (resultExcluir) {
+                                    let token = jwtService.createJWT(idUsuario)
 
                                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
                                     customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
                                     customMessage.DEFAULT_MESSAGE.message = 'E-MAIL VERIFICADO COM SUCESSO'
                                     customMessage.DEFAULT_MESSAGE.response = {
-                                        email_verificado: true
+                                        email_verificado: true,
+                                        token: token
                                     }
 
                                     return customMessage.DEFAULT_MESSAGE

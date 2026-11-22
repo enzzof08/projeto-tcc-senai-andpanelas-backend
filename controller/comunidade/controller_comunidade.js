@@ -25,7 +25,8 @@ const inserirNovaComunidade = async function (comunidade, idUsuario, contentType
                     // Associa o criador à comunidade
                     let resultComunidadeUsuario = await controllerComunidadeUsuario.inserirNovaComunidadeUsuario(
                         idUsuario,
-                        result
+                        result,
+                        true
                     )
 
                     if (!resultComunidadeUsuario.status) {
@@ -116,7 +117,7 @@ const listarComunidade = async function (idUsuario) {
 
                 if (idUsuario != undefined) {
                     for (comunidade of result) {
-        
+
                         let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUsuario, comunidade.id)
                         if (resultParticipando.status) {
                             comunidade.participando = resultParticipando.response.participando
@@ -153,7 +154,7 @@ const buscarComunidade = async function (idUser, idComunidade) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_COMUNIDADE] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
 
-        }else if(idUser !== undefined && (idUser == null || idUser == '' || isNaN(idUser) || !Number.isInteger(Number(idUser)) || idUser <= 0 || String(idComunidade).replaceAll('', '') == '')){
+        } else if (idUser !== undefined && (idUser == null || idUser == '' || isNaN(idUser) || !Number.isInteger(Number(idUser)) || idUser <= 0 || String(idComunidade).replaceAll('', '') == '')) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
 
@@ -163,15 +164,23 @@ const buscarComunidade = async function (idUser, idComunidade) {
             if (result) {
 
                 if (result.length > 0) {
+                    
+                    let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
+
+                    if (resultCriador.status) {
+                        result[0].criador = resultCriador.response
+                    } else {
+                        return resultCriador
+                    }
 
                     if (idUser != undefined) {
                         for (comunidade of result) {
-            
+
                             let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUser, comunidade.id)
                             if (resultParticipando.status) {
                                 comunidade.participando = resultParticipando.response.participando
                             } else
-                                return resultUsuario
+                                return resultParticipando
                         }
                     }
 

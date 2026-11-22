@@ -4,14 +4,20 @@ const knexDatabaseConfig = require('../../database_config/knexConfig')
 
 const knexConection = knex(knexDatabaseConfig.development)
 
-const insertComunidadeUsuario = async function (idUser, idComunidade) {
+const insertComunidadeUsuario = async function (idUser, idComunidade, ehCriador = false) {
     try {
+
         let sql = `INSERT INTO tbl_comunidade_usuario (
             id_comunidade,
-            id_usuario
-        ) VALUES (?, ?);`
+            id_usuario,
+            eh_criador
+        ) VALUES (?, ?, ?);`
 
-        let result = await knexConection.raw(sql, [idComunidade, idUser])
+        let result = await knexConection.raw(sql, [
+            idComunidade,
+            idUser,
+            ehCriador
+        ])
 
         if (result[0].affectedRows > 0) {
             return result[0].insertId
@@ -25,7 +31,7 @@ const insertComunidadeUsuario = async function (idUser, idComunidade) {
         if (error.code === 'ER_DUP_ENTRY') {
             return 'DUPLICADO'
         }
-        
+
         return false
     }
 }
@@ -126,10 +132,42 @@ const selectVerificarComunidadeUsuario = async function(idUsuario, idComunidade)
     }
 }
 
+const selectCriadorByIdComunidade = async function(idComunidade) {
+    try {
+
+        let sql = `
+            SELECT
+                tbl_usuario.id,
+                tbl_usuario.nome,
+                tbl_usuario.username,
+                tbl_usuario.foto_perfil
+            FROM tbl_comunidade_usuario
+                INNER JOIN tbl_usuario
+                    ON tbl_usuario.id = tbl_comunidade_usuario.id_usuario
+            WHERE tbl_comunidade_usuario.id_comunidade = ?
+            AND tbl_comunidade_usuario.eh_criador = TRUE
+            LIMIT 1;
+        `
+
+        let result = await knexConection.raw(sql, [idComunidade])
+
+        if (Array.isArray(result)) {
+            return result[0].length > 0 ? result[0][0] : null
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 module.exports = {
     insertComunidadeUsuario,
     selectComunidadeByIdUsuario,
     selectUsuarioByIdComunidade,
     deleteComunidadeUsuario,
-    selectVerificarComunidadeUsuario
+    selectVerificarComunidadeUsuario,
+    selectCriadorByIdComunidade
 }
