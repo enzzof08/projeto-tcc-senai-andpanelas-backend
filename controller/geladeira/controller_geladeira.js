@@ -82,6 +82,7 @@ const listarGeladeiraIngredientes = async function (idUsuario) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+        console.log(idUsuario)
 
         if (idUsuario == undefined || idUsuario == '' || idUsuario == null || isNaN(idUsuario) || idUsuario <= 0) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
@@ -89,6 +90,7 @@ const listarGeladeiraIngredientes = async function (idUsuario) {
         }
 
         let result = await geladeiraDAO.selectALLGeladeiraIngrediente(idUsuario)
+        console.log(result)
 
         if (result) {
             if (result.length > 0) {
@@ -113,32 +115,39 @@ const listarGeladeiraIngredientes = async function (idUsuario) {
     }
 }
 
-const excluirGeladeirasIngredientes = async function (idGeladeiraIngrediente) {
+
+const excluirGeladeirasIngredientes = async function (idGeladeiraIngrediente, idUsuario) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
 
-        let resultBuscarIngrediente = await buscarGeladeiraIngrediente(idGeladeiraIngrediente)
+        // Verifica se o ingrediente pertence ao usuário
+        let resultBuscarIngrediente = await buscarGeladeiraIngrediente(
+            idGeladeiraIngrediente,
+            idUsuario
+        )
 
         if (resultBuscarIngrediente.status) {
 
-            let result = await geladeiraDAO.deleteGeladeiraIngrediente(idGeladeiraIngrediente)
+            let result = await geladeiraDAO.deleteGeladeiraIngrediente(
+                idGeladeiraIngrediente,
+                idUsuario
+            )
 
             if (result) {
-                if (result.length > 0) {
 
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
-                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
 
-                    return customMessage.DEFAULT_MESSAGE
-                } else {
-                    return customMessage.ERROR_NOT_FOUND
-                }
+                return customMessage.DEFAULT_MESSAGE
+
+
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
+
         } else {
             return resultBuscarIngrediente
         }
@@ -149,18 +158,44 @@ const excluirGeladeirasIngredientes = async function (idGeladeiraIngrediente) {
     }
 }
 
-const buscarGeladeiraIngrediente = async function (id) {
+
+const buscarGeladeiraIngrediente = async function (id, idUsuario) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        if (id == undefined || String(id).replaceAll('', '') == '' || id == null || isNaN(id) || id <= 0) {
+
+        if (
+            id == undefined ||
+            id == null ||
+            id == '' ||
+            isNaN(id) ||
+            !Number.isInteger(Number(id)) ||
+            Number(id) <= 0
+        ) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_GELADEIRA_INGREDIENTE] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
+
+        } else if (
+            idUsuario == undefined ||
+            idUsuario == null ||
+            idUsuario == '' ||
+            isNaN(idUsuario) ||
+            !Number.isInteger(Number(idUsuario)) ||
+            Number(idUsuario) <= 0
+        ) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVALIDO'
+            return customMessage.ERROR_BAD_REQUEST
+
         } else {
-            let result = await geladeiraDAO.selectGeladeiraIngredienteByID(id)
+
+            let result = await geladeiraDAO.selectGeladeiraIngredienteByID(
+                id,
+                idUsuario
+            )
 
             if (result) {
+
                 if (result.length > 0) {
 
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
@@ -168,14 +203,18 @@ const buscarGeladeiraIngrediente = async function (id) {
                     customMessage.DEFAULT_MESSAGE.response.geladeira_ingrediente = result
 
                     return customMessage.DEFAULT_MESSAGE
+
                 } else {
                     return customMessage.ERROR_NOT_FOUND
                 }
+
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
         }
+
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }

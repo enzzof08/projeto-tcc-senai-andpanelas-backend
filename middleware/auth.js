@@ -15,6 +15,7 @@ const verifyToken = function (request, response, next) {
 
     let autenticidadeToken = jwt.validateJWT(token)
 
+
     if (!autenticidadeToken || !Number.isInteger(autenticidadeToken.id_usuario) || autenticidadeToken.id_usuario < 1) {
         return response
             .status(configMessages.ERROR_INVALID_TOKEN.status_code)

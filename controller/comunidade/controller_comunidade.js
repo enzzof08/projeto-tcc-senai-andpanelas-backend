@@ -57,43 +57,63 @@ const inserirNovaComunidade = async function (comunidade, idUsuario, contentType
     }
 }
 
-const atualizarComunidade = async function (comunidade, id, contentType) {
+const atualizarComunidade = async function (comunidade, idUsuario, idComunidade, contentType) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+
         if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
 
-            let resultBuscarComunidade = await buscarComunidade(id)
+            let resultBuscarComunidade = await comunidadeDAO.selectComunidadeById(idComunidade)
 
-            if (resultBuscarComunidade.status) {
+            if (resultBuscarComunidade === false) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
 
-                let validar = await validarDados(comunidade)
+            if (!resultBuscarComunidade || resultBuscarComunidade.length == 0) {
+                return customMessage.ERROR_NOT_FOUND
+            }
 
-                if (!validar) {
+            let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
 
-                    comunidade.id = Number(id)
+            if (!resultCriador.status) {
+                return resultCriador
+            }
 
-                    let result = await comunidadeDAO.updateComunidade(await tratarDados(comunidade))
+            // Verifica se o usuário logado é o criador
+            if (Number(resultCriador.response.id) !== Number(idUsuario)) {
+                customMessage.ERROR_FORBIDDEN.field = '[COMUNIDADE] SOMENTE O CRIADOR PODE EDITAR'
+                return customMessage.ERROR_FORBIDDEN
+            }
 
-                    if (result) {
-                        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
-                        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
-                        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
-                        customMessage.DEFAULT_MESSAGE.response = comunidade
+            // Valida os dados da comunidade
+            let validar = await validarDados(comunidade)
 
-                        return customMessage.DEFAULT_MESSAGE
-                    } else {
-                        return customMessage.ERROR_INTERNAL_SERVER_MODEL
-                    }
+            if (!validar) {
+
+                comunidade.id = Number(idComunidade)
+
+                let result = await comunidadeDAO.updateComunidade(await tratarDados(comunidade))
+
+                if (result) {
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_UPDATE_ITEM.message
+                    customMessage.DEFAULT_MESSAGE.response = comunidade
+
+                    return customMessage.DEFAULT_MESSAGE
+
                 } else {
-                    return validar
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
                 }
 
             } else {
-                return resultBuscarComunidade
+                return validar
             }
 
+        } else {
+            return customMessage.ERROR_CONTENT_TYPE
         }
 
     } catch (error) {
@@ -114,9 +134,25 @@ const listarComunidade = async function (idUsuario) {
 
         if (result) {
             if (result.length > 0) {
+                delete result[0].id_categoria_principal
 
                 if (idUsuario != undefined) {
+
                     for (comunidade of result) {
+
+                        let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(comunidade.id)
+
+                        if (resultCriador.status) {
+                            result[0].criador = resultCriador.response
+                        } else {
+                            return resultCriador
+                        }
+
+                        result[0].sou_criador = false
+
+                        if (Number(idUsuario) == Number(resultCriador.response.id)) {
+                            result[0].sou_criador = true
+                        }
 
                         let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUsuario, comunidade.id)
                         if (resultParticipando.status) {
@@ -164,17 +200,27 @@ const buscarComunidade = async function (idUser, idComunidade) {
             if (result) {
 
                 if (result.length > 0) {
-                    
-                    let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
 
-                    if (resultCriador.status) {
-                        result[0].criador = resultCriador.response
-                    } else {
-                        return resultCriador
-                    }
+                    for (comunidade of result) {
+                        delete result[0].id_categoria_principal
 
-                    if (idUser != undefined) {
-                        for (comunidade of result) {
+                        let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
+
+                        if (resultCriador.status) {
+                            result[0].criador = resultCriador.response
+                        } else {
+                            return resultCriador
+                        }
+
+                        // Verifica se o usuário logado é o criador
+                        if (idUser != undefined) {
+                            result[0].sou_criador = false
+
+                            if (Number(idUser) == Number(resultCriador.response.id)) {
+                                result[0].sou_criador = true
+                            }
+
+
 
                             let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUser, comunidade.id)
                             if (resultParticipando.status) {
@@ -202,31 +248,86 @@ const buscarComunidade = async function (idUser, idComunidade) {
     }
 }
 
-const excluirComunidade = async function (id) {
+
+const excluirComunidade = async function (idUsuario, idComunidade) {
+
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        let resultBuscarComunidade = await buscarComunidade(id)
 
-        if (resultBuscarComunidade.status) {
-            let result = await comunidadeDAO.deleteComunidade(id)
-            if (result) {
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
-                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+        // Busca a comunidade
+        let resultBuscarComunidade = await comunidadeDAO.selectComunidadeById(idComunidade)
 
-                return customMessage.DEFAULT_MESSAGE
-            } else {
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
-            }
+        if (resultBuscarComunidade === false) {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
+
+        if (resultBuscarComunidade.length == 0) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        // Busca o criador da comunidade
+        let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
+
+        if (!resultCriador.status) {
+            return resultCriador
+        }
+
+        // Verifica se o usuário logado é o criador
+        if (Number(resultCriador.response.id) !== Number(idUsuario)) {
+
+            customMessage.ERROR_FORBIDDEN.field = '[COMUNIDADE] SOMENTE O CRIADOR PODE EXCLUIR'
+
+            return customMessage.ERROR_FORBIDDEN
+
+        }
+
+        // Exclui a comunidade
+        let result = await comunidadeDAO.deleteComunidade(idComunidade)
+
+        if (result) {
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+            customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+
+            return customMessage.DEFAULT_MESSAGE
+
         } else {
-            return resultBuscarComunidade
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
         }
 
     } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
+
+// const excluirComunidade = async function (id) {
+//     let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+//     try {
+//         let resultBuscarComunidade = await buscarComunidade(id)
+
+//         if (resultBuscarComunidade.status) {
+//             let result = await comunidadeDAO.deleteComunidade(id)
+//             if (result) {
+//                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+//                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+//                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+
+//                 return customMessage.DEFAULT_MESSAGE
+//             } else {
+//                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
+//             }
+//         } else {
+//             return resultBuscarComunidade
+//         }
+
+//     } catch (error) {
+//         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+//     }
+// }
 
 const validarDados = async function (comunidade) {
 

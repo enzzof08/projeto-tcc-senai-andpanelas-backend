@@ -47,7 +47,7 @@ const comunidadeRouter = require('./routes/comunidade.router.js')
 app.use('/v1/entrepanelas/comunidades', cors(), comunidadeRouter)
 
 const geladeiraRouter = require('./routes/geladeira.router.js')
-app.use('/v1/entrepanelas/usuarios/me/geladeira', cors(), geladeiraRouter)
+app.use('/v1/entrepanelas/geladeira/me/usuario', cors(), geladeiraRouter)
 
 const categoriaRouter = require('./routes/categoria.router.js')
 app.use('/v1/entrepanelas/categoria', cors(), categoriaRouter)
@@ -83,7 +83,7 @@ const seguidoresRouter = require('./routes/seguidores.routes.js')
 app.use('/v1/entrepanelas/seguidores', cors(), seguidoresRouter)
 
 const listaCompraRouter = require('./routes/lista_compra.router.js')
-app.use('/v1/entrepanelas/usuarios/me/lista-compras', cors(), listaCompraRouter)
+app.use('/v1/entrepanelas/lista-compras/me/usuario', cors(), listaCompraRouter)
 
 const comunidadeUsuarioRouter = require('./routes/comunidade_usuario.router.js')
 app.use('/v1/entrepanelas/comunidade_usuario', cors(), comunidadeUsuarioRouter)
