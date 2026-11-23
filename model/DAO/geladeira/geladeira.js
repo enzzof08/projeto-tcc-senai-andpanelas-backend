@@ -32,7 +32,7 @@ const insertGeladeiraIngrediente = async function (ingrediente) {
 
 const selectALLGeladeiraIngrediente = async function (idUsuario) {
     try {
-        let sql = `SELECT nome_ingrediente
+        let sql = `SELECT id, nome_ingrediente
                    FROM tbl_geladeira_ingrediente
                    WHERE id_usuario = ${idUsuario}`
 
@@ -49,13 +49,20 @@ const selectALLGeladeiraIngrediente = async function (idUsuario) {
     }
 }
 
-const selectGeladeiraIngredienteByID = async function (idGeladeiraIngrediente) {
+
+const selectGeladeiraIngredienteByID = async function (idGeladeiraIngrediente, idUsuario) {
     try {
-        let sql = `select * FROM tbl_geladeira_ingrediente
-                   WHERE id = ${idGeladeiraIngrediente}
+
+        let sql = `SELECT *
+                   FROM tbl_geladeira_ingrediente
+                   WHERE id = ?
+                   AND id_usuario = ?
                    ORDER BY id DESC`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [
+            idGeladeiraIngrediente,
+            idUsuario
+        ])
 
         if (Array.isArray(result)) {
             return result[0]
@@ -64,18 +71,24 @@ const selectGeladeiraIngredienteByID = async function (idGeladeiraIngrediente) {
         }
 
     } catch (error) {
+        console.log(error)
         return false
     }
 }
 
 
 
-const deleteGeladeiraIngrediente = async function (idIngrediente) {
+const deleteGeladeiraIngrediente = async function (idIngrediente, idUsuario) {
     try {
 
-        let sql = `DELETE FROM tbl_geladeira_ingrediente WHERE id = ${idIngrediente}`
+        let sql = `DELETE FROM tbl_geladeira_ingrediente
+                   WHERE id = ?
+                   AND id_usuario = ?`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [
+            idIngrediente,
+            idUsuario
+        ])
 
         if (result) {
             return result[0]

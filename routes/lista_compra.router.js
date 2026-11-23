@@ -19,8 +19,8 @@ router.post('/receita/:idReceita', auth.verifyToken, bodyParserJSON, async funct
     response.json(result)
 })
 
-router.get('/receitas/:idUser' , async function (request, response) {
-    let idUsuario = request.params.idUser
+router.get('/receitas' , auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
 
     let result = await controllerListaCompra.listarReceitasListaCompra(idUsuario)
 
@@ -28,8 +28,8 @@ router.get('/receitas/:idUser' , async function (request, response) {
     response.json(result)
 })
 
-router.get('/receitas/:idUser/:idReceita' , async function (request, response) {
-    let idUsuario = request.params.idUser
+router.get('/receitas/:idReceita' , auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
     let idReceita = request.params.idReceita
     let status = request.query.status
 
@@ -39,24 +39,24 @@ router.get('/receitas/:idUser/:idReceita' , async function (request, response) {
     response.json(result)
 })
 
-router.put('/:idUser/:idLista/:idStatus' , auth.verifyToken, async function (request, response) {
+router.put('/:idLista/:idStatus' , auth.verifyToken, async function (request, response) {
     let idLista = request.params.idLista
-    let idUsuario = request.params.idUser
+    let idUsuario = request.id_usuario
     let idStatus = request.params.idStatus
 
     console.log(idUsuario)
 
-    let result = await controllerListaCompra.atualizarStatusListaCompra(idLista, idUsuario, idStatus, idUsuario)
+    let result = await controllerListaCompra.atualizarStatusListaCompra(idLista, idUsuario, idStatus)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.delete('/:idUser/:idReceita' , auth.verifyToken, async function (request, response) {
-    let idUsuario = request.params.idUser
+router.delete('/:idReceita' , auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
     let idReceita = request.params.idReceita
 
-    let result = await controllerListaCompra.excluirReceitaListaCompra(idUsuario, idReceita, idUsuario)
+    let result = await controllerListaCompra.excluirReceitaListaCompra(idUsuario, idReceita)
 
     response.status(result.status_code)
     response.json(result)

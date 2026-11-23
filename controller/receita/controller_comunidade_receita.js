@@ -11,6 +11,8 @@ const controllerDificuldade = require('../dificuldade/controller_dificuldade.js'
 const controllerCusto = require('../custo/controller_custo.js')
 
 const controllerPorcao = require('../porcao/controller_porcao.js')
+const controllerCutir = require('../curtida/controller_curtida.js')
+const controllerSalvar = require('../salvar/controller_salvar.js')
 
 const inserirNovaComunidadeReceita = async function (comunidadeReceita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -76,7 +78,7 @@ const buscarComunidadePorReceita = async function (idReceita) {
     }
 }
 
-const buscarReceitaPorComunidade = async function (idComunidade) {
+const buscarReceitaPorComunidade = async function (idUser, idComunidade) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
@@ -88,64 +90,88 @@ const buscarReceitaPorComunidade = async function (idComunidade) {
 
             if (result) {
 
-            if (result.length > 0) {
+                if (result.length > 0) {
 
-                for (receita of result) {
+                    for (receita of result) {
 
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else
-                        return resultUsuario
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else
-                        return resultDificuldade
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-
-                    } else
-                        return resultCategoria
+                        let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
+                        if (resultUsuario.status) {
+                            receita.usuario = resultUsuario.response.usuario
+                            delete receita.id_usuario
+                        } else
+                            return resultUsuario
 
 
+                        let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
+                        if (resultDificuldade.status) {
+                            receita.dificuldade = resultDificuldade.response.dificuldade
+                            delete receita.id_dificuldade
+                        } else
+                            return resultDificuldade
+
+                        let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
+                        if (resultCategoria.status) {
+                            receita.categoria = resultCategoria.response.categoria
+
+                        } else
+                            return resultCategoria
+
+                        let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
+                        //console.log(resultCusto)
+                        if (resultCusto.status) {
+                            receita.custo = resultDificuldade.response.custo
+                            delete receita.id_custo
+                        } else
+                            return resultCusto
 
 
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-                    //console.log(resultCusto)
-                    if (resultCusto.status) {
-                        receita.custo = resultDificuldade.response.custo
-                        delete receita.id_custo
-                    } else
-                        return resultCusto
+                        let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
+                        if (resultPorcao.status) {
+                            receita.porcao = resultPorcao.response.porcao
+                            delete receita.id_porcao
+                        } else
+                            return resultPorcao
+
+                        if (idUser != undefined) {
+
+                            let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
+                                idUser,
+                                receita.id
+                            )
+
+                            if (resultVerificarCurtida.status) {
+                                receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
+                            } else {
+                                return resultVerificarCurtida
+                            }
 
 
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else
-                        return resultPorcao
 
+                            let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
+                                idUser,
+                                receita.id
+                            )
+
+                            if (resultVerificarSalvo.status) {
+                                receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
+                            } else {
+                                return resultVerificarSalvo
+                            }
+                        }
+
+                    }
+
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+                    customMessage.DEFAULT_MESSAGE.response.count = result.length
+                    customMessage.DEFAULT_MESSAGE.response.receitas = result
+
+                    return customMessage.DEFAULT_MESSAGE // 200
+
+                } else {
+                    return customMessage.ERROR_NOT_FOUND //404
                 }
-
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                return customMessage.DEFAULT_MESSAGE // 200
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND //404
-            }
 
             } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL

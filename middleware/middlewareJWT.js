@@ -17,7 +17,7 @@ const createJWT = function (idUsuario) {
     const EXPIRES = calcularTempoExpiracao()
 
     const token = jwt.sign(
-        { id_usuario: idUsuario },
+        { id_usuario: Number(idUsuario) },
         SECRET,
         {
             expiresIn: EXPIRES,

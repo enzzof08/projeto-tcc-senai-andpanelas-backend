@@ -13,6 +13,7 @@ router.post('/', auth.verifyToken, bodyParserJSON, async function (request, resp
     let idUsuario = request.id_usuario
     
     let dados = request.body
+    dados.id_usuario = Number(idUsuario)
 
     let contentType = request.headers['content-type']
 
@@ -22,8 +23,8 @@ router.post('/', auth.verifyToken, bodyParserJSON, async function (request, resp
     response.json(result)
 })
 
-router.get('/receitas/compatibilidade/:id' , async function (request, response) {
-    let idUsuario = request.params.id
+router.get('/receitas/compatibilidade', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
 
     let result = await controllerGeladeira.buscarGeladeiraUsuarioReceitas(idUsuario)
 
@@ -32,8 +33,8 @@ router.get('/receitas/compatibilidade/:id' , async function (request, response) 
 })
 
 
-router.get('/:id', async function (request, response) {
-    let idUsuario = request.params.id
+router.get('/', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
 
     let result = await controllerGeladeira.listarGeladeiraIngredientes(idUsuario)
 
@@ -43,9 +44,9 @@ router.get('/:id', async function (request, response) {
 
 router.delete('/:id', auth.verifyToken, async function(request,response){
     let idUsuario = request.id_usuario
-    let id = request.params.id
+    let idIngrediente = request.params.id
 
-    let result = await controllerGeladeira.excluirGeladeirasIngredientes(id, idUsuario)
+    let result = await controllerGeladeira.excluirGeladeirasIngredientes(idIngrediente, idUsuario)
 
     response.status(result.status_code)
     response.json(result)

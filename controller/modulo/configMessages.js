@@ -24,6 +24,7 @@ const ERROR_CONTENT_TYPE               = {status: false, status_code: 415, messa
 const ERROR_INTERNAL_SERVER_MODEL      = {status: false, status_code: 500, message: 'Não foi possível processar a requisição devido a um erro interno no servidor [MODEL]'}
 const ERROR_INTERNAL_SERVER_CONTROLLER = {status: false, status_code: 500, message: 'Não foi possível processar a requisição devido a um erro interno no servidor [CONTROLLER]'}
 const ERROR_INVALID_TOKEN              = { status: false, status_code: 401, message: "Token de autenticação não informado, inválido ou expirado." }
+const ERROR_FORBIDDEN = { status: false, status_code: 403, message: "Usuário autenticado não possui permissão para realizar esta ação." }
 
 //Mensagens de SUCESSO do projeto de EntrePanelas
 const SUCCESS_RESPONSE                = {status: true, status_code: 200, message: 'Ação concluida com sucesso!'}
@@ -47,5 +48,6 @@ module.exports = {
     SUCCESS_UPDATE_ITEM,
     SUCCESS_DELETED_ITEM,
     SUCCESS_CREATED_ITEM,
-    SUCCESS_CREATED_ITEM_WARNING
+    SUCCESS_CREATED_ITEM_WARNING,
+    ERROR_FORBIDDEN
 }

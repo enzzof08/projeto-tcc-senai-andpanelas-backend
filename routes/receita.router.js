@@ -52,48 +52,50 @@ router.post('/busca/sugestao', auth.verifyToken, bodyParserJSON, async function 
     response.json(result)
 })
 
-router.get('/busca/nome', async (req, res) => {
-    let nome = req.query.nome
+router.get('/busca/nome', auth.verifyToken, async function (request, response) {
+    let nome = request.query.nome
+    let idUsuario = request.id_usuario
 
-    let result = await controllerReceita.buscarReceitasPorNome(nome)
+    let result = await controllerReceita.buscarReceitasPorNome(nome, idUsuario)
 
-    res.status(result.status_code).json(result)
+    response.status(result.status_code).json(result)
 })
 
-router.get('/', async function (request, response) {
+router.get('/', auth.verifyToken, async function (request, response) {
 
-    let result = await controllerReceita.listarReceitas()
+    let idUsuario = request.id_usuario
+    let result = await controllerReceita.listarReceitas(idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.get('/:id', async function (request, response) {
-    let id = request.params.id
-    let idUsuario = request.query.usuario
+router.get('/:id', auth.verifyToken, async function (request, response) {
+    let idReceita = request.params.id
+    let idUsuario = request.id_usuario
 
-    let result = await controllerReceita.buscarReceita(id, idUsuario)
+    let result = await controllerReceita.buscarReceita(idReceita, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 //Buscar de acordo com os ingredientes
-router.get('/ingrediente/buscar', async function (request, response) {
-
+router.get('/ingrediente/buscar', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
     let ingredientes = request.query.ingredientes
 
-    let result = await controllerReceita.buscarReceitasPorIngredientes(ingredientes)
+    let result = await controllerReceita.buscarReceitasPorIngredientes(ingredientes, idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 //Buscar de acordo com os ingredientes
-router.get('/busca/categoria/:idCategoria', async function (request, response) {
+router.get('/busca/categoria/:idCategoria', auth.verifyToken, async function (request, response) {
 
     let idCategoria = request.params.idCategoria
-    let idUsuario = request.query.usuario
+    let idUsuario = request.id_usuario
 
     let result = await controllerReceita.buscarReceitasPorCategoria(idCategoria, idUsuario)
 
@@ -120,34 +122,31 @@ router.delete('/:id', auth.verifyToken, async function (request, response) {
 })
 
 //INTERACOES
-router.post('/:idUser/:idReceita/curtir', auth.verifyToken, bodyParserJSON, async function (request, response) {
+router.post('/:idReceita/curtir', auth.verifyToken, bodyParserJSON, async function (request, response) {
     let idUsuario = request.id_usuario
-    let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerCurtida.inserirCurtida(idUser, idReceita, idUsuario)
+    let result = await controllerCurtida.inserirCurtida(idUsuario, idReceita)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.delete('/:idUser/:idReceita/curtir', auth.verifyToken, async function (request, response) {
+router.delete('/:idReceita/curtir', auth.verifyToken, async function (request, response) {
     let idUsuario = request.id_usuario
-    let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerCurtida.excluirCurtida(idUser, idReceita, idUsuario)
+    let result = await controllerCurtida.excluirCurtida(idUsuario, idReceita)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.post('/:idUser/:idReceita/salvar', auth.verifyToken, bodyParserJSON, async function (request, response) {
+router.post('/:idReceita/salvar', auth.verifyToken, bodyParserJSON, async function (request, response) {
     let idUsuario = request.id_usuario
-    let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerSalvo.inserirSalvo(idUser, idReceita, idUsuario)
+    let result = await controllerSalvo.inserirSalvo(idUsuario, idReceita)
 
     response.status(result.status_code)
     response.json(result)
@@ -156,10 +155,9 @@ router.post('/:idUser/:idReceita/salvar', auth.verifyToken, bodyParserJSON, asyn
 
 router.delete('/:idUser/:idReceita/salvar', auth.verifyToken, async function (request, response) {
     let idUsuario = request.id_usuario
-    let idUser = request.params.idUser
     let idReceita = request.params.idReceita
 
-    let result = await controllerSalvo.excluirSalvo(idUser, idReceita, idUsuario)
+    let result = await controllerSalvo.excluirSalvo(idUsuario, idReceita)
 
     response.status(result.status_code)
     response.json(result)
