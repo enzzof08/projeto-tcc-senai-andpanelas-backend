@@ -4,6 +4,7 @@ const bodyParser = require('body-parser')
 const bodyParserJSON = bodyParser.json()
 
 const router = express.Router()
+const auth = require('../middleware/auth.js')
 
 const controllerUsuario = require('../controller/usuario/controller_usuario.js')
 const controllerSeguidor = require('../controller/seguidores/controller_seguidores.js')
@@ -11,17 +12,18 @@ const controllerReceita = require('../controller/receita/controller_receita.js')
 const controllerComunidadeUsuario = require('../controller/comunidade_usuario/controller_comunidade_usuario.js')
 
 
-router.get('/', async function (request, response) {
+router.get('/', auth.verifyToken, async function (request, response) {
+    let idUserLogado = request.id_usuario
 
-    let result = await controllerUsuario.listarTodosUsuarios()
+    let result = await controllerUsuario.listarTodosUsuarios(idUserLogado)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.get('/:idUserPerfil', async function (request, response) {
+router.get('/:idUserPerfil', auth.verifyToken, async function (request, response) {
     let idUserPerfil = request.params.idUserPerfil
-    let idUserLogado = request.query.idUserLogado
+    let idUserLogado = request.id_usuario
 
     let result = await controllerUsuario.buscarUsuario(idUserPerfil, idUserLogado)
 
@@ -29,8 +31,8 @@ router.get('/:idUserPerfil', async function (request, response) {
     response.json(result)
 })
 
-router.get('/me/:idUserPerfil', async function (request, response) {
-    let idUserPerfil = request.params.idUserPerfil
+router.get('/me', auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.id_usuario
 
     let result = await controllerUsuario.buscarUsuario(idUserPerfil)
 
@@ -38,17 +40,18 @@ router.get('/me/:idUserPerfil', async function (request, response) {
     response.json(result)
 })
 
-router.get('/busca/username', async function (request, response) {
+router.get('/busca/username', auth.verifyToken, async function (request, response) {
     let username = request.query.nome
+    let idUserLogado = request.id_usuario
 
-    let result = await controllerUsuario.buscarUsuariosPorNome(username)
+    let result = await controllerUsuario.buscarUsuariosPorNome(username, idUserLogado)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.put('/me/:idUserPerfil', bodyParserJSON, async function (request, response) {
-    let idUserPerfil = request.params.idUserPerfil
+router.put('/me', bodyParserJSON, auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.id_usuario
     let dados = request.body
     let contentType = request.headers['content-type']
 
@@ -58,12 +61,23 @@ router.put('/me/:idUserPerfil', bodyParserJSON, async function (request, respons
     response.json(result)
 })
 
+//BUSCAR RECEITAS DO PROPRIO USUARIO
+router.get('/me/receitas', auth.verifyToken, async function (request, response) {
 
-// BUSCAR RECEITAS DO USUARIO
-router.get('/:idUsuario/receitas', async function (request, response) {
+    let idUsuario = request.id_usuario
+    let idUserLogado = request.id_usuario
+
+    let result = await controllerReceita.buscarReceitasPorUsuario(idUsuario, idUserLogado)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+// BUSCAR RECEITAS DE UM USUARIO
+router.get('/:idUsuario/receitas', auth.verifyToken, async function (request, response) {
 
     let idUsuario = request.params.idUsuario
-    let idUserLogado = request.query.idUserLogado
+    let idUserLogado = request.id_usuario
 
     let result = await controllerReceita.buscarReceitasPorUsuario(idUsuario, idUserLogado)
 
@@ -73,10 +87,21 @@ router.get('/:idUsuario/receitas', async function (request, response) {
 
 
 // BUSCAR RECEITAS SALVAS DO USUARIO
-router.get('/:idUsuario/receitas/salvas', async function (request, response) {
+router.get('/receitas/salvas/me', auth.verifyToken, async function (request, response) {
+
+    let idUsuario = request.id_usuario
+    let idUserLogado = request.id_usuario
+
+    let result = await controllerReceita.buscarReceitasSalvasUsuario(idUsuario, idUserLogado)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/receitas/salvas/:idUsuario', auth.verifyToken, async function (request, response) {
 
     let idUsuario = request.params.idUsuario
-    let idUserLogado = request.query.idUserLogado
+    let idUserLogado = request.id_usuario
 
     let result = await controllerReceita.buscarReceitasSalvasUsuario(idUsuario, idUserLogado)
 
@@ -86,7 +111,18 @@ router.get('/:idUsuario/receitas/salvas', async function (request, response) {
 
 
 // BUSCAR COMUNIDADES QUE USUARIO PARTICIPA
-router.get('/:idUsuario/comunidades', async function (request, response) {
+
+router.get('/comunidades/me', auth.verifyToken, async function (request, response) {
+
+    let idUsuario = request.id_usuario
+
+    let result = await controllerComunidadeUsuario.buscarComunidadesPorUsuario(idUsuario)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/comunidades/:idUsuario', async function (request, response) {
 
     let idUsuario = request.params.idUsuario
 
@@ -96,9 +132,10 @@ router.get('/:idUsuario/comunidades', async function (request, response) {
     response.json(result)
 })
 
+
 // SEGUIR INTERACOES
-router.post('/:idSeguidor/:idSeguindo/seguir', async function (request, response) {
-    let idSeguidor = request.params.idSeguidor
+router.post('/seguir/:idSeguindo', auth.verifyToken, async function (request, response) {
+    let idSeguidor = request.id_usuario
     let idSeguindo = request.params.idSeguindo
 
     let result = await controllerSeguidor.inserirNovoSeguidor(idSeguindo, idSeguidor)
@@ -107,8 +144,8 @@ router.post('/:idSeguidor/:idSeguindo/seguir', async function (request, response
     response.json(result)
 })
 
-router.delete('/:idSeguidor/:idSeguindo/deixar-seguir', async function (request, response) {
-    let idSeguidor = request.params.idSeguidor
+router.delete('/deixar-seguir/:idSeguindo', auth.verifyToken, async function (request, response) {
+    let idSeguidor = request.id_usuario
     let idSeguindo = request.params.idSeguindo
 
     let result = await controllerSeguidor.excluirSeguidor(idSeguindo, idSeguidor)
@@ -117,7 +154,7 @@ router.delete('/:idSeguidor/:idSeguindo/deixar-seguir', async function (request,
     response.json(result)
 })
 
-router.get('/:idUser/seguidores', async function (request, response) {
+router.get('/seguidores/:idUser', async function (request, response) {
     let idUsuario = request.params.idUser
 
     let result = await controllerSeguidor.listarSeguidores(idUsuario)
@@ -126,7 +163,7 @@ router.get('/:idUser/seguidores', async function (request, response) {
     response.json(result)
 })
 
-router.get('/:idUser/seguindo', async function (request, response) {
+router.get('/seguindos/:idUser', async function (request, response) {
     let idUsuario = request.params.idUser
 
     let result = await controllerSeguidor.listarSeguindo(idUsuario)

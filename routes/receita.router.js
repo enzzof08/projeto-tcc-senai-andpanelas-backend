@@ -153,7 +153,7 @@ router.post('/:idReceita/salvar', auth.verifyToken, bodyParserJSON, async functi
 })
 
 
-router.delete('/:idUser/:idReceita/salvar', auth.verifyToken, async function (request, response) {
+router.delete('/:idReceita/salvar', auth.verifyToken, async function (request, response) {
     let idUsuario = request.id_usuario
     let idReceita = request.params.idReceita
 
@@ -166,12 +166,11 @@ router.delete('/:idUser/:idReceita/salvar', auth.verifyToken, async function (re
 
 // COMENTARIOS RECEITA
 // Inserir novo comentário
-// Inserir novo comentário
 router.post('/:idReceita/comentarios', auth.verifyToken, bodyParserJSON, async function (request, response) {
     
 
     let idReceita = request.params.idReceita
-    let idUsuario = request.query.idUsuario
+    let idUsuario = request.id_usuario
     let comentario = request.body
     let contentType = request.headers['content-type']
 
@@ -199,7 +198,7 @@ router.get('/:idReceita/comentarios', async function (request, response) {
 router.put('/comentarios/:idComentario', auth.verifyToken, bodyParserJSON, async function (request, response) {
 
     let idComentario = request.params.idComentario
-    let idUsuario = request.query.idUsuario
+    let idUsuario = request.id_usuario
     let comentario = request.body
     let contentType = request.headers['content-type']
 
@@ -218,7 +217,7 @@ router.put('/comentarios/:idComentario', auth.verifyToken, bodyParserJSON, async
 router.delete('/comentarios/:idComentario', auth.verifyToken, async function (request, response) {
 
     let idComentario = request.params.idComentario
-    let idUsuario = request.query.idUsuario
+    let idUsuario = request.id_usuario
 
     let result = await controllerComentario.excluirComentario(idComentario, idUsuario)
 

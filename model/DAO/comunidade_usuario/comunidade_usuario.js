@@ -163,11 +163,34 @@ const selectCriadorByIdComunidade = async function(idComunidade) {
     }
 }
 
+const selectQuantidadeMembrosPorComunidade = async function(idComunidade){
+    try {
+        let sql = `
+            SELECT COUNT(*) AS qtd_membros
+            FROM tbl_comunidade_usuario
+            WHERE id_comunidade = ?;
+        `
+
+        let result = await knexConection.raw(sql, [idComunidade])
+
+        if (Array.isArray(result)) {
+            return result[0][0].qtd_membros
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 module.exports = {
     insertComunidadeUsuario,
     selectComunidadeByIdUsuario,
     selectUsuarioByIdComunidade,
     deleteComunidadeUsuario,
     selectVerificarComunidadeUsuario,
-    selectCriadorByIdComunidade
+    selectCriadorByIdComunidade,
+    selectQuantidadeMembrosPorComunidade
 }

@@ -4,6 +4,8 @@ const comunidadeDAO = require('../../model/DAO/comunidade/comunidade')
 
 const controllerCategoriaPrincipal = require('../categoria_principal/controller_categoria_principal')
 const controllerComunidadeUsuario = require('../comunidade_usuario/controller_comunidade_usuario.js')
+const comunidadeUsuarioDAO = require('../../model/DAO/comunidade_usuario/comunidade_usuario.js')
+const comunidadeReceitaDAO = require('../../model/DAO/comunidade_receita/comunidade_receita.js')
 
 const inserirNovaComunidade = async function (comunidade, idUsuario, contentType) {
 
@@ -140,6 +142,14 @@ const listarComunidade = async function (idUsuario) {
 
                     for (comunidade of result) {
 
+                        let resultMembros = await comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(comunidade.id)
+
+                        let resultReceitas = await comunidadeReceitaDAO.selectQuantidadeReceitasPorComunidade(comunidade.id)
+
+                        comunidade.qtd_membros = resultMembros
+                        comunidade.qtd_receitas = resultReceitas
+
+
                         let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(comunidade.id)
 
                         if (resultCriador.status) {
@@ -202,6 +212,13 @@ const buscarComunidade = async function (idUser, idComunidade) {
                 if (result.length > 0) {
 
                     for (comunidade of result) {
+                        let resultMembros = await comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(idComunidade)
+
+                        let resultReceitas = await comunidadeReceitaDAO.selectQuantidadeReceitasPorComunidade(idComunidade)
+
+                        comunidade.qtd_membros = resultMembros
+                        comunidade.qtd_receitas = resultReceitas
+
                         delete result[0].id_categoria_principal
 
                         let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
@@ -219,8 +236,6 @@ const buscarComunidade = async function (idUser, idComunidade) {
                             if (Number(idUser) == Number(resultCriador.response.id)) {
                                 result[0].sou_criador = true
                             }
-
-
 
                             let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUser, comunidade.id)
                             if (resultParticipando.status) {

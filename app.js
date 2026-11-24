@@ -101,4 +101,5 @@ app.use('/v1/entrepanelas/auth', cors(), autentificacaoRouter)
 //API rodando na porta desejada
 app.listen(process.env.PORT, function () {
     console.log('API aguardando novas requisições...')
+    
 })

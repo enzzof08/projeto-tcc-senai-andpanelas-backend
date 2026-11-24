@@ -421,7 +421,7 @@ const loginUsuario = async function (dados, contentType) {
                             return customMessage.ERROR_UNAUTHORIZED
 
                         }
-                        
+
                         let token = jwtService.createJWT(result.id)
 
                         dados.senha = undefined
@@ -834,8 +834,6 @@ const atualizarUsuario = async function (dados, id, contentType) {
     }
 }
 
-
-// User logado é quem esta visitando o outro perfil
 // User logado é quem está visitando o outro perfil
 const buscarUsuario = async function (idUserPerfil, idUserLogado) {
 
@@ -905,7 +903,7 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
     }
 }
 
-const listarTodosUsuarios = async function () {
+const listarTodosUsuarios = async function (idUserLogado) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -914,6 +912,29 @@ const listarTodosUsuarios = async function () {
         let result = await userDAO.selectAllUsuarios()
 
         if (result && result.length > 0) {
+            result = result.filter(usuario => Number(usuario.id) !== Number(idUserLogado))
+
+
+            if (idUserLogado != undefined && idUserLogado != null) {
+                for (let usuario of result) {
+
+                    if (Number(usuario.id) === Number(idUserLogado)) {
+                        usuario.segue_usuario = false
+                        continue
+                    }
+
+                    let resultSeguidor = await controllerSeguidores.verificarSeguindo(
+                        usuario.id,
+                        idUserLogado
+                    )
+
+                    if (resultSeguidor.status) {
+                        usuario.segue_usuario = resultSeguidor.response.segue_usuario
+                    } else {
+                        return resultSeguidor
+                    }
+                }
+            }
 
             customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
             customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
@@ -932,7 +953,7 @@ const listarTodosUsuarios = async function () {
     }
 }
 
-const buscarUsuariosPorNome = async function (nome) {
+const buscarUsuariosPorNome = async function (nome, idUserLogado) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -947,10 +968,32 @@ const buscarUsuariosPorNome = async function (nome) {
 
         if (result && result.length > 0) {
 
+            if (idUserLogado != undefined && idUserLogado != null) {
+
+                for (let usuario of result) {
+
+                    if (Number(usuario.id) === Number(idUserLogado)) {
+                        usuario.segue_usuario = false
+                        continue
+                    }
+
+                    let resultSeguidor = await controllerSeguidores.verificarSeguindo(
+                        usuario.id,
+                        idUserLogado
+                    )
+
+                    if (resultSeguidor.status) {
+                        usuario.segue_usuario = resultSeguidor.response.segue_usuario
+                    } else {
+                        return resultSeguidor
+                    }
+                }
+            }
+
             customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
             customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
             customMessage.DEFAULT_MESSAGE.response.count = result.length
-            customMessage.DEFAULT_MESSAGE.response.receitas = result
+            customMessage.DEFAULT_MESSAGE.response.usuarios = result
 
             return customMessage.DEFAULT_MESSAGE
 

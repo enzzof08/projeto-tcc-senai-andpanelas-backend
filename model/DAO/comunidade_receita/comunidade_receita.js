@@ -139,11 +139,34 @@ const deleteReceitaByIdComunidade = async function(idComunidade){
     }
 }
 
+const selectQuantidadeReceitasPorComunidade = async function(idComunidade){
+    try {
+        let sql = `
+            SELECT COUNT(*) AS qtd_receitas
+            FROM tbl_comunidade_receita
+            WHERE id_comunidade = ?;
+        `
+
+        let result = await knexConection.raw(sql, [idComunidade])
+
+        if (Array.isArray(result)) {
+            return result[0][0].qtd_receitas
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 module.exports = {
     insertComunidadeReceita,
     selectComunidadeByIdReceita,
     selectReceitaByIdComunidade,
     deleteComunidadeByIdReceita,
     deleteReceitaByIdComunidade,
-    selectComunidadeReceita
+    selectComunidadeReceita,
+    selectQuantidadeReceitasPorComunidade
 }

@@ -85,9 +85,8 @@ router.get('/:id/receitas', auth.verifyToken, async function (request, response)
 
 
 //USUARIO INTERACOES
-router.post('/:idUser/:idComunidade/entrar' , async function (request, response) {
-    //let idUsuario = request.id_usuario
-    let idUser = request.params.idUser
+router.post('/:idComunidade/entrar' , auth.verifyToken, async function (request, response) {
+    let idUser = request.id_usuario
     let idComunidade = request.params.idComunidade
 
     let result = await controllerComunidadeUsuario.inserirNovaComunidadeUsuario(idUser, idComunidade)
@@ -96,11 +95,10 @@ router.post('/:idUser/:idComunidade/entrar' , async function (request, response)
     response.json(result)
 })
 
-router.delete('/:idUser/:idComunidade/sair', auth.verifyToken, async function (request, response) {
-    let idUsuario = request.id_usuario
-    let idUser = request.params.idUser
+router.delete('/:idComunidade/sair', auth.verifyToken, async function (request, response) {
+    let idUser = request.id_usuario
     let idComunidade = request.params.idComunidade
-    let result = await controllerComunidadeUsuario.excluirComunidadeUsuario(idUser, idComunidade, idUsuario)
+    let result = await controllerComunidadeUsuario.excluirComunidadeUsuario(idUser, idComunidade)
 
     response.status(result.status_code)
     response.json(result)
