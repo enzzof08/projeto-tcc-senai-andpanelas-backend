@@ -807,6 +807,13 @@ const atualizarUsuario = async function (dados, id, contentType) {
                     dadosAtualizados.id = id
 
                     let result = await userDAO.updateUsuario(dadosAtualizados, id)
+
+                    if (result === 'USERNAME_DUPLICADO') {
+
+                        customMessage.ERROR_BAD_REQUEST.field = '[USERNAME] JÁ CADASTRADO'
+                        return customMessage.ERROR_BAD_REQUEST
+
+                    }
                     console.log(result)
                     if (result) {
 
@@ -873,15 +880,19 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
             // Verifica se o usuário logado segue o perfil visitado
             if (idUserLogado != undefined) {
 
-                let resultVerificar = await controllerSeguidores.verificarSeguindo(
-                    idUserPerfil,
-                    idUserLogado
-                )
 
-                if (resultVerificar.status) {
-                    result.segue_usuario = resultVerificar.response.segue_usuario
-                } else {
-                    return resultVerificar
+                if (idUserPerfil != idUserLogado) {
+
+                    let resultVerificar = await controllerSeguidores.verificarSeguindo(
+                        idUserPerfil,
+                        idUserLogado
+                    )
+
+                    if (resultVerificar.status) {
+                        result.segue_usuario = resultVerificar.response.segue_usuario
+                    } else {
+                        return resultVerificar
+                    }
                 }
             }
 

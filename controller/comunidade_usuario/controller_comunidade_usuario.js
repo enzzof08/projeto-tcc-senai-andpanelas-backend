@@ -1,17 +1,18 @@
 const configMessages = require('../modulo/configMessages')
 
 const comunidadeUsuarioDAO = require('../../model/DAO/comunidade_usuario/comunidade_usuario')
+const comunidadeReceitaDAO = require('../../model/DAO/comunidade_receita/comunidade_receita.js')
 
-const inserirNovaComunidadeUsuario = async function (idUser, idComunidade, ehCriador = false){
+const inserirNovaComunidadeUsuario = async function (idUser, idComunidade, ehCriador = false) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
+    try {
 
         let validar = await validarDados(idUser, idComunidade)
 
-        if(validar){
+        if (validar) {
             return validar
-        }else{
+        } else {
             let result = await comunidadeUsuarioDAO.insertComunidadeUsuario(idUser, idComunidade, ehCriador)
 
             if (result === 'DUPLICADO') {
@@ -19,61 +20,103 @@ const inserirNovaComunidadeUsuario = async function (idUser, idComunidade, ehCri
                 return customMessage.ERROR_BAD_REQUEST
             }
 
-            if(result){
+            if (result) {
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_CREATED_ITEM.status_code
                 customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_CREATED_ITEM.message
 
                 return customMessage.DEFAULT_MESSAGE
-            }else{
+            } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
         }
 
-    }catch(error){
+    } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const buscarComunidadesPorUsuario = async function(idUsuario){
+const buscarComunidadesPorUsuario = async function (idUsuario) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
+    try {
         if (idUsuario == undefined || String(idUsuario).replaceAll('', '') == '' || idUsuario == '' || idUsuario == null || isNaN(idUsuario) || idUsuario <= 0) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
         } else {
             let result = await comunidadeUsuarioDAO.selectComunidadeByIdUsuario(idUsuario)
 
-            if (result){
+            if (result) {
+                if (result.length > 0) {
 
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.comunidade = result
+                    if (idUsuario != undefined) {
 
-                return customMessage.DEFAULT_MESSAGE
-            }else{
+                        for (comunidade of result) {
+
+                            delete comunidade.id_categoria_principal
+
+                            let resultMembros = await comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(comunidade.id)
+
+                            let resultReceitas = await comunidadeReceitaDAO.selectQuantidadeReceitasPorComunidade(comunidade.id)
+
+                            comunidade.qtd_membros = resultMembros
+                            comunidade.qtd_receitas = resultReceitas
+
+
+                            let resultCriador = await buscarCriadorPorComunidade(comunidade.id)
+
+                            if (resultCriador.status) {
+                                result[0].criador = resultCriador.response
+                            } else {
+                                return resultCriador
+                            }
+
+                            result[0].sou_criador = false
+
+                            if (Number(idUsuario) == Number(resultCriador.response.id)) {
+                                result[0].sou_criador = true
+                            }
+
+                            let resultParticipando = await verificarComunidadeUsuario(idUsuario, comunidade.id)
+                            if (resultParticipando.status) {
+                                comunidade.participando = resultParticipando.response.participando
+                            } else
+                                return resultUsuario
+                        }
+                    }
+
+                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+                    customMessage.DEFAULT_MESSAGE.response.comunidade = result
+
+                    return customMessage.DEFAULT_MESSAGE
+
+                } else {
+                    return customMessage.ERROR_NOT_FOUND
+                }
+            } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
-        }  
+        }
 
-    } catch (error){
+    } catch (error) {
+        console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const buscarUsuariosPorComunidade = async function (idComunidade){
+const buscarUsuariosPorComunidade = async function (idComunidade) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
-    try{
+    try {
         if (idComunidade == undefined || String(idComunidade).replaceAll('', '') == '' || idComunidade == '' || idComunidade == null || isNaN(idComunidade) || idComunidade <= 0) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_COMUNIDADE] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
-        }else{
+        } else {
             let result = await comunidadeUsuarioDAO.selectUsuarioByIdComunidade(idComunidade)
-            if(result){
-                if(result == false){
+            if (result) {
+                if (result == false) {
                     return customMessage.ERROR_INTERNAL_SERVER_MODEL
                 }
 
@@ -82,12 +125,12 @@ const buscarUsuariosPorComunidade = async function (idComunidade){
                 customMessage.DEFAULT_MESSAGE.response = result
 
                 return customMessage.DEFAULT_MESSAGE
-            }else{
+            } else {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
         }
 
-    }catch (error){
+    } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
@@ -151,7 +194,7 @@ const excluirComunidadeUsuario = async function (idUsuario, idComunidade) {
             return validar
         }
 
-        let result = await comunidadeUsuarioDAO.deleteComunidadeUsuario( idUsuario, idComunidade)
+        let result = await comunidadeUsuarioDAO.deleteComunidadeUsuario(idUsuario, idComunidade)
 
         if (result) {
             return customMessage.SUCCESS_DELETED_ITEM
@@ -165,7 +208,7 @@ const excluirComunidadeUsuario = async function (idUsuario, idComunidade) {
     }
 }
 
-const verificarComunidadeUsuario = async function(idUsuario, idComunidade){
+const verificarComunidadeUsuario = async function (idUsuario, idComunidade) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -206,7 +249,7 @@ const validarDados = async function (idUser, idComunidade) {
 
 }
 
-module.exports ={
+module.exports = {
     inserirNovaComunidadeUsuario,
     buscarComunidadesPorUsuario,
     buscarUsuariosPorComunidade,
