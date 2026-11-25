@@ -21,20 +21,20 @@ router.get('/', auth.verifyToken, async function (request, response) {
     response.json(result)
 })
 
-router.get('/:idUserPerfil', auth.verifyToken, async function (request, response) {
-    let idUserPerfil = request.params.idUserPerfil
-    let idUserLogado = request.id_usuario
+router.get('/me', auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.id_usuario
 
-    let result = await controllerUsuario.buscarUsuario(idUserPerfil, idUserLogado)
+    let result = await controllerUsuario.buscarUsuario(idUserPerfil)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.get('/me', auth.verifyToken, async function (request, response) {
-    let idUserPerfil = request.id_usuario
+router.get('/:idUserPerfil', auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.params.idUserPerfil
+    let idUserLogado = request.id_usuario
 
-    let result = await controllerUsuario.buscarUsuario(idUserPerfil)
+    let result = await controllerUsuario.buscarUsuario(idUserPerfil, idUserLogado)
 
     response.status(result.status_code)
     response.json(result)

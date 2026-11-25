@@ -136,11 +136,13 @@ const listarComunidade = async function (idUsuario) {
 
         if (result) {
             if (result.length > 0) {
-                delete result[0].id_categoria_principal
+                
 
                 if (idUsuario != undefined) {
 
                     for (comunidade of result) {
+
+                        delete comunidade.id_categoria_principal
 
                         let resultMembros = await comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(comunidade.id)
 

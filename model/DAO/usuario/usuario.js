@@ -87,7 +87,7 @@ const selectUsuarioByEmail = async function (email) {
     }
 }
 
-const selectAllUsuarios = async function(){
+const selectAllUsuarios = async function () {
     try {
         let sql = `SELECT
             id,
@@ -132,6 +132,9 @@ const updateUsuario = async function (usuario, id) {
 
 
     } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'USERNAME_DUPLICADO'
+        }
         return false
     }
 }
@@ -198,7 +201,7 @@ const selectUsuariosPorNome = async function (nome) {
     }
 }
 
-const selectQtdSeguindoUsuario = async function(idUsuario) {
+const selectQtdSeguindoUsuario = async function (idUsuario) {
     try {
         let sql = `
             SELECT COUNT(*) AS qtd_seguindo
@@ -220,7 +223,7 @@ const selectQtdSeguindoUsuario = async function(idUsuario) {
     }
 }
 
-const selectQtdSeguidoresUsuario = async function(idUsuario) {
+const selectQtdSeguidoresUsuario = async function (idUsuario) {
     try {
 
         let sql = `
@@ -243,7 +246,7 @@ const selectQtdSeguidoresUsuario = async function(idUsuario) {
     }
 }
 
-const selectQtdReceitasUsuario = async function(idUsuario) {
+const selectQtdReceitasUsuario = async function (idUsuario) {
     try {
         let sql = `
             SELECT COUNT(*) AS qtd_receitas
@@ -265,7 +268,7 @@ const selectQtdReceitasUsuario = async function(idUsuario) {
     }
 }
 
-const updateEmailVerificado = async function(idUsuario) {
+const updateEmailVerificado = async function (idUsuario) {
 
     try {
 
