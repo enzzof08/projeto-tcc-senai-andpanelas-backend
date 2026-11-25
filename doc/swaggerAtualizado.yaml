@@ -1,0 +1,3274 @@
+openapi: 3.0.3
+info:
+  title: API Plataforma Inteligente de Receitas - Entre Panelas
+  description: |-
+    API do projeto Entre Panelas, plataforma de receitas inteligentes.
+
+    **Autenticação:** rotas marcadas com cadeado exigem o cabeçalho `Authorization: Bearer <token>`, obtido na rota de login.
+
+    **Formato:** as requisições com corpo devem usar `Content-Type: application/json`.
+
+    **Respostas:** sucessos seguem o formato `status`, `status_code`, `message` e `response`; erros seguem `status`, `status_code`, `message` e, quando aplicável, `field`.
+
+    O chefinho (assistente de IA) fica em `/v1/chefinho/conversas`; as demais rotas ficam em `/v1/entrepanelas`.
+  version: 1.0.10.26
+  contact:
+    name: Entre Panelas
+    url: https://github.com/enzzof08/projeto-tcc-senai-andpanelas-backend
+  license:
+    name: Proprietary
+    url: https://github.com/mthenryx/projeto-tcc-senai-4tech-andpanelas
+servers:
+  - url: /
+    description: Servidor da API
+tags:
+  - name: Autenticação
+    description: Cadastro, verificação de e-mail, login e recuperação de senha
+  - name: Usuários
+    description: Perfis e conteúdo relacionado ao usuário
+  - name: Seguidores
+    description: Seguir e deixar de seguir usuários
+  - name: Receitas
+    description: Cadastro, busca e gerenciamento de receitas
+  - name: Interações
+    description: Curtidas e receitas salvas
+  - name: Comentários
+    description: Comentários em receitas
+  - name: Geladeira
+    description: Ingredientes disponíveis na geladeira do usuário
+  - name: Lista de Compras
+    description: Lista de compras a partir das receitas
+  - name: Comunidades
+    description: Comunidades, participantes e receitas vinculadas
+  - name: Denúncias
+    description: Denúncias de usuários, comunidades e receitas
+  - name: Chefinho
+    description: 'Assistente de IA: conversas e mensagens'
+  - name: Catálogos
+    description: 'Dados de apoio: dificuldades, custos, porções, categorias, tags, ingredientes e itens em alta'
+paths:
+  /v1/entrepanelas/auth/registro:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar novo usuário
+      description: Cadastra a conta e envia o código de verificação para o e-mail informado. A conta só pode 
+        fazer login após a verificação.
+      security: []
+      operationId: postV1EntrepanelasAuthRegistro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/auth/{idUser}/verificar-email:
+    post:
+      tags:
+        - Autenticação
+      summary: Verificar e-mail
+      description: Confirma o e-mail com o código de 6 dígitos enviado no cadastro.
+      security: []
+      operationId: postV1EntrepanelasAuthIduserVerificarEmail
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodigoRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/auth/{idUser}/reenviar-codigo:
+    post:
+      tags:
+        - Autenticação
+      summary: Reenviar código de verificação
+      description: Reenvia o código de verificação de e-mail. Há intervalo mínimo de 60 segundos entre 
+        solicitações.
+      security: []
+      operationId: postV1EntrepanelasAuthIduserReenviarCodigo
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login
+      description: Autentica com e-mail e senha e retorna o token JWT. Exige e-mail verificado.
+      security: []
+      operationId: postV1EntrepanelasAuthLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/auth/recuperar-senha:
+    post:
+      tags:
+        - Autenticação
+      summary: Solicitar recuperação de senha
+      description: Envia um código de recuperação para o e-mail cadastrado.
+      security: []
+      operationId: postV1EntrepanelasAuthRecuperarSenha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/auth/verificar-codigo-reset:
+    post:
+      tags:
+        - Autenticação
+      summary: Verificar código de recuperação
+      description: Valida o código de recuperação antes da redefinição de senha.
+      security: []
+      operationId: postV1EntrepanelasAuthVerificarCodigoReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificarCodigoResetRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/auth/redefinir-senha:
+    post:
+      tags:
+        - Autenticação
+      summary: Redefinir senha
+      description: Define a nova senha usando o código de recuperação validado.
+      security: []
+      operationId: postV1EntrepanelasAuthRedefinirSenha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedefinirSenhaRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios:
+    get:
+      tags:
+        - Usuários
+      summary: Listar usuários
+      security: []
+      operationId: getV1EntrepanelasUsuarios
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/busca/username:
+    get:
+      tags:
+        - Usuários
+      summary: Buscar usuários por nome de usuário
+      security: []
+      operationId: getV1EntrepanelasUsuariosBuscaUsername
+      parameters:
+        - name: nome
+          in: query
+          required: true
+          description: Termo de busca
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/me/{idUserPerfil}:
+    get:
+      tags:
+        - Usuários
+      summary: Buscar perfil (rota /me)
+      description: Retorna os dados do perfil informado.
+      security: []
+      operationId: getV1EntrepanelasUsuariosMeIduserperfil
+      parameters:
+        - name: idUserPerfil
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar perfil
+      description: |-
+        Atualiza os campos enviados. Campos omitidos mantêm o valor atual.
+
+        **Atenção:** Rota sem verificação de token no código atual: qualquer cliente que conheça o ID pode alterar o perfil.
+      security: []
+      operationId: putV1EntrepanelasUsuariosMeIduserperfil
+      parameters:
+        - name: idUserPerfil
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioAtualizacao'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idUserPerfil}:
+    get:
+      tags:
+        - Usuários
+      summary: Buscar perfil de usuário
+      description: Retorna o perfil do usuário. O parâmetro idUserLogado é opcional.
+      security: []
+      operationId: getV1EntrepanelasUsuariosIduserperfil
+      parameters:
+        - name: idUserPerfil
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idUserLogado
+          in: query
+          required: false
+          description: ID do usuário logado
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idUsuario}/receitas:
+    get:
+      tags:
+        - Usuários
+      summary: Listar receitas do usuário
+      security: []
+      operationId: getV1EntrepanelasUsuariosIdusuarioReceitas
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idUserLogado
+          in: query
+          required: false
+          description: ID do usuário logado
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idUsuario}/receitas/salvas:
+    get:
+      tags:
+        - Usuários
+      summary: Listar receitas salvas do usuário
+      security: []
+      operationId: getV1EntrepanelasUsuariosIdusuarioReceitasSalvas
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idUserLogado
+          in: query
+          required: false
+          description: ID do usuário logado
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idUsuario}/comunidades:
+    get:
+      tags:
+        - Usuários
+      summary: Listar comunidades que o usuário participa
+      security: []
+      operationId: getV1EntrepanelasUsuariosIdusuarioComunidades
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idSeguidor}/{idSeguindo}/seguir:
+    post:
+      tags:
+        - Seguidores
+      summary: Seguir usuário
+      security: []
+      operationId: postV1EntrepanelasUsuariosIdseguidorIdseguindoSeguir
+      parameters:
+        - name: idSeguidor
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idSeguindo
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idSeguidor}/{idSeguindo}/deixar-seguir:
+    delete:
+      tags:
+        - Seguidores
+      summary: Deixar de seguir usuário
+      security: []
+      operationId: deleteV1EntrepanelasUsuariosIdseguidorIdseguindoDeixarSeguir
+      parameters:
+        - name: idSeguidor
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idSeguindo
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idUser}/seguidores:
+    get:
+      tags:
+        - Seguidores
+      summary: Listar seguidores do usuário
+      security: []
+      operationId: getV1EntrepanelasUsuariosIduserSeguidores
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idUser}/seguindo:
+    get:
+      tags:
+        - Seguidores
+      summary: Listar usuários seguidos
+      security: []
+      operationId: getV1EntrepanelasUsuariosIduserSeguindo
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas:
+    get:
+      tags:
+        - Receitas
+      summary: Listar receitas
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasReceitas
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Receitas
+      summary: Cadastrar receita
+      description: |-
+        Cadastra a receita com ingredientes, modo de preparo, categorias, comunidades e tags. Os nomes dos ingredientes são corrigidos pelo catálogo antes de salvar. O usuário responsável é identificado pelo token JWT.
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasReceitas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceitaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/populares/semana:
+    get:
+      tags:
+        - Receitas
+      summary: Receitas mais curtidas da semana
+      security: []
+      operationId: getV1EntrepanelasReceitasPopularesSemana
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/busca/nome:
+    get:
+      tags:
+        - Receitas
+      summary: Buscar receitas por nome
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasReceitasBuscaNome
+      parameters:
+        - name: nome
+          in: query
+          required: true
+          description: Termo de busca
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/busca/sugestao:
+    post:
+      tags:
+        - Receitas
+      summary: Sugerir receitas com IA
+      description: |-
+        Gera sugestões de receitas a partir da pesquisa do usuário.
+
+        **Atenção:** Rota com erro no código: o controlador do Chefinho não está importado em receita.router.js, então a requisição retorna erro 500 até a correção.
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasReceitasBuscaSugestao
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SugestaoRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/busca/categoria/{idCategoria}:
+    get:
+      tags:
+        - Receitas
+      summary: Buscar receitas por categoria
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasReceitasBuscaCategoriaIdcategoria
+      parameters:
+        - name: idCategoria
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/ingrediente/buscar:
+    get:
+      tags:
+        - Receitas
+      summary: Buscar receitas pelos ingredientes
+      description: Retorna receitas que utilizam os ingredientes informados.
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasReceitasIngredienteBuscar
+      parameters:
+        - name: ingredientes
+          in: query
+          required: true
+          description: 'Lista de ingredientes. Ex.: ?ingredientes=ovo&ingredientes=farinha'
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/{id}:
+    get:
+      tags:
+        - Receitas
+      summary: Buscar receita por ID
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasReceitasId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - Receitas
+      summary: Atualizar receita
+      description: Envia a receita completa, no mesmo formato do cadastro.
+      security:
+        - bearerAuth: []
+      operationId: putV1EntrepanelasReceitasId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceitaRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Receitas
+      summary: Excluir receita
+      description: '**Atenção:** Rota com erro no código: usa a variável request_usuario, que não existe. Retorna
+        erro 500 até a correção.'
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasReceitasId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/{idReceita}/curtir:
+    post:
+      tags:
+        - Interações
+      summary: Curtir receita
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasReceitasIdreceitaCurtir
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Interações
+      summary: Remover curtida
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasReceitasIdreceitaCurtir
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/{idReceita}/salvar:
+    post:
+      tags:
+        - Interações
+      summary: Salvar receita
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasReceitasIdreceitaSalvar
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Interações
+      summary: Remover receita salva
+      description: O usuário é identificado pelo token; o parâmetro idUser não é utilizado.
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasReceitasIdreceitaSalvar
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/{idReceita}/comentarios:
+    get:
+      tags:
+        - Comentários
+      summary: Listar comentários da receita
+      security: []
+      operationId: getV1EntrepanelasReceitasIdreceitaComentarios
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Comentários
+      summary: Comentar receita
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasReceitasIdreceitaComentarios
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComentarioRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/receitas/comentarios/{idComentario}:
+    put:
+      tags:
+        - Comentários
+      summary: Editar comentário
+      security:
+        - bearerAuth: []
+      operationId: putV1EntrepanelasReceitasComentariosIdcomentario
+      parameters:
+        - name: idComentario
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComentarioRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Comentários
+      summary: Excluir comentário
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasReceitasComentariosIdcomentario
+      parameters:
+        - name: idComentario
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/geladeira/me/usuario:
+    get:
+      tags:
+        - Geladeira
+      summary: Listar ingredientes da geladeira
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasGeladeiraMeUsuario
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Geladeira
+      summary: Adicionar ingrediente à geladeira
+      description: O nome do ingrediente é corrigido pelo catálogo antes de salvar.
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasGeladeiraMeUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeladeiraRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/geladeira/me/usuario/receitas/compatibilidade:
+    get:
+      tags:
+        - Geladeira
+      summary: Receitas compatíveis com a geladeira
+      description: Compara os ingredientes da geladeira com as receitas cadastradas.
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasGeladeiraMeUsuarioReceitasCompatibilidade
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/geladeira/me/usuario/{id}:
+    delete:
+      tags:
+        - Geladeira
+      summary: Remover ingrediente da geladeira
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasGeladeiraMeUsuarioId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/lista-compras/me/usuario/receita/{idReceita}:
+    post:
+      tags:
+        - Lista de Compras
+      summary: Adicionar receita à lista de compras
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasListaComprasMeUsuarioReceitaIdreceita
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/lista-compras/me/usuario/receitas:
+    get:
+      tags:
+        - Lista de Compras
+      summary: Listar receitas da lista de compras
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasListaComprasMeUsuarioReceitas
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/lista-compras/me/usuario/receitas/{idReceita}:
+    get:
+      tags:
+        - Lista de Compras
+      summary: Listar ingredientes da receita na lista
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasListaComprasMeUsuarioReceitasIdreceita
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          description: Filtrar pelo status do item
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/lista-compras/me/usuario/{idLista}/{idStatus}:
+    put:
+      tags:
+        - Lista de Compras
+      summary: Atualizar status do item da lista
+      description: O idStatus aceita apenas 1 ou 2.
+      security:
+        - bearerAuth: []
+      operationId: putV1EntrepanelasListaComprasMeUsuarioIdlistaIdstatus
+      parameters:
+        - name: idLista
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idStatus
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/lista-compras/me/usuario/{idReceita}:
+    delete:
+      tags:
+        - Lista de Compras
+      summary: Remover receita da lista de compras
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasListaComprasMeUsuarioIdreceita
+      parameters:
+        - name: idReceita
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidades:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar comunidades
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasComunidades
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Comunidades
+      summary: Criar comunidade
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasComunidades
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComunidadeRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidades/{id}:
+    get:
+      tags:
+        - Comunidades
+      summary: Buscar comunidade por ID
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasComunidadesId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - Comunidades
+      summary: Atualizar comunidade
+      description: Somente o criador pode editar a comunidade.
+      security:
+        - bearerAuth: []
+      operationId: putV1EntrepanelasComunidadesId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComunidadeRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Comunidades
+      summary: Excluir comunidade
+      description: Somente o criador pode excluir a comunidade.
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasComunidadesId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidades/{id}/receitas:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar receitas da comunidade
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasComunidadesIdReceitas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidades/{idComunidade}/entrar:
+    post:
+      tags:
+        - Comunidades
+      summary: Entrar na comunidade
+      description: 'O usuário é identificado pelo token JWT; o parâmetro idComunidade identifica a comunidade.'
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasComunidadesIdcomunidadeEntrar
+      parameters:
+        - name: idComunidade
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidades/{idComunidade}/sair:
+    delete:
+      tags:
+        - Comunidades
+      summary: Sair da comunidade
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasComunidadesIdcomunidadeSair
+      parameters:
+        - name: idComunidade
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      description: O usuário é identificado pelo token JWT; o parâmetro idComunidade identifica a comunidade.
+  /v1/entrepanelas/comunidades/{idComunidade}/membros:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar membros da comunidade
+      security: []
+      operationId: getV1EntrepanelasComunidadesIdcomunidadeMembros
+      parameters:
+        - name: idComunidade
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidade_usuario:
+    post:
+      tags:
+        - Comunidades
+      summary: Vincular usuário à comunidade
+      security: []
+      operationId: postV1EntrepanelasComunidadeUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComunidadeUsuarioRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidade_usuario/{id}:
+    get:
+      tags:
+        - Comunidades
+      summary: Listar comunidades de um usuário
+      description: O parâmetro {id} é o ID do usuário.
+      security: []
+      operationId: getV1EntrepanelasComunidadeUsuarioId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Comunidades
+      summary: Remover vínculo usuário-comunidade
+      description: O parâmetro {id} é o ID do vínculo.
+      security: []
+      operationId: deleteV1EntrepanelasComunidadeUsuarioId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidade_receita:
+    post:
+      tags:
+        - Comunidades
+      summary: Vincular receita à comunidade
+      security: []
+      operationId: postV1EntrepanelasComunidadeReceita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComunidadeReceitaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/comunidade_receita/{id}:
+    get:
+      tags:
+        - Comunidades
+      summary: Buscar vínculo receita-comunidade
+      description: Consulta pelo ID informado no caminho.
+      security: []
+      operationId: getV1EntrepanelasComunidadeReceitaId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Comunidades
+      summary: Excluir vínculo receita-comunidade
+      description: Remove o vínculo pelo ID informado.
+      security: []
+      operationId: deleteV1EntrepanelasComunidadeReceitaId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia:
+    post:
+      tags:
+        - Denúncias
+      summary: Criar denúncia
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasDenuncia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DenunciaGeralRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Denúncias
+      summary: Listar denúncias
+      security: []
+      operationId: getV1EntrepanelasDenuncia
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia/comunidade/{id}:
+    post:
+      tags:
+        - Denúncias
+      summary: Denunciar comunidade
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasDenunciaComunidadeId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DenunciaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia/receita/{id}:
+    post:
+      tags:
+        - Denúncias
+      summary: Denunciar receita
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasDenunciaReceitaId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DenunciaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia/usuario/{id}:
+    post:
+      tags:
+        - Denúncias
+      summary: Denunciar usuário
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasDenunciaUsuarioId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DenunciaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia_usuario:
+    post:
+      tags:
+        - Denúncias
+      summary: Vincular denúncia a usuário
+      security: []
+      operationId: postV1EntrepanelasDenunciaUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DenunciaUsuarioRelacaoRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia_usuario/{id}:
+    get:
+      tags:
+        - Denúncias
+      summary: Buscar denúncia de usuário por ID
+      description: '**Atenção:** Rota com erro no código: a variável contentType não existe no escopo. Retorna erro
+        500 até a correção.'
+      security: []
+      operationId: getV1EntrepanelasDenunciaUsuarioId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia_comunidade:
+    post:
+      tags:
+        - Denúncias
+      summary: Vincular denúncia a comunidade
+      security: []
+      operationId: postV1EntrepanelasDenunciaComunidade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DenunciaComunidadeRelacaoRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/denuncia_comunidade/{id}:
+    get:
+      tags:
+        - Denúncias
+      summary: Buscar denúncia de comunidade por ID
+      description: '**Atenção:** Rota com erro no código: variáveis indefinidas no escopo. Retorna erro 500 até
+        a correção.'
+      security: []
+      operationId: getV1EntrepanelasDenunciaComunidadeId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/chefinho/conversas:
+    post:
+      tags:
+        - Chefinho
+      summary: Criar conversa
+      security:
+        - bearerAuth: []
+      operationId: postV1ChefinhoConversas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Chefinho
+      summary: Listar conversas
+      security: []
+      operationId: getV1ChefinhoConversas
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/chefinho/conversas/{id}:
+    get:
+      tags:
+        - Chefinho
+      summary: Buscar detalhes da conversa
+      security: []
+      operationId: getV1ChefinhoConversasId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Chefinho
+      summary: Excluir conversa
+      security:
+        - bearerAuth: []
+      operationId: deleteV1ChefinhoConversasId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/chefinho/conversas/{id}/mensagens:
+    post:
+      tags:
+        - Chefinho
+      summary: Enviar mensagem ao Chefinho
+      description: Envia a pergunta do usuário; a IA responde considerando as últimas 10 mensagens da 
+        conversa.
+      security:
+        - bearerAuth: []
+      operationId: postV1ChefinhoConversasIdMensagens
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MensagemChefinhoRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/mensagem:
+    get:
+      tags:
+        - Chefinho
+      summary: Listar mensagens
+      security: []
+      operationId: getV1EntrepanelasMensagem
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Chefinho
+      summary: Cadastrar mensagem de conversa
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasMensagem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MensagemRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/mensagem/{id}:
+    delete:
+      tags:
+        - Chefinho
+      summary: Excluir mensagem
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasMensagemId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/dificuldade:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar dificuldades
+      security: []
+      operationId: getV1EntrepanelasDificuldade
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/dificuldade/{id}:
+    get:
+      tags:
+        - Catálogos
+      summary: Buscar dificuldade por ID
+      security: []
+      operationId: getV1EntrepanelasDificuldadeId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/custo:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar faixas de custo
+      security: []
+      operationId: getV1EntrepanelasCusto
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/porcao:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar porções
+      security: []
+      operationId: getV1EntrepanelasPorcao
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/porcao/{id}:
+    get:
+      tags:
+        - Catálogos
+      summary: Buscar porção por ID
+      security: []
+      operationId: getV1EntrepanelasPorcaoId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/unidade_medida:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar unidades de medida
+      security: []
+      operationId: getV1EntrepanelasUnidadeMedida
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/unidade_medida/{id}:
+    get:
+      tags:
+        - Catálogos
+      summary: Buscar unidade de medida por ID
+      security: []
+      operationId: getV1EntrepanelasUnidadeMedidaId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/categoria:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar categorias
+      security: []
+      operationId: getV1EntrepanelasCategoria
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Catálogos
+      summary: Criar categoria
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasCategoria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/categoria_principal:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar categorias principais
+      security: []
+      operationId: getV1EntrepanelasCategoriaPrincipal
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/categoria_principal/{id}:
+    get:
+      tags:
+        - Catálogos
+      summary: Buscar categoria principal por ID
+      security: []
+      operationId: getV1EntrepanelasCategoriaPrincipalId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/tag:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar tags
+      security: []
+      operationId: getV1EntrepanelasTag
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Catálogos
+      summary: Criar tag
+      security: []
+      operationId: postV1EntrepanelasTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/tag/{id}:
+    get:
+      tags:
+        - Catálogos
+      summary: Buscar tag por ID
+      security: []
+      operationId: getV1EntrepanelasTagId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - Catálogos
+      summary: Atualizar tag
+      security: []
+      operationId: putV1EntrepanelasTagId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/ingrediente/buscar/{ingrediente}:
+    get:
+      tags:
+        - Catálogos
+      summary: Corrigir nome de ingrediente
+      description: Retorna o nome do ingrediente corrigido com base no catálogo.
+      security: []
+      operationId: getV1EntrepanelasIngredienteBuscarIngrediente
+      parameters:
+        - name: ingrediente
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/status:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar status
+      description: '**Atenção:** Rota com erro no código: usa o controlador de em_alta sem importá-lo. Retorna erro
+        500 até a correção.'
+      security: []
+      operationId: getV1EntrepanelasStatus
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/em_alta:
+    get:
+      tags:
+        - Catálogos
+      summary: Listar pesquisas em alta
+      security: []
+      operationId: getV1EntrepanelasEmAlta
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Catálogos
+      summary: Registrar pesquisa em alta
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasEmAlta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmAltaRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/em_alta/{id}:
+    delete:
+      tags:
+        - Catálogos
+      summary: Excluir pesquisa em alta
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasEmAltaId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/modo_preparo:
+    post:
+      tags:
+        - Catálogos
+      summary: Cadastrar etapa de modo de preparo
+      security:
+        - bearerAuth: []
+      operationId: postV1EntrepanelasModoPreparo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModoPreparoRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/modo_preparo/{id}:
+    get:
+      tags:
+        - Catálogos
+      summary: Buscar modo de preparo
+      security: []
+      operationId: getV1EntrepanelasModoPreparoId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Catálogos
+      summary: Excluir modo de preparo
+      description: '**Atenção:** Rota com erro no código: a variável idUsuario não está definida. Retorna erro 500
+        até a correção.'
+      security:
+        - bearerAuth: []
+      operationId: deleteV1EntrepanelasModoPreparoId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/seguidores:
+    post:
+      tags:
+        - Seguidores
+      summary: Criar seguidor
+      description: '**Atenção:** Rota com erro no código: os argumentos passados ao controlador não correspondem
+        à assinatura da função.'
+      security: []
+      operationId: postV1EntrepanelasSeguidores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeguidorRequest'
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Seguidores
+      summary: Listar seguidores
+      security: []
+      operationId: getV1EntrepanelasSeguidores
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/seguidores/{id}:
+    get:
+      tags:
+        - Seguidores
+      summary: Buscar seguidores por ID
+      security: []
+      operationId: getV1EntrepanelasSeguidoresId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Seguidores
+      summary: Excluir seguidor
+      security: []
+      operationId: deleteV1EntrepanelasSeguidoresId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SucessoPadrao:
+      type: object
+      properties:
+        api_description:
+          type: string
+          example: API para controlar o projeto da Plataforma de Receitas Inteligentes
+        development:
+          type: string
+          example: 4tech
+        version:
+          type: string
+          example: 1.0.10.26
+        status:
+          type: boolean
+          example: true
+        status_code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Ação concluida com sucesso!
+        response:
+          type: object
+          description: Dados retornados pela operação (varia conforme a rota)
+    ErroPadrao:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: false
+        status_code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Não foi possível processar a requisição devido a erros de entrada
+        field:
+          type: string
+          description: Campo que causou o erro (quando aplicável)
+          example: '[EMAIL] INVÁLIDO'
+      required:
+        - status
+        - status_code
+        - message
+    RegistroRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          description: Máximo 150 caracteres
+          example: Maria Silva
+        username:
+          type: string
+          description: Máximo 20 caracteres
+          example: maria.silva
+        email:
+          type: string
+          example: maria@email.com
+        senha:
+          type: string
+          description: Máximo 15 caracteres
+          example: senha123
+        data_nascimento:
+          type: string
+          description: Formato AAAA-MM-DD
+          example: '2000-05-10'
+        foto_perfil:
+          type: string
+          description: URL http(s), máximo 2000 caracteres
+      required:
+        - nome
+        - username
+        - email
+        - senha
+        - data_nascimento
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: maria@email.com
+        senha:
+          type: string
+          description: Máximo 15 caracteres
+          example: senha123
+      required:
+        - email
+        - senha
+    EmailRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: maria@email.com
+      required:
+        - email
+    CodigoRequest:
+      type: object
+      properties:
+        codigo:
+          type: string
+          description: Código de 6 dígitos
+          example: '123456'
+      required:
+        - codigo
+    VerificarCodigoResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: maria@email.com
+        codigo:
+          type: string
+          description: Código de 6 dígitos
+          example: '123456'
+      required:
+        - email
+        - codigo
+    RedefinirSenhaRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: maria@email.com
+        codigo:
+          type: string
+          description: Código de recuperação
+          example: '123456'
+        nova_senha:
+          type: string
+          description: Máximo 15 caracteres
+          example: novaSenha1
+      required:
+        - email
+        - codigo
+        - nova_senha
+    UsuarioAtualizacao:
+      type: object
+      properties:
+        nome:
+          type: string
+          description: Máximo 150 caracteres
+        username:
+          type: string
+          description: Máximo 20 caracteres
+        descricao:
+          type: string
+          description: Máximo 200 caracteres
+        banner_url:
+          type: string
+          description: URL http(s), máximo 2000 caracteres
+        foto_perfil:
+          type: string
+          description: URL http(s), máximo 2000 caracteres
+      description: Envie apenas os campos que deseja alterar.
+    IngredienteReceita:
+      type: object
+      properties:
+        nome:
+          type: string
+          description: Máximo 35 caracteres. O nome é corrigido pelo catálogo.
+          example: ovo
+        quantidade:
+          type: string
+          description: Máximo 10 caracteres
+          example: '2'
+        id_unidade_medida:
+          type: integer
+          example: 1
+      required:
+        - nome
+        - quantidade
+        - id_unidade_medida
+    ModoPreparoItem:
+      type: object
+      properties:
+        metodo_preparo:
+          type: string
+          description: Máximo 250 caracteres
+          example: Bata os ovos
+        ordem_preparo:
+          type: integer
+          example: 1
+      required:
+        - metodo_preparo
+        - ordem_preparo
+    CategoriaRef:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+      required:
+        - id
+    ComunidadeRef:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+      required:
+        - id
+    TagRef:
+      type: object
+      properties:
+        nome_tag:
+          type: string
+          description: Máximo 30 caracteres
+          example: rápido
+      required:
+        - nome_tag
+    ReceitaRequest:
+      type: object
+      properties:
+        titulo:
+          type: string
+          description: Máximo 50 caracteres
+          example: Bolo de cenoura
+        descricao:
+          type: string
+          description: Máximo 200 caracteres
+        tempo:
+          type: string
+          example: 45 min
+        foto:
+          type: string
+          description: URL http(s), máximo 2000 caracteres
+        id_porcao:
+          type: integer
+          example: 1
+        id_dificuldade:
+          type: integer
+          example: 1
+        id_custo:
+          type: integer
+          example: 1
+        ingredientes:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredienteReceita'
+        modo_preparo:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModoPreparoItem'
+        categoria:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoriaRef'
+        comunidade:
+          type: array
+          description: Opcional
+          items:
+            $ref: '#/components/schemas/ComunidadeRef'
+        tags:
+          type: array
+          description: Opcional. Tags inexistentes são criadas automaticamente.
+          items:
+            $ref: '#/components/schemas/TagRef'
+      required:
+        - titulo
+        - descricao
+        - tempo
+        - foto
+        - id_porcao
+        - id_dificuldade
+        - id_custo
+        - ingredientes
+        - modo_preparo
+        - categoria
+    SugestaoRequest:
+      type: object
+      properties:
+        pesquisa_usuario:
+          type: string
+          description: Máximo 200 caracteres
+          example: frango com batata
+      required:
+        - pesquisa_usuario
+    ComentarioRequest:
+      type: object
+      properties:
+        comentario:
+          type: string
+          example: Ficou delicioso!
+      required:
+        - comentario
+    GeladeiraRequest:
+      type: object
+      properties:
+        nome_ingrediente:
+          type: string
+          description: Máximo 35 caracteres
+          example: tomate
+      required:
+        - nome_ingrediente
+      description: O usuário é identificado pelo token.
+    ComunidadeRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          example: Amantes de massas
+        descricao:
+          type: string
+          example: Comunidade para receitas de massas
+        foto_url:
+          type: string
+          description: URL http(s)
+        banner_url:
+          type: string
+          description: URL http(s)
+        id_categoria_principal:
+          type: integer
+          example: 1
+      required:
+        - nome
+        - descricao
+        - foto_url
+        - banner_url
+        - id_categoria_principal
+    DenunciaRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          description: Máximo 50 caracteres
+          example: Conteúdo impróprio
+        detalhe:
+          type: string
+          description: Máximo 200 caracteres
+      required:
+        - motivo
+    DenunciaGeralRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          description: Máximo 50 caracteres
+          example: Conteúdo impróprio
+        detalhe:
+          type: string
+          description: Máximo 200 caracteres
+        id_usuario:
+          type: integer
+          description: Lido do corpo nesta versão da API
+          example: 1
+      required:
+        - motivo
+        - id_usuario
+    DenunciaUsuarioRelacaoRequest:
+      type: object
+      properties:
+        id_usuario:
+          type: integer
+          example: 1
+        id_denuncia:
+          type: integer
+          example: 1
+      required:
+        - id_usuario
+        - id_denuncia
+    DenunciaComunidadeRelacaoRequest:
+      type: object
+      properties:
+        id_comunidade:
+          type: integer
+          example: 1
+        id_denuncia:
+          type: integer
+          example: 1
+      required:
+        - id_comunidade
+        - id_denuncia
+    ConversaRequest:
+      type: object
+      properties:
+        titulo:
+          type: string
+          description: Máximo 100 caracteres
+          example: Dúvidas sobre massas
+        id_usuario:
+          type: integer
+          description: Lido do corpo nesta versão da API
+          example: 1
+      required:
+        - titulo
+        - id_usuario
+    MensagemChefinhoRequest:
+      type: object
+      properties:
+        mensagem:
+          type: string
+          description: Máximo 2000 caracteres
+          example: Como fazer um bolo sem glúten?
+      required:
+        - mensagem
+    CategoriaRequest:
+      type: object
+      properties:
+        categoria:
+          type: string
+          description: Máximo 25 caracteres
+          example: Sobremesas
+      required:
+        - categoria
+    TagRequest:
+      type: object
+      properties:
+        nome_tag:
+          type: string
+          description: Máximo 30 caracteres
+          example: vegano
+      required:
+        - nome_tag
+    EmAltaRequest:
+      type: object
+      properties:
+        pesquisa:
+          type: string
+          description: Máximo 80 caracteres
+          example: bolo de chocolate
+      required:
+        - pesquisa
+    ModoPreparoRequest:
+      type: object
+      properties:
+        id_receita:
+          type: integer
+          example: 1
+        metodo_preparo:
+          type: string
+          description: Máximo 250 caracteres
+          example: Asse por 40 minutos
+        ordem_preparo:
+          type: integer
+          example: 3
+      required:
+        - id_receita
+        - metodo_preparo
+        - ordem_preparo
+    MensagemRequest:
+      type: object
+      properties:
+        conteudo:
+          type: string
+          example: Olá, Chefinho!
+        data:
+          type: string
+          description: Formato AAAA-MM-DD
+          example: '2026-11-23'
+        tipo_remetente:
+          type: string
+          example: usuario
+        id_chefinho_conversa:
+          type: integer
+          example: 1
+      required:
+        - conteudo
+        - data
+        - tipo_remetente
+        - id_chefinho_conversa
+    ComunidadeUsuarioRequest:
+      type: object
+      properties:
+        id_usuario:
+          type: integer
+          example: 1
+        id_comunidade:
+          type: integer
+          example: 1
+      required:
+        - id_usuario
+        - id_comunidade
+    ComunidadeReceitaRequest:
+      type: object
+      properties:
+        id_receita:
+          type: integer
+          example: 1
+        id_comunidade:
+          type: integer
+          example: 1
+      required:
+        - id_receita
+        - id_comunidade
+    SeguidorRequest:
+      type: object
+      properties: {}
+      description: 'Corpo ainda não definido: a rota está em revisão no código.'
+  responses:
+    BadRequest:
+      description: Dados de entrada inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroPadrao'
+    Unauthorized:
+      description: Token ausente, inválido ou expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroPadrao'
+    NotFound:
+      description: Nenhum dado encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroPadrao'
+    UnsupportedMediaType:
+      description: Content-Type diferente de application/json
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroPadrao'
+    InternalServerError:
+      description: Erro interno no servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErroPadrao'

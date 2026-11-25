@@ -1,18 +1,18 @@
-const express = require('express')
-const bodyParser = require('body-parser')
+// const express = require('express')
+// const bodyParser = require('body-parser')
 
-const bodyParserJSON = bodyParser.json()
+// const bodyParserJSON = bodyParser.json()
 
-const router = express.Router()
+// const router = express.Router()
 
-const controllerStatus = require('../controller/status/controller_status')
+// const controllerStatus = require('../controller/status/controller_status')
 
-router.get('/', async function (request, response) {
+// router.get('/', async function (request, response) {
 
-    let result = await controllerEmAlta.listarEmAlta()
+//     let result = await controllerEmAlta.listarEmAlta()
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
-module.exports = router
+// module.exports = router

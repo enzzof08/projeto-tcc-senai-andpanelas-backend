@@ -67,11 +67,11 @@ app.use('/v1/entrepanelas/em_alta', cors(), emAltaRouter)
 const modoPreparoRouter = require('./routes/modo_preparo.router.js')
 app.use('/v1/entrepanelas/modo_preparo', cors(), modoPreparoRouter)
 
-const statusRouter = require('./routes/status.router.js')
-app.use('/v1/entrepanelas/status', cors(), statusRouter)
+// const statusRouter = require('./routes/status.router.js')
+// app.use('/v1/entrepanelas/status', cors(), statusRouter)
 
-const tagRouter = require('./routes/tag.router.js')
-app.use('/v1/entrepanelas/tag', cors(), tagRouter)
+// const tagRouter = require('./routes/tag.router.js')
+// app.use('/v1/entrepanelas/tag', cors(), tagRouter)
 
 const unidadeMedidaRouter = require('./routes/unidade_medida.router.js')
 app.use('/v1/entrepanelas/unidade_medida', cors(), unidadeMedidaRouter)
@@ -79,8 +79,8 @@ app.use('/v1/entrepanelas/unidade_medida', cors(), unidadeMedidaRouter)
 const denunciaUsuarioRouter = require('./routes/denuncia_usuario.router.js')
 app.use('/v1/entrepanelas/denuncia_usuario', cors(), denunciaUsuarioRouter)
 
-const seguidoresRouter = require('./routes/seguidores.routes.js')
-app.use('/v1/entrepanelas/seguidores', cors(), seguidoresRouter)
+// const seguidoresRouter = require('./routes/seguidores.routes.js')
+// app.use('/v1/entrepanelas/seguidores', cors(), seguidoresRouter)
 
 const listaCompraRouter = require('./routes/lista_compra.router.js')
 app.use('/v1/entrepanelas/lista-compras/me/usuario', cors(), listaCompraRouter)
