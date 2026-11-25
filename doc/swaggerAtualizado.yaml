@@ -52,8 +52,8 @@ paths:
       tags:
         - Autenticação
       summary: Registrar novo usuário
-      description: Cadastra a conta e envia o código de verificação para o e-mail informado. A conta só pode 
-        fazer login após a verificação.
+      description: Cadastra a conta e envia o código de verificação para o e-mail informado. A conta só pode fazer login
+        após a verificação.
       security: []
       operationId: postV1EntrepanelasAuthRegistro
       requestBody:
@@ -113,8 +113,7 @@ paths:
       tags:
         - Autenticação
       summary: Reenviar código de verificação
-      description: Reenvia o código de verificação de e-mail. Há intervalo mínimo de 60 segundos entre 
-        solicitações.
+      description: Reenvia o código de verificação de e-mail. Há intervalo mínimo de 60 segundos entre solicitações.
       security: []
       operationId: postV1EntrepanelasAuthIduserReenviarCodigo
       parameters:
@@ -247,7 +246,8 @@ paths:
       tags:
         - Usuários
       summary: Listar usuários
-      security: []
+      security:
+        - bearerAuth: []
       operationId: getV1EntrepanelasUsuarios
       responses:
         '200':
@@ -260,12 +260,16 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Lista os usuários cadastrados. Exige autenticação por token JWT.
   /v1/entrepanelas/usuarios/busca/username:
     get:
       tags:
         - Usuários
       summary: Buscar usuários por nome de usuário
-      security: []
+      security:
+        - bearerAuth: []
       operationId: getV1EntrepanelasUsuariosBuscaUsername
       parameters:
         - name: nome
@@ -285,73 +289,18 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/me/{idUserPerfil}:
-    get:
-      tags:
-        - Usuários
-      summary: Buscar perfil (rota /me)
-      description: Retorna os dados do perfil informado.
-      security: []
-      operationId: getV1EntrepanelasUsuariosMeIduserperfil
-      parameters:
-        - name: idUserPerfil
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    put:
-      tags:
-        - Usuários
-      summary: Atualizar perfil
-      description: |-
-        Atualiza os campos enviados. Campos omitidos mantêm o valor atual.
-
-        **Atenção:** Rota sem verificação de token no código atual: qualquer cliente que conheça o ID pode alterar o perfil.
-      security: []
-      operationId: putV1EntrepanelasUsuariosMeIduserperfil
-      parameters:
-        - name: idUserPerfil
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UsuarioAtualizacao'
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Busca usuários usando o termo enviado no parâmetro de consulta nome.
   /v1/entrepanelas/usuarios/{idUserPerfil}:
     get:
       tags:
         - Usuários
       summary: Buscar perfil de usuário
-      description: Retorna o perfil do usuário. O parâmetro idUserLogado é opcional.
-      security: []
+      description: Retorna o perfil do usuário identificado por idUserPerfil. O usuário que consulta é identificado pelo
+        token JWT.
+      security:
+        - bearerAuth: []
       operationId: getV1EntrepanelasUsuariosIduserperfil
       parameters:
         - name: idUserPerfil
@@ -359,12 +308,6 @@ paths:
           required: true
           schema:
             type: integer
-        - name: idUserLogado
-          in: query
-          required: false
-          description: ID do usuário logado
-          schema:
-            type: integer
       responses:
         '200':
           description: Operação realizada com sucesso
@@ -376,12 +319,15 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/entrepanelas/usuarios/{idUsuario}/receitas:
     get:
       tags:
         - Usuários
       summary: Listar receitas do usuário
-      security: []
+      security:
+        - bearerAuth: []
       operationId: getV1EntrepanelasUsuariosIdusuarioReceitas
       parameters:
         - name: idUsuario
@@ -389,12 +335,6 @@ paths:
           required: true
           schema:
             type: integer
-        - name: idUserLogado
-          in: query
-          required: false
-          description: ID do usuário logado
-          schema:
-            type: integer
       responses:
         '200':
           description: Operação realizada com sucesso
@@ -406,166 +346,9 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/{idUsuario}/receitas/salvas:
-    get:
-      tags:
-        - Usuários
-      summary: Listar receitas salvas do usuário
-      security: []
-      operationId: getV1EntrepanelasUsuariosIdusuarioReceitasSalvas
-      parameters:
-        - name: idUsuario
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: idUserLogado
-          in: query
-          required: false
-          description: ID do usuário logado
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/{idUsuario}/comunidades:
-    get:
-      tags:
-        - Usuários
-      summary: Listar comunidades que o usuário participa
-      security: []
-      operationId: getV1EntrepanelasUsuariosIdusuarioComunidades
-      parameters:
-        - name: idUsuario
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/{idSeguidor}/{idSeguindo}/seguir:
-    post:
-      tags:
-        - Seguidores
-      summary: Seguir usuário
-      security: []
-      operationId: postV1EntrepanelasUsuariosIdseguidorIdseguindoSeguir
-      parameters:
-        - name: idSeguidor
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: idSeguindo
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '201':
-          description: Item criado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/{idSeguidor}/{idSeguindo}/deixar-seguir:
-    delete:
-      tags:
-        - Seguidores
-      summary: Deixar de seguir usuário
-      security: []
-      operationId: deleteV1EntrepanelasUsuariosIdseguidorIdseguindoDeixarSeguir
-      parameters:
-        - name: idSeguidor
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: idSeguindo
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/{idUser}/seguidores:
-    get:
-      tags:
-        - Seguidores
-      summary: Listar seguidores do usuário
-      security: []
-      operationId: getV1EntrepanelasUsuariosIduserSeguidores
-      parameters:
-        - name: idUser
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /v1/entrepanelas/usuarios/{idUser}/seguindo:
-    get:
-      tags:
-        - Seguidores
-      summary: Listar usuários seguidos
-      security: []
-      operationId: getV1EntrepanelasUsuariosIduserSeguindo
-      parameters:
-        - name: idUser
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Operação realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SucessoPadrao'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Lista as receitas do usuário indicado por idUsuario. A autenticação é feita pelo token JWT.
   /v1/entrepanelas/receitas:
     get:
       tags:
@@ -814,8 +597,8 @@ paths:
       tags:
         - Receitas
       summary: Excluir receita
-      description: '**Atenção:** Rota com erro no código: usa a variável request_usuario, que não existe. Retorna
-        erro 500 até a correção.'
+      description: '**Atenção:** Rota com erro no código: usa a variável request_usuario, que não existe. Retorna erro 500
+        até a correção.'
       security:
         - bearerAuth: []
       operationId: deleteV1EntrepanelasReceitasId
@@ -918,7 +701,7 @@ paths:
       tags:
         - Interações
       summary: Remover receita salva
-      description: O usuário é identificado pelo token; o parâmetro idUser não é utilizado.
+      description: O usuário é identificado pelo token JWT; somente idReceita é informado na URL.
       security:
         - bearerAuth: []
       operationId: deleteV1EntrepanelasReceitasIdreceitaSalvar
@@ -1853,8 +1636,8 @@ paths:
       tags:
         - Denúncias
       summary: Buscar denúncia de usuário por ID
-      description: '**Atenção:** Rota com erro no código: a variável contentType não existe no escopo. Retorna erro
-        500 até a correção.'
+      description: '**Atenção:** Rota com erro no código: a variável contentType não existe no escopo. Retorna erro 500 até
+        a correção.'
       security: []
       operationId: getV1EntrepanelasDenunciaUsuarioId
       parameters:
@@ -1905,8 +1688,7 @@ paths:
       tags:
         - Denúncias
       summary: Buscar denúncia de comunidade por ID
-      description: '**Atenção:** Rota com erro no código: variáveis indefinidas no escopo. Retorna erro 500 até
-        a correção.'
+      description: '**Atenção:** Rota com erro no código: variáveis indefinidas no escopo. Retorna erro 500 até a correção.'
       security: []
       operationId: getV1EntrepanelasDenunciaComunidadeId
       parameters:
@@ -2025,8 +1807,7 @@ paths:
       tags:
         - Chefinho
       summary: Enviar mensagem ao Chefinho
-      description: Envia a pergunta do usuário; a IA responde considerando as últimas 10 mensagens da 
-        conversa.
+      description: Envia a pergunta do usuário; a IA responde considerando as últimas 10 mensagens da conversa.
       security:
         - bearerAuth: []
       operationId: postV1ChefinhoConversasIdMensagens
@@ -2488,8 +2269,8 @@ paths:
       tags:
         - Catálogos
       summary: Listar status
-      description: '**Atenção:** Rota com erro no código: usa o controlador de em_alta sem importá-lo. Retorna erro
-        500 até a correção.'
+      description: '**Atenção:** Rota com erro no código: usa o controlador de em_alta sem importá-lo. Retorna erro 500 até
+        a correção.'
       security: []
       operationId: getV1EntrepanelasStatus
       responses:
@@ -2631,8 +2412,7 @@ paths:
       tags:
         - Catálogos
       summary: Excluir modo de preparo
-      description: '**Atenção:** Rota com erro no código: a variável idUsuario não está definida. Retorna erro 500
-        até a correção.'
+      description: '**Atenção:** Rota com erro no código: a variável idUsuario não está definida. Retorna erro 500 até a correção.'
       security:
         - bearerAuth: []
       operationId: deleteV1EntrepanelasModoPreparoId
@@ -2658,8 +2438,8 @@ paths:
       tags:
         - Seguidores
       summary: Criar seguidor
-      description: '**Atenção:** Rota com erro no código: os argumentos passados ao controlador não correspondem
-        à assinatura da função.'
+      description: '**Atenção:** Rota com erro no código: os argumentos passados ao controlador não correspondem à assinatura
+        da função.'
       security: []
       operationId: postV1EntrepanelasSeguidores
       requestBody:
@@ -2745,6 +2525,288 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/me:
+    get:
+      tags:
+        - Usuários
+      summary: Buscar próprio perfil
+      description: Retorna os dados do usuário identificado pelo token JWT.
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasUsuariosMe
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar próprio perfil
+      description: |-
+        Atualiza os campos enviados do usuário autenticado. Campos omitidos mantêm o valor atual.
+      security:
+        - bearerAuth: []
+      operationId: putV1EntrepanelasUsuariosMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioAtualizacao'
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/entrepanelas/usuarios/me/receitas:
+    get:
+      tags:
+        - Usuários
+      summary: Listar minhas receitas
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasUsuariosMeReceitas
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Lista as receitas do usuário autenticado, identificado pelo token JWT.
+  /v1/entrepanelas/usuarios/receitas/salvas/me:
+    get:
+      tags:
+        - Usuários
+      summary: Listar minhas receitas salvas
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasUsuariosReceitasSalvasMe
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Lista as receitas salvas pelo usuário autenticado, identificado pelo token JWT.
+  /v1/entrepanelas/usuarios/receitas/salvas/{idUsuario}:
+    get:
+      tags:
+        - Usuários
+      summary: Listar receitas salvas do usuário
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasUsuariosReceitasSalvasIdusuario
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Lista as receitas salvas pelo usuário indicado por idUsuario. A autenticação é feita pelo token JWT.
+  /v1/entrepanelas/usuarios/comunidades/me:
+    get:
+      tags:
+        - Usuários
+      summary: Listar minhas comunidades
+      security:
+        - bearerAuth: []
+      operationId: getV1EntrepanelasUsuariosComunidadesMe
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      description: Lista as comunidades do usuário autenticado, identificado pelo token JWT.
+  /v1/entrepanelas/usuarios/comunidades/{idUsuario}:
+    get:
+      tags:
+        - Usuários
+      summary: Listar comunidades de um usuário
+      security: []
+      operationId: getV1EntrepanelasUsuariosComunidadesIdusuario
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      description: Lista as comunidades do usuário indicado por idUsuario. Esta consulta não exige autenticação.
+  /v1/entrepanelas/usuarios/{idSeguidor}/{idSeguindo}/seguir:
+    post:
+      tags:
+        - Seguidores
+      summary: Seguir usuário
+      description: O parâmetro idSeguidor identifica o usuário que está seguindo; idSeguindo identifica o usuário que será seguido. Esta rota não exige JWT.
+      security: []
+      operationId: postV1EntrepanelasUsuariosIdseguidorIdseguindoSeguir
+      parameters:
+        - name: idSeguidor
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idSeguindo
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Item criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/{idSeguidor}/{idSeguindo}/deixar-seguir:
+    delete:
+      tags:
+        - Seguidores
+      summary: Deixar de seguir usuário
+      description: O parâmetro idSeguidor identifica o usuário que deixa de seguir; idSeguindo identifica o usuário que deixará de ser seguido. Esta rota não exige JWT.
+      security: []
+      operationId: deleteV1EntrepanelasUsuariosIdseguidorIdseguindoDeixarSeguir
+      parameters:
+        - name: idSeguidor
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: idSeguindo
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/entrepanelas/usuarios/seguidores/{idUser}:
+    get:
+      tags:
+        - Seguidores
+      summary: Listar seguidores do usuário
+      security: []
+      operationId: getV1EntrepanelasUsuariosSeguidoresIduser
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      description: Lista os seguidores do usuário identificado por idUser. Esta consulta não exige autenticação.
+  /v1/entrepanelas/usuarios/seguindos/{idUser}:
+    get:
+      tags:
+        - Seguidores
+      summary: Listar usuários seguidos
+      security: []
+      operationId: getV1EntrepanelasUsuariosSeguindosIduser
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SucessoPadrao'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      description: Lista os usuários seguidos pelo usuário identificado por idUser. Esta consulta não exige 
+        autenticação.
 components:
   securitySchemes:
     bearerAuth:
@@ -3047,7 +3109,8 @@ components:
           example: tomate
       required:
         - nome_ingrediente
-      description: O usuário é identificado pelo token.
+      description: Informe apenas nome_ingrediente. O id_usuario é obtido pelo token JWT e não deve ser enviado no 
+        corpo.
     ComunidadeRequest:
       type: object
       properties:
