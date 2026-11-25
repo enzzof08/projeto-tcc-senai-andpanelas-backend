@@ -67,6 +67,26 @@ const selectComentariosPorReceita = async function(idReceita){
         return false
     }
 }
+// SELECT QUANTIDADE DE COMENTARIOS POR RECEITA
+const selectQtdComentariosPorReceita = async function(idReceita){
+    try {
+        let sql = `SELECT COUNT(*) AS qtd_comentarios
+                   FROM tbl_comentario
+                   WHERE id_receita = ?`
+
+        let result = await knexConection.raw(sql, [idReceita])
+
+        if (Array.isArray(result)) {
+            return result[0][0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
 
 
 // UPDATE COMENTARIO
@@ -125,5 +145,6 @@ module.exports = {
     insertComentario,
     selectComentariosPorReceita,
     updateComentario,
-    deleteComentario
+    deleteComentario,
+    selectQtdComentariosPorReceita
 }

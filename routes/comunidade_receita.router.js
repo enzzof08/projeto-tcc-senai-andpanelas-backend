@@ -1,57 +1,57 @@
-const express = require('express')
-const bodyParser = require('body-parser')
+// const express = require('express')
+// const bodyParser = require('body-parser')
 
-const bodyParserJSON = bodyParser.json()
+// const bodyParserJSON = bodyParser.json()
 
-const router = express.Router()
+// const router = express.Router()
 
-const controllerComunidadeReceita = require('../controller/receita/controller_comunidade_receita.js')
+// const controllerComunidadeReceita = require('../controller/receita/controller_comunidade_receita.js')
 
-router.post('/', bodyParserJSON, async function (request, response) {
-    let dados = request.body
+// router.post('/', bodyParserJSON, async function (request, response) {
+//     let dados = request.body
 
-    let contentType = request.headers['content-type']
+//     let contentType = request.headers['content-type']
 
-    let result = await controllerComunidadeReceita.inserirNovaComunidadeReceita(dados, contentType)
+//     let result = await controllerComunidadeReceita.inserirNovaComunidadeReceita(dados, contentType)
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
-router.get('/:id', async function (request, response) {
-    let id = request.params.id
+// router.get('/:id', async function (request, response) {
+//     let id = request.params.id
 
-    let result = await controllerComunidadeReceita.buscarComunidadeReceita(id)
+//     let result = await controllerComunidadeReceita.buscarComunidadeReceita(id)
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
-router.get('/:id', async function (request, response) {
-    let id = request.params.id
+// router.get('/:id', async function (request, response) {
+//     let id = request.params.id
 
-    let result = await controllerComunidadeReceita.buscarReceitaComunidade(id)
+//     let result = await controllerComunidadeReceita.buscarReceitaComunidade(id)
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
-router.delete('/:id', async function(request,response){
-    let id = request.params.id
+// router.delete('/:id', async function(request,response){
+//     let id = request.params.id
 
-    let result = await controllerComunidadeReceita.excluirComunidadeReceita(id)
+//     let result = await controllerComunidadeReceita.excluirComunidadeReceita(id)
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
-router.delete('/:id', async function(request,response){
-    let id = request.params.id
+// router.delete('/:id', async function(request,response){
+//     let id = request.params.id
 
-    let result = await controllerComunidadeReceita.excluirReceitaComunidade(id)
+//     let result = await controllerComunidadeReceita.excluirReceitaComunidade(id)
 
-    response.status(result.status_code)
-    response.json(result)
-})
+//     response.status(result.status_code)
+//     response.json(result)
+// })
 
-module.exports = router
+// module.exports = router

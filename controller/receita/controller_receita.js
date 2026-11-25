@@ -293,6 +293,12 @@ const listarReceitas = async function (idUsuario) {
                     } else
                         return resultSalvo
 
+                    let resultComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultComentario.status) {
+                        receita.qtd_comentarios = resultComentario.response.qtd_comentarios
+                    } else
+                        return resultComentario
+
 
                     if (idUsuario != undefined) {
 
@@ -663,6 +669,13 @@ const buscarReceita = async function (idReceita, idUsuario) {
                         return resultSalvo
 
 
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                    } else
+                        return resultComentario
+
+
                     if (idUsuario != undefined) {
 
                         let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
@@ -804,6 +817,15 @@ const buscarReceitasPorIngredientes = async function (ingredientes, idUsuario) {
                             receita.qtd_salvos = resultSalvo.response.qtd_salvo
                         } else
                             return resultSalvo
+
+
+                        let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                        if (resultQtdComentario.status) {
+                            receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                        } else
+                            return resultComentario
+
+
 
 
                         if (idUsuario != undefined) {

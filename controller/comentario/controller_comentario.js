@@ -191,6 +191,32 @@ const excluirComentario = async function(idComentario, idUsuario){
     }
 }
 
+// LISTAR QUANTIDADE DE COMENTARIOS POR RECEITA
+const listarQtdComentariosReceita = async function(idReceita) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        let result = await comentarioDAO.selectQtdComentariosPorReceita(idReceita)
+
+        if (result) {
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+            customMessage.DEFAULT_MESSAGE.response = result
+
+            return customMessage.DEFAULT_MESSAGE
+        } else {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
+
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 const validarDados = async function(comentario){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -220,5 +246,6 @@ module.exports = {
     inserirComentario,
     buscarComentarioPelaReceita,
     atualizarComentario,
-    excluirComentario
+    excluirComentario,
+    listarQtdComentariosReceita
 }
