@@ -180,10 +180,91 @@ const avaliarDenuncia = async function (tipo, corpo) {
     }
 }
 
+const listarConversasDoUsuario = async function (idUsuario) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        let conversas = await chefinhoDAO.selectConversasPorUsuario(idUsuario)
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+        customMessage.DEFAULT_MESSAGE.response = { dados: conversas }
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const buscarDetalhesDeUmaConversa = async function (idConversa, idUsuario) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (isNaN(idConversa)) {
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let conversa = await chefinhoDAO.selectConversaById(idConversa)
+
+        if (!conversa) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        if (Number(conversa.id_usuario) !== Number(idUsuario)) {
+            return customMessage.ERROR_FORBIDDEN
+        }
+
+        let mensagens = await chefinhoDAO.selectMensagensPorConversa(idConversa)
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+        customMessage.DEFAULT_MESSAGE.response = { conversa, mensagens }
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const deletarConversa = async function (idConversa, idUsuario) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        if (isNaN(idConversa)) {
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let conversa = await chefinhoDAO.selectConversaById(idConversa)
+
+        if (!conversa) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        if (Number(conversa.id_usuario) !== Number(idUsuario)) {
+            return customMessage.ERROR_FORBIDDEN
+        }
+
+        await chefinhoDAO.deleteConversa(idConversa)
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 module.exports = {
     inserirConversa,
     inserirNovaMensagemConversa,
     avaliarComunidade,
     avaliarDenuncia,
-    sugerirReceita
+    sugerirReceita,
+    listarConversasDoUsuario,
+    buscarDetalhesDeUmaConversa,
+    deletarConversa
 }

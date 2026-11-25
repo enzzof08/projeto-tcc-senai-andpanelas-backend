@@ -266,7 +266,7 @@ const listarReceitas = async function (idUsuario) {
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                     //console.log(resultCusto)
                     if (resultCusto.status) {
-                        receita.custo = resultDificuldade.response.custo
+                        receita.custo = resultCusto.response.custo
                         delete receita.id_custo
                     } else
                         return resultCusto
@@ -606,7 +606,7 @@ const buscarReceita = async function (idReceita, idUsuario) {
 
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                     if (resultCusto.status) {
-                        receita.custo = resultDificuldade.response.custo
+                        receita.custo = resultCusto.response.custo
                         delete receita.id_custo
                     } else
                         return resultCusto
@@ -908,7 +908,7 @@ const buscarReceitasPorNome = async function (titulo, idUsuario) {
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                     //console.log(resultCusto)
                     if (resultCusto.status) {
-                        receita.custo = resultDificuldade.response.custo
+                        receita.custo = resultCusto.response.custo
                         delete receita.id_custo
                     } else
                         return resultCusto

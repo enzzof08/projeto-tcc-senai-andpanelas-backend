@@ -871,7 +871,7 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
 
 
             // Verifica se o usuário logado segue o perfil visitado
-            if (idUserLogado != undefined) {
+            if (idUserLogado != undefined && Number(idUserLogado) !== Number(idUserPerfil)) {
 
                 let resultVerificar = await controllerSeguidores.verificarSeguindo(
                     idUserPerfil,

@@ -22,17 +22,20 @@ router.post('/', auth.verifyToken, bodyParserJSON, async function (request, resp
     response.json(result)
 })
 
-router.get('/', async function (request, response) {
-    let result = await controllerChefinho.listarConversasDoUsuario()
+router.get('/', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
+
+    let result = await controllerChefinho.listarConversasDoUsuario(idUsuario)
 
     response.status(result.status_code)
     response.json(result)
 })
 
-router.get('/:id', async function (request, response) {
+router.get('/:id', auth.verifyToken, async function (request, response) {
     let id = request.params.id
+    let idUsuario = request.id_usuario
 
-    let result = await controllerChefinho.buscarDetalhesDeUmaConversa(id)
+    let result = await controllerChefinho.buscarDetalhesDeUmaConversa(id, idUsuario)
 
     response.status(result.status_code)
     response.json(result)

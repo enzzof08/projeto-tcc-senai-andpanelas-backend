@@ -14,8 +14,20 @@ const controllerComunidadeUsuario = require('../controller/comunidade_usuario/co
 
 router.get('/', auth.verifyToken, async function (request, response) {
     let idUserLogado = request.id_usuario
+    let busca = request.query.busca
 
-    let result = await controllerUsuario.listarTodosUsuarios(idUserLogado)
+    let result = busca
+        ? await controllerUsuario.buscarUsuariosPorNome(busca, idUserLogado)
+        : await controllerUsuario.listarTodosUsuarios(idUserLogado)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.get('/me', auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.id_usuario
+
+    let result = await controllerUsuario.buscarUsuario(idUserPerfil)
 
     response.status(result.status_code)
     response.json(result)
@@ -26,15 +38,6 @@ router.get('/:idUserPerfil', auth.verifyToken, async function (request, response
     let idUserLogado = request.id_usuario
 
     let result = await controllerUsuario.buscarUsuario(idUserPerfil, idUserLogado)
-
-    response.status(result.status_code)
-    response.json(result)
-})
-
-router.get('/me', auth.verifyToken, async function (request, response) {
-    let idUserPerfil = request.id_usuario
-
-    let result = await controllerUsuario.buscarUsuario(idUserPerfil)
 
     response.status(result.status_code)
     response.json(result)

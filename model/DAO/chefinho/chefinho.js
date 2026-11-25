@@ -36,9 +36,32 @@ const insertConversa = async function (titulo, idUsuario) {
     return id
 }
 
+const selectConversasPorUsuario = async function (idUsuario) {
+    return await knexConection('tbl_chefinho_conversa')
+        .select('id', 'titulo', 'data_hora')
+        .where({ id_usuario: idUsuario })
+        .orderBy('id', 'desc')
+}
+
+const selectMensagensPorConversa = async function (idConversa) {
+    return await knexConection('tbl_mensagem')
+        .select('id', 'tipo_remetente', 'conteudo', 'data_hora')
+        .where({ id_chefinho_conversa: idConversa })
+        .orderBy('id', 'asc')
+}
+
+const deleteConversa = async function (idConversa) {
+    await knexConection('tbl_mensagem').where({ id_chefinho_conversa: idConversa }).del()
+
+    return await knexConection('tbl_chefinho_conversa').where({ id: idConversa }).del()
+}
+
 module.exports = {
     selectConversaById,
     selectUltimasMensagens,
     insertMensagens,
-    insertConversa
+    insertConversa,
+    selectConversasPorUsuario,
+    selectMensagensPorConversa,
+    deleteConversa
 }
