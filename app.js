@@ -55,8 +55,8 @@ app.use('/v1/entrepanelas/categoria', cors(), categoriaRouter)
 const categoriaPrincipalRouter = require('./routes/categoria_principal.router.js')
 app.use('/v1/entrepanelas/categoria_principal', cors(), categoriaPrincipalRouter)
 
-const comunidadeReceitaRouter = require('./routes/comunidade_receita.router.js')
-app.use('/v1/entrepanelas/comunidade_receita', cors(), comunidadeReceitaRouter)
+// const comunidadeReceitaRouter = require('./routes/comunidade_receita.router.js')
+// app.use('/v1/entrepanelas/comunidade_receita', cors(), comunidadeReceitaRouter)
 
 const denunciaRouter = require('./routes/denuncia.router.js')
 app.use('/v1/entrepanelas/denuncia', cors(), denunciaRouter)
@@ -85,8 +85,8 @@ app.use('/v1/entrepanelas/seguidores', cors(), seguidoresRouter)
 const listaCompraRouter = require('./routes/lista_compra.router.js')
 app.use('/v1/entrepanelas/lista-compras/me/usuario', cors(), listaCompraRouter)
 
-const comunidadeUsuarioRouter = require('./routes/comunidade_usuario.router.js')
-app.use('/v1/entrepanelas/comunidade_usuario', cors(), comunidadeUsuarioRouter)
+// const comunidadeUsuarioRouter = require('./routes/comunidade_usuario.router.js')
+// app.use('/v1/entrepanelas/comunidade_usuario', cors(), comunidadeUsuarioRouter)
 
 const mensagemRouter = require('./routes/mensagem.router.js')
 app.use('/v1/entrepanelas/mensagem', cors(), mensagemRouter)
