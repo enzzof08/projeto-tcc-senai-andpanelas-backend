@@ -293,11 +293,11 @@ const listarReceitas = async function (idUsuario) {
                     } else
                         return resultSalvo
 
-                    let resultComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
-                    if (resultComentario.status) {
-                        receita.qtd_comentarios = resultComentario.response.qtd_comentarios
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
                     } else
-                        return resultComentario
+                        return resultQtdComentario
 
 
                     if (idUsuario != undefined) {
@@ -404,7 +404,7 @@ const atualizarReceita = async function (dados, id, contentType) {
                                 let ingredienteReceita = {
                                     nome: itemIngrediente.nome,
                                     quantidade: itemIngrediente.quantidade,
-                                    id_receita: receita.id,
+                                    id_receita: id,
                                     id_unidade_medida: itemIngrediente.id_unidade_medida
                                 }
 
@@ -612,7 +612,7 @@ const buscarReceita = async function (idReceita, idUsuario) {
 
                     let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                     if (resultCusto.status) {
-                        receita.custo = resultDificuldade.response.custo
+                        receita.custo = resultCusto.response.custo
                         delete receita.id_custo
                     } else
                         return resultCusto
@@ -673,7 +673,7 @@ const buscarReceita = async function (idReceita, idUsuario) {
                     if (resultQtdComentario.status) {
                         receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
                     } else
-                        return resultComentario
+                        return resultQtdComentario
 
 
                     if (idUsuario != undefined) {
@@ -770,6 +770,7 @@ const buscarReceitasPorIngredientes = async function (ingredientes, idUsuario) {
             let result = await receitaDAO.selectReceitasPorIngredientes(ingredientesCorrigidos)
 
             if (result) {
+
                 if (result.length > 0) {
 
                     for (receita of result) {
@@ -823,9 +824,7 @@ const buscarReceitasPorIngredientes = async function (ingredientes, idUsuario) {
                         if (resultQtdComentario.status) {
                             receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
                         } else
-                            return resultComentario
-
-
+                            return resultQtdComentario
 
 
                         if (idUsuario != undefined) {
@@ -853,6 +852,38 @@ const buscarReceitasPorIngredientes = async function (ingredientes, idUsuario) {
                             } else {
                                 return resultVerificarSalvo
                             }
+                        }
+
+                        let resultIngredientes = await controllerIngrediente.listarIngredientesPorReceita(receita.id)
+
+                        if (resultIngredientes && resultIngredientes.status) {
+
+                            let ingredientesReceita = resultIngredientes.response.ingrediente
+
+                            let quantidadeEncontrada = 0
+
+                            for (const itemIngrediente of ingredientesReceita) {
+
+                                if (ingredientesCorrigidos.some(item =>
+                                    item.trim().toLowerCase() === itemIngrediente.nome.trim().toLowerCase()
+                                )) {
+                                    quantidadeEncontrada++
+                                }
+                            }
+
+                            if (ingredientesReceita.length > 0) {
+
+                                receita.compatibilidade = Math.round(
+                                    (quantidadeEncontrada / ingredientesReceita.length) * 100
+                                )
+
+                            } else {
+
+                                receita.compatibilidade = 0
+                            }
+
+                        } else {
+                            return resultIngredientes
                         }
 
                     }
@@ -956,6 +987,13 @@ const buscarReceitasPorNome = async function (titulo, idUsuario) {
                         receita.qtd_salvos = resultSalvo.response.qtd_salvo
                     } else
                         return resultSalvo
+
+
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                    } else
+                        return resultQtdComentario
 
 
                     if (idUsuario != undefined) {
@@ -1101,6 +1139,12 @@ const buscarReceitasPorUsuario = async function (idUsuarioPerfil, idUserLogado) 
                         return resultSalvo
                     }
 
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                    } else
+                        return resultQtdComentario
+
 
                     if (idUserLogado != undefined) {
 
@@ -1238,6 +1282,11 @@ const buscarReceitasSalvasUsuario = async function (idUsuarioPerfil, idUserLogad
                         return resultSalvo
                     }
 
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                    } else
+                        return resultQtdComentario
 
                     if (idUserLogado != undefined) {
 
@@ -1379,6 +1428,12 @@ const buscarReceitasPorCategoria = async function (idCategoria, idUserLogado) {
                         return resultSalvo
                     }
 
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                    } else
+                        return resultQtdComentario
+
 
                     if (idUserLogado != undefined) {
 
@@ -1499,6 +1554,12 @@ const buscarReceitasMaisCurtidasSemana = async function () {
                     } else {
                         return resultCurtida
                     }
+
+                    let resultQtdComentario = await controllerComentario.listarQtdComentariosReceita(receita.id)
+                    if (resultQtdComentario.status) {
+                        receita.qtd_comentarios = resultQtdComentario.response.qtd_comentarios
+                    } else
+                        return resultQtdComentario
 
 
                     // let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
