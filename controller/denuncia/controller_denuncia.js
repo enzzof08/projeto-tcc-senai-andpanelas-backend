@@ -3,6 +3,8 @@ const configMessages = require('../modulo/configMessages')
 const denunciaDAO = require('../../model/DAO/denuncia/denuncia.js')
 
 const controllerChefinho = require('../chefinho/controller_chefinho.js')
+const bcrypt = require('bcrypt')
+const crypto = require('crypto')
 
 const inserirDenuncia = async function(denuncia, contentType){
 
@@ -91,7 +93,7 @@ const validarDados = async function(denuncia){
     }
 }
 
-const inserirDenunciaComunidade = async function (idComunidade, dados, contentType) {
+const inserirDenunciaComunidade = async function (idComunidade, dados, contentType, idUsuarioAutenticado) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
@@ -102,7 +104,7 @@ const inserirDenunciaComunidade = async function (idComunidade, dados, contentTy
         let motivo = typeof dados.motivo == 'string' ? dados.motivo.trim() : ''
         let detalhe = typeof dados.detalhe == 'string' && dados.detalhe.trim() != '' ? dados.detalhe.trim() : null
 
-        if (isNaN(idComunidade) || motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !dados.id_usuario || isNaN(dados.id_usuario)) {
+        if (isNaN(idComunidade) || motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !Number.isInteger(Number(idUsuarioAutenticado)) || Number(idUsuarioAutenticado) <= 0) {
             return customMessage.ERROR_BAD_REQUEST
         }
 
@@ -112,7 +114,7 @@ const inserirDenunciaComunidade = async function (idComunidade, dados, contentTy
             return customMessage.ERROR_NOT_FOUND
         }
 
-        await denunciaDAO.insertDenunciaComunidade(idComunidade, { motivo, detalhe, id_usuario: dados.id_usuario })
+        await denunciaDAO.insertDenunciaComunidade(idComunidade, { motivo, detalhe, id_usuario: Number(idUsuarioAutenticado) })
 
         let total = await denunciaDAO.selectTotalDenunciasComunidade(idComunidade)
 
@@ -144,18 +146,18 @@ const inserirDenunciaComunidade = async function (idComunidade, dados, contentTy
 const FOTO_BLOQUEADA = 'https://i.pinimg.com/originals/a9/c1/03/a9c10358112c550006d0db9b0f48d301.jpg'
 const BANNER_BLOQUEADO = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1PUaUb0c3ErJOjlNJd3XPKFynVrpxvjXw9uaHjKZEuA&s=10'
 
-const montarDenuncia = function (dados) {
+const montarDenuncia = function (dados, idUsuarioAutenticado) {
     let motivo = typeof dados.motivo == 'string' ? dados.motivo.trim() : ''
     let detalhe = typeof dados.detalhe == 'string' && dados.detalhe.trim() != '' ? dados.detalhe.trim() : null
 
-    if (motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !dados.id_usuario || isNaN(dados.id_usuario)) {
+    if (motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !Number.isInteger(Number(idUsuarioAutenticado)) || Number(idUsuarioAutenticado) <= 0) {
         return null
     }
 
-    return { motivo, detalhe, id_usuario: dados.id_usuario }
+    return { motivo, detalhe, id_usuario: Number(idUsuarioAutenticado) }
 }
 
-const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
+const inserirDenunciaReceita = async function (idReceita, dados, contentType, idUsuarioAutenticado) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
@@ -163,7 +165,7 @@ const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
             return customMessage.ERROR_CONTENT_TYPE
         }
 
-        let denuncia = montarDenuncia(dados)
+        let denuncia = montarDenuncia(dados, idUsuarioAutenticado)
 
         if (isNaN(idReceita) || !denuncia) {
             return customMessage.ERROR_BAD_REQUEST
@@ -203,7 +205,7 @@ const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
     }
 }
 
-const inserirDenunciaUsuario = async function (idUsuario, dados, contentType) {
+const inserirDenunciaUsuario = async function (idUsuario, dados, contentType, idUsuarioAutenticado) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
@@ -211,7 +213,7 @@ const inserirDenunciaUsuario = async function (idUsuario, dados, contentType) {
             return customMessage.ERROR_CONTENT_TYPE
         }
 
-        let denuncia = montarDenuncia(dados)
+        let denuncia = montarDenuncia(dados, idUsuarioAutenticado)
 
         if (isNaN(idUsuario) || !denuncia) {
             return customMessage.ERROR_BAD_REQUEST

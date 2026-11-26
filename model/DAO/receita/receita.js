@@ -48,11 +48,17 @@ const insertReceita = async function (receita) {
 }
 
 
-const selectALLReceita = async function () {
+const selectALLReceita = async function (limite) {
     try {
         let sql = 'select * from tbl_receita order by id desc'
+        const parametros = []
+        const limiteNumerico = Number(limite)
+        if (Number.isInteger(limiteNumerico) && limiteNumerico > 0) {
+            sql += ' LIMIT ?'
+            parametros.push(limiteNumerico)
+        }
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, parametros)
 
         if (Array.isArray(result)) {
             return result[0]
@@ -84,51 +90,23 @@ const selectReceitaByID = async function (idReceita) {
 
 const selectReceitasPorIngredientes = async function (ingredientes) {
     try {
+        if (!Array.isArray(ingredientes) || ingredientes.length === 0) return []
 
-        // Guarda as receitas encontradas
-        let receitasEncontradas = []
-
-        // Percorre os ingredientes recebidos
-        for (const ingrediente of ingredientes) {
-
-            // Busca as receitas que possuem este ingrediente
-            let sql = `
+        // Uma única consulta substitui a consulta sequencial por ingrediente.
+        // A lista manual é limitada para evitar hidratar um volume excessivo de receitas.
+        const placeholders = ingredientes.map(() => '?').join(', ')
+        const sql = `
             SELECT DISTINCT tbl_receita.*
             FROM tbl_receita
             INNER JOIN tbl_ingrediente
                 ON tbl_receita.id = tbl_ingrediente.id_receita
-            WHERE tbl_ingrediente.nome = '${ingrediente}';
-            `
+            WHERE tbl_ingrediente.nome IN (${placeholders})
+            ORDER BY tbl_receita.id DESC
+            LIMIT 100;
+        `
 
-            let result = await knexConection.raw(sql)
-
-            if (Array.isArray(result) && Array.isArray(result[0])) {
-
-                // Receitas encontradas para o ingrediente atual
-                let receitas = result[0]
-
-                // Percorre as receitas encontradas
-                for (const receita of receitas) {
-
-                    // Verifica se a receita já foi adicionada
-                    let jaExiste = receitasEncontradas.some(
-                        item => item.id == receita.id
-                    )
-
-                    // Adiciona somente se ainda não existir
-                    if (!jaExiste) {
-                        receitasEncontradas.push(receita)
-                    }
-                }
-
-            } else {
-
-                return false
-            }
-        }
-
-        return receitasEncontradas
-
+        const result = await knexConection.raw(sql, ingredientes)
+        return Array.isArray(result) ? result[0] : false
     } catch (error) {
         console.log(error)
         return false
@@ -150,10 +128,10 @@ const selectReceitasPorIngredientesGeladeira = async function (ingredientes) {
             FROM tbl_receita
             INNER JOIN tbl_ingrediente
                 ON tbl_receita.id = tbl_ingrediente.id_receita
-            WHERE tbl_ingrediente.nome = '${ingrediente.nome_ingrediente}';
+            WHERE tbl_ingrediente.nome = ?;
             `
 
-            let result = await knexConection.raw(sql)
+            let result = await knexConection.raw(sql, [ingrediente.nome_ingrediente])
 
             if (Array.isArray(result) && Array.isArray(result[0])) {
 
@@ -232,23 +210,18 @@ const deleteReceita = async function (idReceita) {
     }
 }
 
-const selectReceitasPorNome = async function (titulo) {
+const selectReceitasPorNome = async function (titulo, limite = 30) {
     try {
-
-        let sql = `
+        const sql = `
             SELECT *
             FROM tbl_receita
-            WHERE titulo LIKE '%${titulo}%';
+            WHERE titulo LIKE ?
+            ORDER BY id DESC
+            LIMIT ?;
         `
 
-        let result = await knexConection.raw(sql)
-
-        if (Array.isArray(result)) {
-            return result[0]
-        } else {
-            return false
-        }
-
+        const result = await knexConection.raw(sql, [`%${titulo}%`, limite])
+        return Array.isArray(result) ? result[0] : false
     } catch (error) {
         console.log(error)
         return false
@@ -300,7 +273,7 @@ const selectReceitasSalvasUsuario = async function(idUsuario) {
     }
 }
 
-const selectReceitasPorCategoria = async function(idCategoria){
+const selectReceitasPorCategoria = async function(idCategoria, limite = 50){
     try {
         let sql = `
             SELECT DISTINCT tbl_receita.*
@@ -308,10 +281,11 @@ const selectReceitasPorCategoria = async function(idCategoria){
                 INNER JOIN tbl_receita_categoria
                     ON tbl_receita.id = tbl_receita_categoria.id_receita
             WHERE tbl_receita_categoria.id_categoria = ?
-            ORDER BY tbl_receita.id DESC;
+            ORDER BY tbl_receita.id DESC
+            LIMIT ?;
         `
 
-        let result = await knexConection.raw(sql, [idCategoria])
+        let result = await knexConection.raw(sql, [idCategoria, limite])
 
         if (Array.isArray(result)) {
             return result[0]
@@ -344,7 +318,7 @@ const selectReceitasMaisCurtidasSemana = async function(){
 
         ON tbl_receita.id = resultado.id_receita
 
-        ORDER BY resultado.qtd_curtidas_semana DESC
+        ORDER BY resultado.qtd_curtidas_semana DESC, tbl_receita.id DESC
         LIMIT 3;`
 
         let result = await knexConection.raw(sql)

@@ -852,3 +852,157 @@ insert into tbl_usuario (
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-oTt0q3TUctmgFN69Aq8HUbMCvL1t_7hPJSQu6F5XQPvx4NAq6M72tZs&s=10'
 );
 
+-- ============================================================
+-- USUÁRIOS E COMUNIDADES DE TESTE (somente dados para ambiente local)
+-- Credenciais dos dois usuários:
+--   teste.comunidade1@entrepanelas.com | Teste123!
+--   teste.comunidade2@entrepanelas.com | Teste123!
+-- E-mail marcado como verificado para permitir login direto nos testes.
+-- Não altera tabelas, colunas ou relacionamentos do banco.
+-- ============================================================
+
+INSERT INTO tbl_usuario (
+    id, nome, username, email, senha, data_nascimento,
+    descricao, banner_url, foto_perfil, email_verificado
+) VALUES
+(
+    2,
+    'Marina Oliveira',
+    'marina_cozinha',
+    'teste.comunidade1@entrepanelas.com',
+    '$2b$10$iWRmgZ7SAi3cUGEv2Y806OztrkFpvNeEZM9lI0F6OrCOHu3.Gj1Sy',
+    '2000-05-14',
+    'Apaixonada por receitas caseiras e comida afetiva.',
+    'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1600',
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+    TRUE
+),
+(
+    3,
+    'Lucas Ferreira',
+    'lucas_na_cozinha',
+    'teste.comunidade2@entrepanelas.com',
+    '$2b$10$iWRmgZ7SAi3cUGEv2Y806OztrkFpvNeEZM9lI0F6OrCOHu3.Gj1Sy',
+    '2001-09-22',
+    'Testando pratos simples, lanches e receitas para compartilhar.',
+    'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1600',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400',
+    TRUE
+);
+
+INSERT INTO tbl_comunidade (foto_url, nome, banner_url, descricao, id_categoria_principal)
+VALUES (
+    'https://images.unsplash.com/photo-1547592180-85f173990554?w=800',
+    'Cozinha da Marina',
+    'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1600',
+    'Um espaço para compartilhar receitas caseiras, doces e pratos do dia a dia.',
+    1
+);
+SET @id_comunidade_marina = LAST_INSERT_ID();
+
+INSERT INTO tbl_comunidade (foto_url, nome, banner_url, descricao, id_categoria_principal)
+VALUES (
+    'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800',
+    'Receitas do Lucas',
+    'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=1600',
+    'Comunidade para testar receitas variadas e trocar ideias culinárias.',
+    7
+);
+SET @id_comunidade_lucas = LAST_INSERT_ID();
+
+INSERT INTO tbl_comunidade_usuario (id_comunidade, id_usuario, eh_criador)
+VALUES
+(@id_comunidade_marina, 2, TRUE),
+(@id_comunidade_lucas, 3, TRUE);
+
+-- Receitas da Marina: café da manhã, almoço e sobremesa.
+INSERT INTO tbl_receita (titulo, descricao, tempo, foto, video, id_custo, id_dificuldade, id_porcao, id_usuario)
+VALUES ('Pão de queijo caseiro', 'Pão de queijo macio por dentro e dourado por fora.', '00:35:00', 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=1200', NULL, 1, 1, 2, 2);
+SET @id_receita_marina_1 = LAST_INSERT_ID();
+INSERT INTO tbl_ingrediente (nome, quantidade, id_receita, id_unidade_medida) VALUES
+('Polvilho azedo', '250', @id_receita_marina_1, 1),
+('Queijo minas', '150', @id_receita_marina_1, 1),
+('Ovo', '1', @id_receita_marina_1, 5),
+('Leite', '100', @id_receita_marina_1, 3);
+INSERT INTO tbl_modo_preparo (metodo_preparo, ordem_preparo, id_receita) VALUES
+('Aqueça o leite e misture com o polvilho até formar uma massa.', 1, @id_receita_marina_1),
+('Adicione o queijo e o ovo, misture e modele pequenas porções.', 2, @id_receita_marina_1),
+('Asse em forno preaquecido até dourar.', 3, @id_receita_marina_1);
+INSERT INTO tbl_receita_categoria (id_categoria, id_receita) VALUES (1, @id_receita_marina_1);
+INSERT INTO tbl_comunidade_receita (id_comunidade, id_receita) VALUES (@id_comunidade_marina, @id_receita_marina_1);
+
+INSERT INTO tbl_receita (titulo, descricao, tempo, foto, video, id_custo, id_dificuldade, id_porcao, id_usuario)
+VALUES ('Frango ao curry simples', 'Frango cremoso com curry, ideal para acompanhar arroz.', '00:45:00', 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=1200', NULL, 2, 2, 4, 2);
+SET @id_receita_marina_2 = LAST_INSERT_ID();
+INSERT INTO tbl_ingrediente (nome, quantidade, id_receita, id_unidade_medida) VALUES
+('Peito de frango', '500', @id_receita_marina_2, 1),
+('Leite de coco', '200', @id_receita_marina_2, 3),
+('Curry', '10', @id_receita_marina_2, 1),
+('Cebola', '1', @id_receita_marina_2, 5);
+INSERT INTO tbl_modo_preparo (metodo_preparo, ordem_preparo, id_receita) VALUES
+('Corte o frango em cubos e tempere a gosto.', 1, @id_receita_marina_2),
+('Refogue a cebola, acrescente o frango e cozinhe até dourar.', 2, @id_receita_marina_2),
+('Junte o curry e o leite de coco, cozinhe até o molho engrossar.', 3, @id_receita_marina_2);
+INSERT INTO tbl_receita_categoria (id_categoria, id_receita) VALUES (2, @id_receita_marina_2);
+INSERT INTO tbl_comunidade_receita (id_comunidade, id_receita) VALUES (@id_comunidade_marina, @id_receita_marina_2);
+
+INSERT INTO tbl_receita (titulo, descricao, tempo, foto, video, id_custo, id_dificuldade, id_porcao, id_usuario)
+VALUES ('Brigadeiro de colher', 'Brigadeiro cremoso para servir em pequenas porções.', '00:20:00', 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=1200', NULL, 1, 1, 4, 2);
+SET @id_receita_marina_3 = LAST_INSERT_ID();
+INSERT INTO tbl_ingrediente (nome, quantidade, id_receita, id_unidade_medida) VALUES
+('Leite condensado', '395', @id_receita_marina_3, 1),
+('Chocolate em po', '30', @id_receita_marina_3, 1),
+('Manteiga', '15', @id_receita_marina_3, 1);
+INSERT INTO tbl_modo_preparo (metodo_preparo, ordem_preparo, id_receita) VALUES
+('Misture o leite condensado, o chocolate e a manteiga em uma panela.', 1, @id_receita_marina_3),
+('Cozinhe em fogo baixo, mexendo sempre, até ficar cremoso.', 2, @id_receita_marina_3),
+('Deixe amornar e sirva em potinhos.', 3, @id_receita_marina_3);
+INSERT INTO tbl_receita_categoria (id_categoria, id_receita) VALUES (4, @id_receita_marina_3);
+INSERT INTO tbl_comunidade_receita (id_comunidade, id_receita) VALUES (@id_comunidade_marina, @id_receita_marina_3);
+
+-- Receitas do Lucas: lanche, sopa e bebida.
+INSERT INTO tbl_receita (titulo, descricao, tempo, foto, video, id_custo, id_dificuldade, id_porcao, id_usuario)
+VALUES ('Sanduíche caprese', 'Sanduíche leve com tomate, queijo e manjericão.', '00:15:00', 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=1200', NULL, 2, 1, 2, 3);
+SET @id_receita_lucas_1 = LAST_INSERT_ID();
+INSERT INTO tbl_ingrediente (nome, quantidade, id_receita, id_unidade_medida) VALUES
+('Pao', '2', @id_receita_lucas_1, 5),
+('Tomate', '2', @id_receita_lucas_1, 5),
+('Mussarela', '100', @id_receita_lucas_1, 1),
+('Manjericao', '5', @id_receita_lucas_1, 1);
+INSERT INTO tbl_modo_preparo (metodo_preparo, ordem_preparo, id_receita) VALUES
+('Corte os tomates e o queijo em fatias.', 1, @id_receita_lucas_1),
+('Monte o sanduíche com tomate, queijo e manjericão.', 2, @id_receita_lucas_1),
+('Aqueça em uma frigideira ou sanduicheira até o queijo derreter.', 3, @id_receita_lucas_1);
+INSERT INTO tbl_receita_categoria (id_categoria, id_receita) VALUES (5, @id_receita_lucas_1);
+INSERT INTO tbl_comunidade_receita (id_comunidade, id_receita) VALUES (@id_comunidade_lucas, @id_receita_lucas_1);
+
+INSERT INTO tbl_receita (titulo, descricao, tempo, foto, video, id_custo, id_dificuldade, id_porcao, id_usuario)
+VALUES ('Sopa de legumes', 'Sopa simples com legumes cozidos em caldo leve.', '00:40:00', 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200', NULL, 1, 1, 4, 3);
+SET @id_receita_lucas_2 = LAST_INSERT_ID();
+INSERT INTO tbl_ingrediente (nome, quantidade, id_receita, id_unidade_medida) VALUES
+('Batata', '2', @id_receita_lucas_2, 5),
+('Cenoura', '1', @id_receita_lucas_2, 5),
+('Abobrinha', '1', @id_receita_lucas_2, 5),
+('Caldo de legumes', '500', @id_receita_lucas_2, 3);
+INSERT INTO tbl_modo_preparo (metodo_preparo, ordem_preparo, id_receita) VALUES
+('Lave, descasque e corte os legumes em pedaços.', 1, @id_receita_lucas_2),
+('Coloque os legumes e o caldo em uma panela.', 2, @id_receita_lucas_2),
+('Cozinhe até os legumes ficarem macios e ajuste o tempero.', 3, @id_receita_lucas_2);
+INSERT INTO tbl_receita_categoria (id_categoria, id_receita) VALUES (6, @id_receita_lucas_2);
+INSERT INTO tbl_comunidade_receita (id_comunidade, id_receita) VALUES (@id_comunidade_lucas, @id_receita_lucas_2);
+
+INSERT INTO tbl_receita (titulo, descricao, tempo, foto, video, id_custo, id_dificuldade, id_porcao, id_usuario)
+VALUES ('Suco de maracujá natural', 'Suco refrescante de maracujá preparado na hora.', '00:10:00', 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=1200', NULL, 1, 1, 3, 3);
+SET @id_receita_lucas_3 = LAST_INSERT_ID();
+INSERT INTO tbl_ingrediente (nome, quantidade, id_receita, id_unidade_medida) VALUES
+('Maracuja', '2', @id_receita_lucas_3, 5),
+('Agua', '500', @id_receita_lucas_3, 3),
+('Acucar', '30', @id_receita_lucas_3, 1);
+INSERT INTO tbl_modo_preparo (metodo_preparo, ordem_preparo, id_receita) VALUES
+('Retire a polpa dos maracujás.', 1, @id_receita_lucas_3),
+('Bata a polpa com a água e o açúcar.', 2, @id_receita_lucas_3),
+('Coe se desejar e sirva gelado.', 3, @id_receita_lucas_3);
+INSERT INTO tbl_receita_categoria (id_categoria, id_receita) VALUES (8, @id_receita_lucas_3);
+INSERT INTO tbl_comunidade_receita (id_comunidade, id_receita) VALUES (@id_comunidade_lucas, @id_receita_lucas_3);
+
+

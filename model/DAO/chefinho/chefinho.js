@@ -20,6 +20,27 @@ const selectUltimasMensagens = async function (idConversa, limite) {
     return mensagens.reverse()
 }
 
+const selectConversasByUsuario = async function (idUsuario) {
+    return await knexConection('tbl_chefinho_conversa')
+        .select('id', 'titulo', 'data_hora')
+        .where({ id_usuario: idUsuario })
+        .orderBy('id', 'desc')
+}
+
+const selectMensagensByConversa = async function (idConversa) {
+    return await knexConection('tbl_mensagem')
+        .select('id', 'conteudo', 'tipo_remetente', 'data_hora')
+        .where({ id_chefinho_conversa: idConversa })
+        .orderBy('id', 'asc')
+}
+
+const deleteConversa = async function (idConversa) {
+    return await knexConection.transaction(async function (trx) {
+        await trx('tbl_mensagem').where({ id_chefinho_conversa: idConversa }).del()
+        return await trx('tbl_chefinho_conversa').where({ id: idConversa }).del()
+    })
+}
+
 const insertMensagens = async function (idConversa, pergunta, resposta) {
     return await knexConection('tbl_mensagem').insert([
         { conteudo: pergunta, tipo_remetente: 'user', id_chefinho_conversa: idConversa },
@@ -36,32 +57,12 @@ const insertConversa = async function (titulo, idUsuario) {
     return id
 }
 
-const selectConversasPorUsuario = async function (idUsuario) {
-    return await knexConection('tbl_chefinho_conversa')
-        .select('id', 'titulo', 'data_hora')
-        .where({ id_usuario: idUsuario })
-        .orderBy('id', 'desc')
-}
-
-const selectMensagensPorConversa = async function (idConversa) {
-    return await knexConection('tbl_mensagem')
-        .select('id', 'tipo_remetente', 'conteudo', 'data_hora')
-        .where({ id_chefinho_conversa: idConversa })
-        .orderBy('id', 'asc')
-}
-
-const deleteConversa = async function (idConversa) {
-    await knexConection('tbl_mensagem').where({ id_chefinho_conversa: idConversa }).del()
-
-    return await knexConection('tbl_chefinho_conversa').where({ id: idConversa }).del()
-}
-
 module.exports = {
     selectConversaById,
     selectUltimasMensagens,
+    selectConversasByUsuario,
+    selectMensagensByConversa,
     insertMensagens,
     insertConversa,
-    selectConversasPorUsuario,
-    selectMensagensPorConversa,
     deleteConversa
 }

@@ -610,7 +610,7 @@ const verificarCodigoRecuperacao = async function (dados, contentType) {
             if (!codigoValido) {
 
                 // Incrementa a quantidade de tentativas
-                let resultTentativas = await codigoVerificacaoDAO.incrementarTentativasCodigo(
+                let resultTentativas = await codigoVerificacaoDAO.updateTentativasCodigo(
                     resultUsuario.id,
                     'recuperar_senha'
                 )
@@ -665,10 +665,11 @@ const redefinirSenha = async function (dados, contentType) {
                 dados.email == '' ||
                 dados.codigo == undefined ||
                 dados.codigo == null ||
-                dados.codigo == '' ||
+                !/^\d{6}$/.test(String(dados.codigo).trim()) ||
                 typeof dados.nova_senha != 'string' ||
-                dados.nova_senha.trim() == '' ||
-                dados.nova_senha.length > 15
+                dados.nova_senha.trim().length < 6 ||
+                dados.nova_senha.length > 15 ||
+                (dados.confirmar_senha !== undefined && dados.confirmar_senha !== dados.nova_senha)
             ) {
 
                 customMessage.ERROR_BAD_REQUEST.field = '[DADOS] INVÁLIDOS'
@@ -723,7 +724,7 @@ const redefinirSenha = async function (dados, contentType) {
 
             if (!codigoValido) {
 
-                let resultTentativas = await codigoVerificacaoDAO.incrementarTentativasCodigo(
+                let resultTentativas = await codigoVerificacaoDAO.updateTentativasCodigo(
                     resultUsuario.id,
                     'recuperar_senha'
                 )
@@ -780,6 +781,7 @@ const redefinirSenha = async function (dados, contentType) {
 
 }
 
+
 const atualizarUsuario = async function (dados, id, contentType) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -788,14 +790,17 @@ const atualizarUsuario = async function (dados, id, contentType) {
 
             let BuscaUsuario = await buscarUsuario(id)
 
-            if (BuscaUsuario) {
+            if (BuscaUsuario.status) {
+
+                let usuarioAtual = BuscaUsuario.response.usuario
 
                 let dadosAtualizados = {
-                    nome: dados.nome === undefined ? usuario.nome : dados.nome,
-                    username: dados.username === undefined ? usuario.username : dados.username,
-                    descricao: dados.descricao === undefined ? usuario.descricao : dados.descricao,
-                    banner_url: dados.banner_url === undefined ? usuario.banner_url : dados.banner_url,
-                    foto_perfil: dados.foto_perfil === undefined ? usuario.foto_perfil : dados.foto_perfil
+                    nome: dados.nome === undefined ? usuarioAtual.nome : dados.nome,
+                    username: dados.username === undefined ? usuarioAtual.username : dados.username,
+                    descricao: dados.descricao === undefined ? usuarioAtual.descricao : dados.descricao,
+                    banner_url: dados.banner_url === undefined ? usuarioAtual.banner_url : dados.banner_url,
+                    foto_perfil: dados.foto_perfil === undefined ? usuarioAtual.foto_perfil : dados.foto_perfil,
+                    data_nascimento: dados.data_nascimento === undefined ? usuarioAtual.data_nascimento : dados.data_nascimento
                 }
 
                 let validar = await validarDadosAtualizacao(dadosAtualizados)
@@ -845,43 +850,37 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
 
         if (result) {
 
-            let resultReceitas = await usuarioDAO.selectQtdReceitasUsuario(idUserPerfil)
+            const [resultReceitas, resultSeguidores, resultSeguindo] = await Promise.all([
+                usuarioDAO.selectQtdReceitasUsuario(idUserPerfil),
+                usuarioDAO.selectQtdSeguidoresUsuario(idUserPerfil),
+                usuarioDAO.selectQtdSeguindoUsuario(idUserPerfil)
+            ])
 
-            if (resultReceitas) {
-                result.qtd_receitas = resultReceitas.qtd_receitas
-            } else {
+            if (!resultReceitas || !resultSeguidores || !resultSeguindo) {
                 return customMessage.ERROR_INTERNAL_SERVER_MODEL
             }
 
-            let resultSeguidores = await usuarioDAO.selectQtdSeguidoresUsuario(idUserPerfil)
-
-            if (resultSeguidores) {
-                result.qtd_seguidores = resultSeguidores.qtd_seguidores
-            } else {
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
-            }
-
-            let resultSeguindo = await usuarioDAO.selectQtdSeguindoUsuario(idUserPerfil)
-
-            if (resultSeguindo) {
-                result.qtd_seguindo = resultSeguindo.qtd_seguindo
-            } else {
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
-            }
+            result.qtd_receitas = resultReceitas.qtd_receitas
+            result.qtd_seguidores = resultSeguidores.qtd_seguidores
+            result.qtd_seguindo = resultSeguindo.qtd_seguindo
 
 
-            // Verifica se o usuário logado segue o perfil visitado
-            if (idUserLogado != undefined && Number(idUserLogado) !== Number(idUserPerfil)) {
-
-                let resultVerificar = await controllerSeguidores.verificarSeguindo(
-                    idUserPerfil,
-                    idUserLogado
-                )
-
-                if (resultVerificar.status) {
-                    result.segue_usuario = resultVerificar.response.segue_usuario
+            // Um usuário não segue a si mesmo. Não envie esse caso à validação
+            // de seguidores, que corretamente rejeita relações com IDs iguais.
+            if (idUserLogado != undefined && idUserLogado != null) {
+                if (Number(idUserPerfil) === Number(idUserLogado)) {
+                    result.segue_usuario = false
                 } else {
-                    return resultVerificar
+                    let resultVerificar = await controllerSeguidores.verificarSeguindo(
+                        idUserPerfil,
+                        idUserLogado
+                    )
+
+                    if (resultVerificar.status) {
+                        result.segue_usuario = resultVerificar.response.segue_usuario
+                    } else {
+                        return resultVerificar
+                    }
                 }
             }
 
@@ -903,37 +902,33 @@ const buscarUsuario = async function (idUserPerfil, idUserLogado) {
     }
 }
 
-const listarTodosUsuarios = async function (idUserLogado) {
+const listarTodosUsuarios = async function (idUserLogado, limite = 50) {
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-
-        let result = await userDAO.selectAllUsuarios()
+        const limiteNumerico = Number(limite)
+        const limiteSeguro = Number.isInteger(limiteNumerico) && limiteNumerico > 0
+            ? Math.min(limiteNumerico, 100)
+            : 50
+        let result = await userDAO.selectAllUsuarios(limiteSeguro)
 
         if (result && result.length > 0) {
             result = result.filter(usuario => Number(usuario.id) !== Number(idUserLogado))
 
 
-            if (idUserLogado != undefined && idUserLogado != null) {
-                for (let usuario of result) {
+            if (idUserLogado !== undefined && idUserLogado !== null) {
+                // Uma consulta recupera todos os perfis seguidos. Isso evita uma
+                // requisição SQL individual para cada usuário da Home.
+                const respostaSeguindo = await controllerSeguidores.listarSeguindo(idUserLogado)
+                if (!respostaSeguindo?.status) return respostaSeguindo || customMessage.ERROR_INTERNAL_SERVER_MODEL
 
-                    if (Number(usuario.id) === Number(idUserLogado)) {
-                        usuario.segue_usuario = false
-                        continue
-                    }
-
-                    let resultSeguidor = await controllerSeguidores.verificarSeguindo(
-                        usuario.id,
-                        idUserLogado
-                    )
-
-                    if (resultSeguidor.status) {
-                        usuario.segue_usuario = resultSeguidor.response.segue_usuario
-                    } else {
-                        return resultSeguidor
-                    }
-                }
+                const idsSeguidos = new Set(
+                    (respostaSeguindo.response?.seguindo || []).map((usuario) => Number(usuario.id))
+                )
+                result.forEach((usuario) => {
+                    usuario.segue_usuario = idsSeguidos.has(Number(usuario.id))
+                })
             }
 
             customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
@@ -968,26 +963,16 @@ const buscarUsuariosPorNome = async function (nome, idUserLogado) {
 
         if (result && result.length > 0) {
 
-            if (idUserLogado != undefined && idUserLogado != null) {
+            if (idUserLogado !== undefined && idUserLogado !== null) {
+                const respostaSeguindo = await controllerSeguidores.listarSeguindo(idUserLogado)
+                if (!respostaSeguindo?.status) return respostaSeguindo || customMessage.ERROR_INTERNAL_SERVER_MODEL
 
-                for (let usuario of result) {
-
-                    if (Number(usuario.id) === Number(idUserLogado)) {
-                        usuario.segue_usuario = false
-                        continue
-                    }
-
-                    let resultSeguidor = await controllerSeguidores.verificarSeguindo(
-                        usuario.id,
-                        idUserLogado
-                    )
-
-                    if (resultSeguidor.status) {
-                        usuario.segue_usuario = resultSeguidor.response.segue_usuario
-                    } else {
-                        return resultSeguidor
-                    }
-                }
+                const idsSeguidos = new Set(
+                    (respostaSeguindo.response?.seguindo || []).map((usuario) => Number(usuario.id))
+                )
+                result.forEach((usuario) => {
+                    usuario.segue_usuario = Number(usuario.id) !== Number(idUserLogado) && idsSeguidos.has(Number(usuario.id))
+                })
             }
 
             customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
@@ -1066,6 +1051,9 @@ const validarDadosAtualizacao = async function (usuario) {
         return customMessage.ERROR_BAD_REQUEST
     } else if (usuario.foto_perfil != undefined && usuario.foto_perfil != null && usuario.foto_perfil != '' && (typeof usuario.foto_perfil != 'string' || usuario.foto_perfil.length > 2000 || !/^https?:\/\/.+/i.test(usuario.foto_perfil))) {
         customMessage.ERROR_BAD_REQUEST.field = '[FOTO DE PERFIL] INVÁLIDA'
+        return customMessage.ERROR_BAD_REQUEST
+    } else if (usuario.data_nascimento != undefined && usuario.data_nascimento != null && isNaN(new Date(usuario.data_nascimento).getTime())) {
+        customMessage.ERROR_BAD_REQUEST.field = '[DATA DE NASCIMENTO] INVÁLIDA'
         return customMessage.ERROR_BAD_REQUEST
     } else {
         return false

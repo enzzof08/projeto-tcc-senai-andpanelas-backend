@@ -140,7 +140,7 @@ const listarComunidade = async function (idUsuario) {
 
                 if (idUsuario != undefined) {
 
-                    for (comunidade of result) {
+                    for (let comunidade of result) {
 
                         let resultMembros = await comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(comunidade.id)
 
@@ -153,7 +153,7 @@ const listarComunidade = async function (idUsuario) {
                         let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(comunidade.id)
 
                         if (resultCriador.status) {
-                            result[0].criador = resultCriador.response
+                            comunidade.criador = resultCriador.response
                         } else {
                             return resultCriador
                         }
@@ -211,7 +211,7 @@ const buscarComunidade = async function (idUser, idComunidade) {
 
                 if (result.length > 0) {
 
-                    for (comunidade of result) {
+                    for (let comunidade of result) {
                         let resultMembros = await comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(idComunidade)
 
                         let resultReceitas = await comunidadeReceitaDAO.selectQuantidadeReceitasPorComunidade(idComunidade)
@@ -224,7 +224,7 @@ const buscarComunidade = async function (idUser, idComunidade) {
                         let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
 
                         if (resultCriador.status) {
-                            result[0].criador = resultCriador.response
+                            comunidade.criador = resultCriador.response
                         } else {
                             return resultCriador
                         }

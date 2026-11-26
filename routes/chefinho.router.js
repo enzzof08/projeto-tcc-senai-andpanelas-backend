@@ -32,8 +32,9 @@ router.get('/', auth.verifyToken, async function (request, response) {
 })
 
 router.get('/:id', auth.verifyToken, async function (request, response) {
-    let id = request.params.id
     let idUsuario = request.id_usuario
+
+    let id = request.params.id
 
     let result = await controllerChefinho.buscarDetalhesDeUmaConversa(id, idUsuario)
 

@@ -69,6 +69,22 @@ const selectComentariosPorReceita = async function(idReceita){
 }
 
 
+// Retorna somente a quantidade de comentários, sem transferir o conteúdo completo.
+const selectQtdComentariosPorReceita = async function (idReceita) {
+    try {
+        const sql = `SELECT COUNT(*) AS qtd_comentarios
+            FROM tbl_comentario
+            WHERE id_receita = ?`
+        const result = await knexConection.raw(sql, [idReceita])
+        const quantidade = Number(result?.[0]?.[0]?.qtd_comentarios)
+        return Number.isFinite(quantidade) ? quantidade : false
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+
 // UPDATE COMENTARIO
 const updateComentario = async function(comentario){
     try {
@@ -124,6 +140,7 @@ const deleteComentario = async function(idComentario, idUsuario){
 module.exports = {
     insertComentario,
     selectComentariosPorReceita,
+    selectQtdComentariosPorReceita,
     updateComentario,
     deleteComentario
 }

@@ -1,6 +1,7 @@
 const configMessages = require('../modulo/configMessages')
 
 const comunidadeUsuarioDAO = require('../../model/DAO/comunidade_usuario/comunidade_usuario')
+const comunidadeReceitaDAO = require('../../model/DAO/comunidade_receita/comunidade_receita')
 
 const inserirNovaComunidadeUsuario = async function (idUser, idComunidade, ehCriador = false){
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -46,11 +47,27 @@ const buscarComunidadesPorUsuario = async function(idUsuario){
         } else {
             let result = await comunidadeUsuarioDAO.selectComunidadeByIdUsuario(idUsuario)
 
-            if (result){
+            if (result) {
+                const comunidadesComContagem = await Promise.all(result.map(async (comunidade) => {
+                    const [qtdMembros, qtdReceitas] = await Promise.all([
+                        comunidadeUsuarioDAO.selectQuantidadeMembrosPorComunidade(comunidade.id),
+                        comunidadeReceitaDAO.selectQuantidadeReceitasPorComunidade(comunidade.id)
+                    ])
+
+                    if (qtdMembros === false || qtdReceitas === false) {
+                        throw new Error('Não foi possível calcular os totais da comunidade.')
+                    }
+
+                    return {
+                        ...comunidade,
+                        qtd_membros: Number(qtdMembros),
+                        qtd_receitas: Number(qtdReceitas)
+                    }
+                }))
 
                 customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                 customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.comunidade = result
+                customMessage.DEFAULT_MESSAGE.response.comunidade = comunidadesComContagem
 
                 return customMessage.DEFAULT_MESSAGE
             }else{

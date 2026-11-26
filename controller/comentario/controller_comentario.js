@@ -96,6 +96,22 @@ const buscarComentarioPelaReceita = async function(idReceita){
     }
 }
 
+const adicionarQtdComentarios = async function (receitas) {
+    const tamanhoLote = 10
+
+    for (let inicio = 0; inicio < receitas.length; inicio += tamanhoLote) {
+        const lote = receitas.slice(inicio, inicio + tamanhoLote)
+        const contagens = await Promise.all(lote.map((receita) =>
+            comentarioDAO.selectQtdComentariosPorReceita(receita.id)
+        ))
+
+        lote.forEach((receita, indice) => {
+            receita.qtd_comentarios = Number.isFinite(contagens[indice]) ? contagens[indice] : 0
+        })
+    }
+
+    return receitas
+}
 const atualizarComentario = async function(comentario, idComentario, idUsuario, contentType){
 
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -219,6 +235,7 @@ const validarDados = async function(comentario){
 module.exports = {
     inserirComentario,
     buscarComentarioPelaReceita,
+    adicionarQtdComentarios,
     atualizarComentario,
     excluirComentario
 }

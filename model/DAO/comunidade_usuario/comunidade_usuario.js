@@ -67,7 +67,7 @@ const selectComunidadeByIdUsuario = async function(idUsuario){
 const selectUsuarioByIdComunidade = async function(idComunidade){
     try {
         let sql = `
-    SELECT tbl_usuario.*
+    SELECT tbl_usuario.id, tbl_usuario.nome, tbl_usuario.username, tbl_usuario.foto_perfil
     FROM tbl_comunidade
         INNER JOIN tbl_comunidade_usuario
             ON tbl_comunidade.id = tbl_comunidade_usuario.id_comunidade

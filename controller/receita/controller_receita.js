@@ -32,6 +32,90 @@ const controllerCutir = require('../curtida/controller_curtida.js')
 const controllerSalvar = require('../salvar/controller_salvar.js')
 const controllerComentario = require('../comentario/controller_comentario.js')
 
+
+/**
+ * Hidrata listas de receitas usando consultas independentes em paralelo.
+ * Mantém os mesmos campos públicos utilizados pelas telas e limita a
+ * concorrência por lotes para respeitar o pool de conexões do MySQL.
+ */
+const hidratarListaReceitas = async function (receitas, idUsuario, { incluirCategoria = true, tamanhoLote = 4 } = {}) {
+    const usuariosEmCache = new Map()
+
+    const buscarUsuarioCacheado = (id) => {
+        const chave = String(id)
+        if (!usuariosEmCache.has(chave)) {
+            usuariosEmCache.set(chave, controllerUsuario.buscarUsuario(id))
+        }
+        return usuariosEmCache.get(chave)
+    }
+
+    for (let inicio = 0; inicio < receitas.length; inicio += tamanhoLote) {
+        const lote = receitas.slice(inicio, inicio + tamanhoLote)
+        const erros = await Promise.all(lote.map(async (receita) => {
+            const tarefas = [
+                buscarUsuarioCacheado(receita.id_usuario),
+                controllerDificuldade.buscarDificuldade(receita.id_dificuldade),
+                incluirCategoria
+                    ? controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
+                    : Promise.resolve(null),
+                controllerCusto.buscarCusto(receita.id_custo),
+                controllerPorcao.buscarPorcao(receita.id_porcao),
+                controllerCutir.listarCurtidasReceita(receita.id),
+                controllerSalvar.listarSalvosReceita(receita.id)
+            ]
+
+            if (idUsuario !== undefined && idUsuario !== null) {
+                tarefas.push(controllerCutir.verificarCurtidaUsuario(idUsuario, receita.id))
+                tarefas.push(controllerSalvar.verificarSalvoUsuario(idUsuario, receita.id))
+            }
+
+            const respostas = await Promise.all(tarefas)
+            const [usuario, dificuldade, categoria, custo, porcao, curtidas, salvos, curtidaUsuario, salvoUsuario] = respostas
+
+            const obrigatorias = [usuario, dificuldade, ...(incluirCategoria ? [categoria] : []), custo, porcao, curtidas, salvos]
+            const erro = obrigatorias.find((resposta) => !resposta || !resposta.status)
+            if (erro) return erro
+
+            if (idUsuario !== undefined && idUsuario !== null) {
+                if (!curtidaUsuario?.status) return curtidaUsuario || { status: false, status_code: 500 }
+                if (!salvoUsuario?.status) return salvoUsuario || { status: false, status_code: 500 }
+            }
+
+            receita.usuario = usuario.response.usuario
+            const dificuldadeRegistro = dificuldade.response.dificuldade?.[0]
+            const custoRegistro = custo.response.custo?.[0]
+            const porcaoRegistro = porcao.response.porcao?.[0]
+
+            // A API pública entrega valores primitivos, como os componentes Vue esperam.
+            receita.dificuldade = dificuldadeRegistro?.dificuldade || 'Fácil'
+            receita.custo = custoRegistro?.tipo_custo || 'Econômico'
+            receita.porcao = porcaoRegistro?.numero_porcao || 1
+            receita.qtd_curtidas = curtidas.response.qtd_curtida
+            receita.qtd_salvos = salvos.response.qtd_salvo
+
+            if (incluirCategoria) {
+                receita.categoria = categoria.response.categoria
+            }
+
+            if (idUsuario !== undefined && idUsuario !== null) {
+                receita.curtida_pelo_usuario = curtidaUsuario.response.curtida_usuario
+                receita.salvo_pelo_usuario = salvoUsuario.response.salvo_usuario
+            }
+
+            delete receita.id_usuario
+            delete receita.id_dificuldade
+            delete receita.id_custo
+            delete receita.id_porcao
+            return null
+        }))
+
+        const erro = erros.find(Boolean)
+        if (erro) return erro
+    }
+
+    return null
+}
+
 const inserirNovaReceita = async function (receita, contentType) {
 
     //Forma de criar uma cópia dos JSON do arquvio de configuração de mensagens
@@ -119,7 +203,7 @@ const inserirNovaReceita = async function (receita, contentType) {
                     }
 
                     // CATEGORIA
-                    for (itemCategoria of receita.categoria) {
+                    for (let itemCategoria of receita.categoria) {
 
 
                         let receitaCategoria = {
@@ -141,7 +225,7 @@ const inserirNovaReceita = async function (receita, contentType) {
                     //COMUNIDADE
                     if (receita.comunidade && receita.comunidade.length > 0) {
 
-                        for (itemComunidade of receita.comunidade) {
+                        for (let itemComunidade of receita.comunidade) {
 
                             let dadosComunidade = {
                                 id_receita: receita.id,
@@ -223,121 +307,30 @@ const inserirNovaReceita = async function (receita, contentType) {
 
 }
 
-const listarReceitas = async function (idUsuario) {
-
-    // Cria uma cópia das mensagens padronizadas
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+const listarReceitas = async function (idUsuario, limite = 50) {
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+        const limiteNumerico = Number(limite)
+        const limiteSeguro = Number.isInteger(limiteNumerico) && limiteNumerico > 0
+            ? Math.min(limiteNumerico, 100)
+            : 50
+        const result = await receitaDAO.selectALLReceita(limiteSeguro)
 
-        let result = await receitaDAO.selectALLReceita()
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
+        const erro = await hidratarListaReceitas(result, idUsuario, { incluirCategoria: true, tamanhoLote: 4 })
+        if (erro) return erro
 
-        if (result) {
-            if (result.length > 0) {
+        await controllerComentario.adicionarQtdComentarios(result)
 
-                for (receita of result) {
-
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else
-                        return resultUsuario
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else
-                        return resultDificuldade
-
-
-
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-
-                    } else
-                        return resultCategoria
-
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-                    //console.log(resultCusto)
-                    if (resultCusto.status) {
-                        receita.custo = resultCusto.response.custo
-                        delete receita.id_custo
-                    } else
-                        return resultCusto
-
-
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else
-                        return resultPorcao
-
-
-                    let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-                    if (resultCurtida.status) {
-                        receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                    } else
-                        return resultCurtida
-
-
-                    let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-                    if (resultSalvo.status) {
-                        receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                    } else
-                        return resultSalvo
-
-
-                    if (idUsuario != undefined) {
-
-                        let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
-                            idUsuario,
-                            receita.id
-                        )
-
-                        if (resultVerificarCurtida.status) {
-                            receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
-                        } else {
-                            return resultVerificarCurtida
-                        }
-
-
-
-                        let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
-                            idUsuario,
-                            receita.id
-                        )
-
-                        if (resultVerificarSalvo.status) {
-                            receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
-                        } else {
-                            return resultVerificarSalvo
-                        }
-                    }
-
-                }
-
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response = result
-
-                return customMessage.DEFAULT_MESSAGE // 200
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND //404
-            }
-        } else {
-            customMessage.ERROR_INTERNAL_SERVER_MODEL //404
-        }
-
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
@@ -579,7 +572,7 @@ const buscarReceita = async function (idReceita, idUsuario) {
         if (result) {
             if (result.length > 0) {
 
-                for (receita of result) {
+                for (let receita of result) {
 
                     let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
                     if (resultUsuario.status) {
@@ -691,6 +684,7 @@ const buscarReceita = async function (idReceita, idUsuario) {
                     let resultComentario = await controllerComentario.buscarComentarioPelaReceita(receita.id)
                     if (resultComentario.status) {
                         receita.comentarios = resultComentario.response.comentarios
+                        receita.qtd_comentarios = receita.comentarios.length
                     } else
                         return resultComentario
 
@@ -719,274 +713,109 @@ const buscarReceita = async function (idReceita, idUsuario) {
 }
 
 const buscarReceitasPorIngredientes = async function (ingredientes, idUsuario) {
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-
-        if (ingredientes != undefined && !Array.isArray(ingredientes)) {
+        if (ingredientes !== undefined && !Array.isArray(ingredientes)) {
             ingredientes = [ingredientes]
         }
 
-        let validar = await validarDadosBuscaIngredientes(ingredientes)
+        const validar = await validarDadosBuscaIngredientes(ingredientes)
+        if (validar) return validar
 
-        if (validar) {
+        const ingredientesCorrigidos = []
+        for (const ingrediente of ingredientes) {
+            const respostaIngrediente = await controllerIngrediente.corrigirIngredienteNome(ingrediente)
+            if (!respostaIngrediente?.status) return respostaIngrediente || customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+            ingredientesCorrigidos.push(respostaIngrediente.response)
+        }
 
-            return validar
+        const result = await receitaDAO.selectReceitasPorIngredientes(ingredientesCorrigidos)
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
-        } else {
+        const erroHidratacao = await hidratarListaReceitas(result, idUsuario, {
+            incluirCategoria: false,
+            tamanhoLote: 4
+        })
+        if (erroHidratacao) return erroHidratacao
 
-            let ingredientesCorrigidos = []
+        const normalizarIngrediente = (valor) => String(valor ?? '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLocaleLowerCase('pt-BR')
+        const ingredientesBuscados = new Set(ingredientesCorrigidos.map(normalizarIngrediente))
 
-            for (const ingrediente of ingredientes) {
+        for (let inicio = 0; inicio < result.length; inicio += 4) {
+            const lote = result.slice(inicio, inicio + 4)
+            const respostas = await Promise.all(lote.map((receita) =>
+                controllerIngrediente.listarIngredientesPorReceita(receita.id)
+            ))
 
-                let resultIngrediente = await controllerIngrediente.corrigirIngredienteNome(ingrediente)
+            for (let indice = 0; indice < lote.length; indice++) {
+                const resposta = respostas[indice]
+                if (!resposta?.status) return resposta || customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
 
-                if (resultIngrediente && resultIngrediente.status) {
+                const ingredientesDaReceita = resposta.response?.ingrediente || []
+                const encontrados = ingredientesDaReceita.reduce((total, item) =>
+                    total + (ingredientesBuscados.has(normalizarIngrediente(item.nome)) ? 1 : 0), 0)
 
-                    ingredientesCorrigidos.push(
-                        resultIngrediente.response
-                    )
-
-                } else {
-
-                    return resultIngrediente
-                }
-            }
-
-            let result = await receitaDAO.selectReceitasPorIngredientes(ingredientesCorrigidos)
-
-            if (result) {
-                if (result.length > 0) {
-
-                    for (receita of result) {
-
-                        let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-                        if (resultUsuario) {
-                            receita.usuario = resultUsuario.response.usuario
-                            delete receita.id_usuario
-                        } else
-                            return resultUsuario
-
-                        let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-                        if (resultDificuldade) {
-                            receita.dificuldade = resultDificuldade.response.dificuldade
-                            delete receita.id_dificuldade
-                        } else
-                            return resultDificuldade
-
-
-                        let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-                        if (resultCusto) {
-                            receita.custo = resultCusto.response.custo
-                            delete receita.id_custo
-                        } else
-                            return resultCusto
-
-
-                        let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-                        if (resultPorcao) {
-                            receita.porcao = resultPorcao.response.porcao
-                            delete receita.id_porcao
-                        } else
-                            return resultPorcao
-
-
-                        let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-                        if (resultCurtida.status) {
-                            receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                        } else
-                            return resultCurtida
-
-
-                        let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-                        if (resultSalvo.status) {
-                            receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                        } else
-                            return resultSalvo
-
-
-                        if (idUsuario != undefined) {
-
-                            let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
-                                idUsuario,
-                                receita.id
-                            )
-
-                            if (resultVerificarCurtida.status) {
-                                receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
-                            } else {
-                                return resultVerificarCurtida
-                            }
-
-
-
-                            let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
-                                idUsuario,
-                                receita.id
-                            )
-
-                            if (resultVerificarSalvo.status) {
-                                receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
-                            } else {
-                                return resultVerificarSalvo
-                            }
-                        }
-
-                    }
-
-                    // Ordenar as receitas de acordo com a compatibilidade
-                    result.sort((a, b) => b.compatibilidade - a.compatibilidade)
-
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                    customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
-                    customMessage.DEFAULT_MESSAGE.response.count = result.length
-                    customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                    return customMessage.DEFAULT_MESSAGE
-
-                } else {
-                    return customMessage.ERROR_NOT_FOUND
-                }
-
-            } else {
-
-                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                // Mantém a mesma regra usada pela busca da geladeira:
+                // ingredientes encontrados / total de ingredientes da receita.
+                lote[indice].compatibilidade = ingredientesDaReceita.length > 0
+                    ? Math.round((encontrados / ingredientesDaReceita.length) * 100)
+                    : 0
             }
         }
 
+        result.sort((a, b) => b.compatibilidade - a.compatibilidade)
+        await controllerComentario.adicionarQtdComentarios(result)
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response.receitas = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const buscarReceitasPorNome = async function (titulo, idUsuario) {
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+const buscarReceitasPorNome = async function (titulo, idUsuario, limite = 30) {
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-
-        if (titulo == undefined || titulo == null || titulo.trim() == '') {
+        if (typeof titulo !== 'string' || !titulo.trim() || titulo.trim().length > 50) {
             customMessage.ERROR_BAD_REQUEST.field = '[TITULO] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
         }
 
-        let result = await receitaDAO.selectReceitasPorNome(titulo)
+        const limiteNumerico = Number(limite)
+        const limiteSeguro = Number.isInteger(limiteNumerico) && limiteNumerico > 0
+            ? Math.min(limiteNumerico, 100)
+            : 30
+        const result = await receitaDAO.selectReceitasPorNome(titulo.trim(), limiteSeguro)
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
-        if (result) {
+        const erro = await hidratarListaReceitas(result, idUsuario, {
+            incluirCategoria: true,
+            tamanhoLote: 4
+        })
+        if (erro) return erro
 
-            if (result.length > 0) {
-                for (receita of result) {
+        const emAlta = await controllerEmAlta.inserirNovoEmAlta(titulo.trim())
+        if (!emAlta?.status) return emAlta || customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
 
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else
-                        return resultUsuario
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else
-                        return resultDificuldade
-
-
-
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-
-                    } else
-                        return resultCategoria
-
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-                    //console.log(resultCusto)
-                    if (resultCusto.status) {
-                        receita.custo = resultCusto.response.custo
-                        delete receita.id_custo
-                    } else
-                        return resultCusto
-
-
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else
-                        return resultPorcao
-
-
-                    let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-                    if (resultCurtida.status) {
-                        receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                    } else
-                        return resultCurtida
-
-
-                    let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-                    if (resultSalvo.status) {
-                        receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                    } else
-                        return resultSalvo
-
-
-                    if (idUsuario != undefined) {
-
-                        let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
-                            idUsuario,
-                            receita.id
-                        )
-
-                        if (resultVerificarCurtida.status) {
-                            receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
-                        } else {
-                            return resultVerificarCurtida
-                        }
-
-
-
-                        let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
-                            idUsuario,
-                            receita.id
-                        )
-
-                        if (resultVerificarSalvo.status) {
-                            receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
-                        } else {
-                            return resultVerificarSalvo
-                        }
-                    }
-
-                }
-
-                let emAlta = await controllerEmAlta.inserirNovoEmAlta(titulo)
-                if (emAlta.status) {
-
-                    customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                    customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                    customMessage.DEFAULT_MESSAGE.response.count = result.length
-                    customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                    return customMessage.DEFAULT_MESSAGE
-
-                } else {
-                    return emAlta
-                }
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND
-            }
-
-        } else {
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
-        }
-
+        await controllerComentario.adicionarQtdComentarios(result)
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response.receitas = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
@@ -994,136 +823,28 @@ const buscarReceitasPorNome = async function (titulo, idUsuario) {
 }
 
 const buscarReceitasPorUsuario = async function (idUsuarioPerfil, idUserLogado) {
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+        const validar = await validarDadosPerfil(idUsuarioPerfil, idUserLogado)
+        if (validar) return validar
 
-        let validar = await validarDadosPerfil(idUsuarioPerfil, idUserLogado)
+        const result = await receitaDAO.selectReceitasPorUsuario(idUsuarioPerfil)
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
-        if (validar) {
-            return validar
-        }
+        const erro = await hidratarListaReceitas(result, idUserLogado, {
+            incluirCategoria: true,
+            tamanhoLote: 4
+        })
+        if (erro) return erro
 
-        let result = await receitaDAO.selectReceitasPorUsuario(idUsuarioPerfil)
-
-        if (result) {
-
-            if (result.length > 0) {
-
-                for (let receita of result) {
-
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else {
-                        return resultUsuario
-                    }
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else {
-                        return resultDificuldade
-                    }
-
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-                    } else {
-                        return resultCategoria
-                    }
-
-
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-
-                    if (resultCusto.status) {
-                        receita.custo = resultCusto.response.custo
-                        delete receita.id_custo
-                    } else {
-                        return resultCusto
-                    }
-
-
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else {
-                        return resultPorcao
-                    }
-
-
-                    let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-
-                    if (resultCurtida.status) {
-                        receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                    } else {
-                        return resultCurtida
-                    }
-
-
-                    let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-
-                    if (resultSalvo.status) {
-                        receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                    } else {
-                        return resultSalvo
-                    }
-
-
-                    if (idUserLogado != undefined) {
-
-                        let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
-                            idUserLogado,
-                            receita.id
-                        )
-
-                        if (resultVerificarCurtida.status) {
-                            receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
-                        } else {
-                            return resultVerificarCurtida
-                        }
-
-
-
-                        let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
-                            idUserLogado,
-                            receita.id
-                        )
-
-                        if (resultVerificarSalvo.status) {
-                            receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
-                        } else {
-                            return resultVerificarSalvo
-                        }
-                    }
-
-                }
-
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                return customMessage.DEFAULT_MESSAGE
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND
-            }
-
-        } else {
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
-        }
-
+        await controllerComentario.adicionarQtdComentarios(result)
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response.receitas = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
@@ -1131,276 +852,70 @@ const buscarReceitasPorUsuario = async function (idUsuarioPerfil, idUserLogado) 
 }
 
 const buscarReceitasSalvasUsuario = async function (idUsuarioPerfil, idUserLogado) {
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+        const validar = await validarDadosPerfil(idUsuarioPerfil, idUserLogado)
+        if (validar) return validar
 
-        let validar = await validarDadosPerfil(idUsuarioPerfil, idUserLogado)
+        const result = await receitaDAO.selectReceitasSalvasUsuario(idUsuarioPerfil)
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
-        if (validar) {
-            return validar
-        }
+        const erro = await hidratarListaReceitas(result, idUserLogado, {
+            incluirCategoria: true,
+            tamanhoLote: 4
+        })
+        if (erro) return erro
 
-        let result = await receitaDAO.selectReceitasSalvasUsuario(idUsuarioPerfil)
-
-        if (result) {
-
-            if (result.length > 0) {
-
-                for (let receita of result) {
-
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else {
-                        return resultUsuario
-                    }
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else {
-                        return resultDificuldade
-                    }
-
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-                    } else {
-                        return resultCategoria
-                    }
-
-
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-
-                    if (resultCusto.status) {
-                        receita.custo = resultCusto.response.custo
-                        delete receita.id_custo
-                    } else {
-                        return resultCusto
-                    }
-
-
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else {
-                        return resultPorcao
-                    }
-
-
-                    let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-
-                    if (resultCurtida.status) {
-                        receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                    } else {
-                        return resultCurtida
-                    }
-
-
-                    let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-
-                    if (resultSalvo.status) {
-                        receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                    } else {
-                        return resultSalvo
-                    }
-
-
-                    if (idUserLogado != undefined) {
-
-                        let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
-                            idUserLogado,
-                            receita.id
-                        )
-
-                        if (resultVerificarCurtida.status) {
-                            receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
-                        } else {
-                            return resultVerificarCurtida
-                        }
-
-
-
-                        let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
-                            idUserLogado,
-                            receita.id
-                        )
-
-                        if (resultVerificarSalvo.status) {
-                            receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
-                        } else {
-                            return resultVerificarSalvo
-                        }
-                    }
-
-                }
-
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                return customMessage.DEFAULT_MESSAGE
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND
-            }
-
-        } else {
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
-        }
-
+        await controllerComentario.adicionarQtdComentarios(result)
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response.receitas = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
 
-const buscarReceitasPorCategoria = async function (idCategoria, idUserLogado) {
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+const buscarReceitasPorCategoria = async function (idCategoria, idUserLogado, limite = 50) {
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-
-        if (idCategoria == undefined || idCategoria == null || idCategoria == '' || isNaN(idCategoria) || !Number.isInteger(Number(idCategoria)) || idCategoria <= 0) {
+        if (idCategoria === undefined || idCategoria === null || idCategoria === '' ||
+            !Number.isInteger(Number(idCategoria)) || Number(idCategoria) <= 0) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_CATEGORIA] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
         }
 
-        if (idUserLogado != undefined && (idUserLogado == null || idUserLogado == '' || isNaN(idUserLogado) || !Number.isInteger(Number(idUserLogado)) || idUserLogado <= 0)) {
+        if (idUserLogado !== undefined && (idUserLogado === null || idUserLogado === '' ||
+            !Number.isInteger(Number(idUserLogado)) || Number(idUserLogado) <= 0)) {
             customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO_LOGADO] INVALIDO'
             return customMessage.ERROR_BAD_REQUEST
         }
 
-        let result = await receitaDAO.selectReceitasPorCategoria(idCategoria)
+        const limiteNumerico = Number(limite)
+        const limiteSeguro = Number.isInteger(limiteNumerico) && limiteNumerico > 0
+            ? Math.min(limiteNumerico, 100)
+            : 50
+        const result = await receitaDAO.selectReceitasPorCategoria(idCategoria, limiteSeguro)
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
-        if (result) {
+        const erro = await hidratarListaReceitas(result, idUserLogado, {
+            incluirCategoria: true,
+            tamanhoLote: 4
+        })
+        if (erro) return erro
 
-            if (result.length > 0) {
-
-                for (let receita of result) {
-
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else {
-                        return resultUsuario
-                    }
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else {
-                        return resultDificuldade
-                    }
-
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-                    } else {
-                        return resultCategoria
-                    }
-
-
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-
-                    if (resultCusto.status) {
-                        receita.custo = resultCusto.response.custo
-                        delete receita.id_custo
-                    } else {
-                        return resultCusto
-                    }
-
-
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else {
-                        return resultPorcao
-                    }
-
-
-                    let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-
-                    if (resultCurtida.status) {
-                        receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                    } else {
-                        return resultCurtida
-                    }
-
-
-                    let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-
-                    if (resultSalvo.status) {
-                        receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                    } else {
-                        return resultSalvo
-                    }
-
-
-                    if (idUserLogado != undefined) {
-
-                        let resultVerificarCurtida = await controllerCutir.verificarCurtidaUsuario(
-                            idUserLogado,
-                            receita.id
-                        )
-
-                        if (resultVerificarCurtida.status) {
-                            receita.curtida_pelo_usuario = resultVerificarCurtida.response.curtida_usuario
-                        } else {
-                            return resultVerificarCurtida
-                        }
-
-
-                        let resultVerificarSalvo = await controllerSalvar.verificarSalvoUsuario(
-                            idUserLogado,
-                            receita.id
-                        )
-
-                        if (resultVerificarSalvo.status) {
-                            receita.salvo_pelo_usuario = resultVerificarSalvo.response.salvo_usuario
-                        } else {
-                            return resultVerificarSalvo
-                        }
-                    }
-
-                }
-
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                return customMessage.DEFAULT_MESSAGE
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND
-            }
-
-        } else {
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
-        }
-
+        await controllerComentario.adicionarQtdComentarios(result)
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response.receitas = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
@@ -1408,108 +923,30 @@ const buscarReceitasPorCategoria = async function (idCategoria, idUserLogado) {
 }
 
 const buscarReceitasMaisCurtidasSemana = async function () {
-
-    let customMessage = JSON.parse(JSON.stringify(configMessages))
+    const customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
+        const result = await receitaDAO.selectReceitasMaisCurtidasSemana()
+        if (!result) return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        if (result.length === 0) return customMessage.ERROR_NOT_FOUND
 
-        let result = await receitaDAO.selectReceitasMaisCurtidasSemana()
+        const erro = await hidratarListaReceitas(result, null, {
+            incluirCategoria: true,
+            tamanhoLote: 3
+        })
+        if (erro) return erro
 
-        if (result) {
-
-            if (result.length > 0) {
-
-                for (let receita of result) {
-
-                    let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
-
-                    if (resultUsuario.status) {
-                        receita.usuario = resultUsuario.response.usuario
-                        delete receita.id_usuario
-                    } else {
-                        return resultUsuario
-                    }
-
-
-                    let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
-
-                    if (resultDificuldade.status) {
-                        receita.dificuldade = resultDificuldade.response.dificuldade
-                        delete receita.id_dificuldade
-                    } else {
-                        return resultDificuldade
-                    }
-
-
-                    let resultCategoria = await controllerReceitaCategoria.buscarCategoriasIdReceita(receita.id)
-
-                    if (resultCategoria.status) {
-                        receita.categoria = resultCategoria.response.categoria
-                    } else {
-                        return resultCategoria
-                    }
-
-
-                    let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
-
-                    if (resultCusto.status) {
-                        receita.custo = resultCusto.response.custo
-                        delete receita.id_custo
-                    } else {
-                        return resultCusto
-                    }
-
-
-                    let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
-
-                    if (resultPorcao.status) {
-                        receita.porcao = resultPorcao.response.porcao
-                        delete receita.id_porcao
-                    } else {
-                        return resultPorcao
-                    }
-
-
-                    let resultCurtida = await controllerCutir.listarCurtidasReceita(receita.id)
-
-                    if (resultCurtida.status) {
-                        receita.qtd_curtidas = resultCurtida.response.qtd_curtida
-                    } else {
-                        return resultCurtida
-                    }
-
-
-                    // let resultSalvo = await controllerSalvar.listarSalvosReceita(receita.id)
-
-                    // if (resultSalvo.status) {
-                    //     receita.qtd_salvos = resultSalvo.response.qtd_salvo
-                    // } else {
-                    //     return resultSalvo
-                    // }
-
-                }
-
-                customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
-                customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
-                customMessage.DEFAULT_MESSAGE.response.count = result.length
-                customMessage.DEFAULT_MESSAGE.response.receitas = result
-
-                return customMessage.DEFAULT_MESSAGE
-
-            } else {
-                return customMessage.ERROR_NOT_FOUND
-            }
-
-        } else {
-            return customMessage.ERROR_INTERNAL_SERVER_MODEL
-        }
-
+        await controllerComentario.adicionarQtdComentarios(result)
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+        customMessage.DEFAULT_MESSAGE.response.count = result.length
+        customMessage.DEFAULT_MESSAGE.response.receitas = result
+        return customMessage.DEFAULT_MESSAGE
     } catch (error) {
         console.log(error)
         return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
     }
 }
-
 
 const excluirReceita = async function (id) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))

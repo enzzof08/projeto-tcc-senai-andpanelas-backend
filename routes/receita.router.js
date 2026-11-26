@@ -11,6 +11,7 @@ const controllerReceita = require('../controller/receita/controller_receita.js')
 const controllerCurtida = require('../controller/curtida/controller_curtida.js')
 const controllerSalvo = require('../controller/salvar/controller_salvar.js')
 const controllerComentario = require('../controller/comentario/controller_comentario.js')
+const controllerChefinho = require('../controller/chefinho/controller_chefinho.js')
 
 
 
@@ -52,11 +53,22 @@ router.post('/busca/sugestao', auth.verifyToken, bodyParserJSON, async function 
     response.json(result)
 })
 
+router.post('/busca/sugestao/salvar', auth.verifyToken, bodyParserJSON, async function (request, response) {
+    let dados = request.body
+    let contentType = request.headers['content-type']
+
+    let result = await controllerChefinho.salvarSugestaoReceita(dados, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 router.get('/busca/nome', auth.verifyToken, async function (request, response) {
     let nome = request.query.nome
     let idUsuario = request.id_usuario
+    let limite = request.query.limite
 
-    let result = await controllerReceita.buscarReceitasPorNome(nome, idUsuario)
+    let result = await controllerReceita.buscarReceitasPorNome(nome, idUsuario, limite)
 
     response.status(result.status_code).json(result)
 })
@@ -64,7 +76,8 @@ router.get('/busca/nome', auth.verifyToken, async function (request, response) {
 router.get('/', auth.verifyToken, async function (request, response) {
 
     let idUsuario = request.id_usuario
-    let result = await controllerReceita.listarReceitas(idUsuario)
+    let limite = request.query.limite
+    let result = await controllerReceita.listarReceitas(idUsuario, limite)
 
     response.status(result.status_code)
     response.json(result)
@@ -96,8 +109,9 @@ router.get('/busca/categoria/:idCategoria', auth.verifyToken, async function (re
 
     let idCategoria = request.params.idCategoria
     let idUsuario = request.id_usuario
+    let limite = request.query.limite
 
-    let result = await controllerReceita.buscarReceitasPorCategoria(idCategoria, idUsuario)
+    let result = await controllerReceita.buscarReceitasPorCategoria(idCategoria, idUsuario, limite)
 
     response.status(result.status_code)
     response.json(result)

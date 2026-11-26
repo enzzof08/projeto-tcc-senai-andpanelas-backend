@@ -13,6 +13,7 @@ const controllerCusto = require('../custo/controller_custo.js')
 const controllerPorcao = require('../porcao/controller_porcao.js')
 const controllerCutir = require('../curtida/controller_curtida.js')
 const controllerSalvar = require('../salvar/controller_salvar.js')
+const controllerComentario = require('../comentario/controller_comentario.js')
 
 const inserirNovaComunidadeReceita = async function (comunidadeReceita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
@@ -92,7 +93,7 @@ const buscarReceitaPorComunidade = async function (idUser, idComunidade) {
 
                 if (result.length > 0) {
 
-                    for (receita of result) {
+                    for (let receita of result) {
 
                         let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
                         if (resultUsuario.status) {
@@ -104,7 +105,7 @@ const buscarReceitaPorComunidade = async function (idUser, idComunidade) {
 
                         let resultDificuldade = await controllerDificuldade.buscarDificuldade(receita.id_dificuldade)
                         if (resultDificuldade.status) {
-                            receita.dificuldade = resultDificuldade.response.dificuldade
+                            receita.dificuldade = resultDificuldade.response.dificuldade?.[0]?.dificuldade || 'Fácil'
                             delete receita.id_dificuldade
                         } else
                             return resultDificuldade
@@ -119,7 +120,7 @@ const buscarReceitaPorComunidade = async function (idUser, idComunidade) {
                         let resultCusto = await controllerCusto.buscarCusto(receita.id_custo)
                         //console.log(resultCusto)
                         if (resultCusto.status) {
-                            receita.custo = resultDificuldade.response.custo
+                            receita.custo = resultCusto.response.custo?.[0]?.tipo_custo || 'Econômico'
                             delete receita.id_custo
                         } else
                             return resultCusto
@@ -127,10 +128,17 @@ const buscarReceitaPorComunidade = async function (idUser, idComunidade) {
 
                         let resultPorcao = await controllerPorcao.buscarPorcao(receita.id_porcao)
                         if (resultPorcao.status) {
-                            receita.porcao = resultPorcao.response.porcao
+                            receita.porcao = resultPorcao.response.porcao?.[0]?.numero_porcao || 1
                             delete receita.id_porcao
                         } else
                             return resultPorcao
+
+                        const resultCurtidas = await controllerCutir.listarCurtidasReceita(receita.id)
+                        if (resultCurtidas?.status) {
+                            receita.qtd_curtidas = resultCurtidas.response.qtd_curtida
+                        } else {
+                            return resultCurtidas || customMessage.ERROR_INTERNAL_SERVER_MODEL
+                        }
 
                         if (idUser != undefined) {
 
@@ -164,6 +172,7 @@ const buscarReceitaPorComunidade = async function (idUser, idComunidade) {
                     customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
                     customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
                     customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_RESPONSE.message
+                    await controllerComentario.adicionarQtdComentarios(result)
                     customMessage.DEFAULT_MESSAGE.response.count = result.length
                     customMessage.DEFAULT_MESSAGE.response.receitas = result
 

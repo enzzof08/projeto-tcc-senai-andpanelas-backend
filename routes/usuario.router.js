@@ -14,11 +14,8 @@ const controllerComunidadeUsuario = require('../controller/comunidade_usuario/co
 
 router.get('/', auth.verifyToken, async function (request, response) {
     let idUserLogado = request.id_usuario
-    let busca = request.query.busca
 
-    let result = busca
-        ? await controllerUsuario.buscarUsuariosPorNome(busca, idUserLogado)
-        : await controllerUsuario.listarTodosUsuarios(idUserLogado)
+    let result = await controllerUsuario.listarTodosUsuarios(idUserLogado, request.query.limite)
 
     response.status(result.status_code)
     response.json(result)
@@ -37,6 +34,16 @@ router.get('/:idUserPerfil', auth.verifyToken, async function (request, response
     let idUserPerfil = request.params.idUserPerfil
     let idUserLogado = request.id_usuario
 
+    // O Chefinho é um perfil de sistema: suas receitas podem ser públicas,
+    // mas a página de perfil não deve ser acessível como a de um usuário comum.
+    if (Number(idUserPerfil) === 1) {
+        return response.status(404).json({
+            status: false,
+            status_code: 404,
+            message: 'Usuário não encontrado.'
+        })
+    }
+
     let result = await controllerUsuario.buscarUsuario(idUserPerfil, idUserLogado)
 
     response.status(result.status_code)
@@ -52,7 +59,6 @@ router.get('/busca/username', auth.verifyToken, async function (request, respons
     response.status(result.status_code)
     response.json(result)
 })
-
 router.put('/me', bodyParserJSON, auth.verifyToken, async function (request, response) {
     let idUserPerfil = request.id_usuario
     let dados = request.body

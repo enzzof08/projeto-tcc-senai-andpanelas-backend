@@ -87,7 +87,7 @@ const selectUsuarioByEmail = async function (email) {
     }
 }
 
-const selectAllUsuarios = async function(){
+const selectAllUsuarios = async function(limite){
     try {
         let sql = `SELECT
             id,
@@ -97,9 +97,17 @@ const selectAllUsuarios = async function(){
             foto_perfil
         FROM tbl_usuario
         WHERE username <> ?
-        ORDER BY id DESC;`
+        ORDER BY id DESC`
 
-        let result = await knexConection.raw(sql, ['chefinho'])
+        const parametros = ['chefinho']
+        const limiteNumerico = Number(limite)
+        if (Number.isInteger(limiteNumerico) && limiteNumerico > 0) {
+            sql += ' LIMIT ?'
+            parametros.push(limiteNumerico)
+        }
+        sql += ';'
+
+        let result = await knexConection.raw(sql, parametros)
 
         if (Array.isArray(result)) {
             return result[0]
@@ -116,14 +124,23 @@ const selectAllUsuarios = async function(){
 const updateUsuario = async function (usuario, id) {
     try {
         let sql = `UPDATE tbl_usuario SET
-        nome = '${usuario.nome}',
-        username = '${usuario.username}',
-        descricao = '${usuario.descricao}',
-        banner_url = '${usuario.banner_url}',
-        foto_perfil = '${usuario.foto_perfil}'
-    WHERE id = ${id};`
+        nome = ?,
+        username = ?,
+        descricao = ?,
+        banner_url = ?,
+        foto_perfil = ?,
+        data_nascimento = ?
+    WHERE id = ?;`
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [
+            usuario.nome,
+            usuario.username,
+            usuario.descricao ?? null,
+            usuario.banner_url ?? null,
+            usuario.foto_perfil ?? null,
+            usuario.data_nascimento,
+            id
+        ])
         if (result)
             return true
 
@@ -138,8 +155,10 @@ const updateUsuario = async function (usuario, id) {
 
 const selectUsuarioById = async function (id) {
     try {
+        const idNumerico = Number(id)
+        if (!Number.isInteger(idNumerico) || idNumerico <= 0) return false
 
-        let sql = `
+        const sql = `
             SELECT
                 id,
                 nome,
@@ -150,10 +169,10 @@ const selectUsuarioById = async function (id) {
                 foto_perfil,
                 data_nascimento
             FROM tbl_usuario
-            WHERE id = ${id}
+            WHERE id = ?
         `
 
-        let result = await knexConection.raw(sql)
+        let result = await knexConection.raw(sql, [idNumerico])
 
         if (result[0].length > 0) {
             return result[0][0]
@@ -285,6 +304,7 @@ const updateEmailVerificado = async function(idUsuario) {
     }
 
 }
+
 
 const updateSenhaUsuario = async function (idUsuario, senha) {
 

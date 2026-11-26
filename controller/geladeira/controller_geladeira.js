@@ -14,6 +14,8 @@ const controllerPorcao = require('../porcao/controller_porcao.js')
 
 const controllerIngrediente = require('../ingrediente/controller_ingrediente.js')
 
+const controllerComentario = require('../comentario/controller_comentario.js')
+
 const controllerMdPreparo = require('../modo_preparo/controller_modo_preparo.js')
 
 const controllerReceitaCategoria = require('../receita/controller_receita_categoria.js')
@@ -242,7 +244,7 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
                     let result = await receitaDAO.selectReceitasPorIngredientesGeladeira(ingredientes)
 
                     if (result) {
-                        for (receita of result) {
+                        for (let receita of result) {
 
                             let resultUsuario = await controllerUsuario.buscarUsuario(receita.id_usuario)
                             if (resultUsuario) {
@@ -308,6 +310,8 @@ const buscarGeladeiraUsuarioReceitas = async function (idUsuario) {
                             }
 
                         }
+
+                        await controllerComentario.adicionarQtdComentarios(result)
 
                         // Ordenar as receitas de acordo com a compatibilidade
                         result.sort((a, b) => b.compatibilidade - a.compatibilidade)

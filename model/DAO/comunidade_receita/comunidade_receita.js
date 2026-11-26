@@ -69,16 +69,16 @@ const selectComunidadeByIdReceita = async function(idReceita) {
 
 const selectReceitaByIdComunidade = async function(idComunidade){
     try{
-        let sql = ` select tbl_receita.*
-                    from tbl_comunidade
-                        inner join tbl_comunidade_receita
-                            on tbl_comunidade.id = tbl_comunidade_receita.id_comunidade
-                        inner join tbl_receita
-                            on tbl_receita.id = tbl_comunidade_receita.id_receita
-                            
-                    where tbl_comunidade.id=${idComunidade};`
+        const sql = `
+            SELECT tbl_receita.*
+            FROM tbl_comunidade_receita
+            INNER JOIN tbl_receita
+                ON tbl_receita.id = tbl_comunidade_receita.id_receita
+            WHERE tbl_comunidade_receita.id_comunidade = ?
+            ORDER BY tbl_receita.id DESC;
+        `
 
-        let result = await knexConection.raw(sql)
+        const result = await knexConection.raw(sql, [idComunidade])
 
         if(Array.isArray(result)){
             return result [0]
