@@ -313,6 +313,60 @@ const updateSenhaUsuario = async function (idUsuario, senha) {
 
 }
 
+const selectUsuarioByIdComSenha = async function(idUsuario) {
+
+    try {
+
+        let sql = `SELECT id, email, senha
+                   FROM tbl_usuario
+                   WHERE id = ?`
+
+        let result = await knexConection.raw(sql, [idUsuario])
+
+        if (result[0].length > 0) {
+            return result[0][0]
+        } else {
+            return false
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return false
+
+    }
+
+}
+
+const updateEmailUsuario = async function(idUsuario, email) {
+
+    try {
+
+        let sql = `UPDATE tbl_usuario
+                   SET email = ?, email_verificado = true
+                   WHERE id = ?`
+
+        let result = await knexConection.raw(sql, [
+            email,
+            idUsuario
+        ])
+
+        return true
+
+    } catch (error) {
+
+        console.log(error)
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return 'EMAIL_DUPLICADO'
+        }
+
+        return false
+
+    }
+
+}
+
 module.exports = {
     insertUsuario,
     selectUsuarioByEmail,
@@ -324,5 +378,8 @@ module.exports = {
     selectQtdReceitasUsuario,
     selectQtdSeguidoresUsuario,
     updateEmailVerificado,
-    updateSenhaUsuario
+    updateSenhaUsuario,
+    selectUsuarioByIdComSenha,
+    updateEmailUsuario
+
 }

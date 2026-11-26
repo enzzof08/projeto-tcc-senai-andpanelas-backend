@@ -1022,6 +1022,310 @@ const buscarUsuariosPorNome = async function (nome, idUserLogado) {
 }
 
 
+//Funcoes Alterar Email
+const solicitarAlteracaoEmail = async function(dados, idUsuario, contentType) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+            // Valida o ID
+            if (
+                idUsuario == undefined ||
+                idUsuario == null ||
+                idUsuario == '' ||
+                isNaN(idUsuario) ||
+                !Number.isInteger(Number(idUsuario)) ||
+                Number(idUsuario) <= 0
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Valida os dados
+            if (
+                dados == undefined ||
+                dados == null ||
+                typeof dados.email != 'string' ||
+                dados.email.trim() == '' ||
+                dados.email.length > 256 ||
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dados.email.trim()) ||
+                typeof dados.senha != 'string' ||
+                dados.senha == ''
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[DADOS] INVÁLIDOS'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Busca o usuário e sua senha atual
+            let resultUsuario = await usuarioDAO.selectUsuarioByIdComSenha(idUsuario)
+
+            if (!resultUsuario) {
+                return customMessage.ERROR_NOT_FOUND
+            }
+
+            // Confere a senha atual
+            const senhaValida = await bcrypt.compare(
+                dados.senha,
+                resultUsuario.senha
+            )
+
+            if (!senhaValida) {
+                return customMessage.ERROR_UNAUTHORIZED
+            }
+
+            const novoEmail = dados.email.trim()
+
+            // Verifica se o novo e-mail é igual ao atual
+            if (novoEmail.toLowerCase() == resultUsuario.email.toLowerCase()) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] INFORMADO JÁ É O ATUAL'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Verifica se o novo e-mail já está cadastrado
+            let resultEmail = await usuarioDAO.selectUsuarioByEmail(novoEmail)
+
+            if (resultEmail) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] JÁ CADASTRADO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Gera o código
+            const codigo = codigoVerificacaoService.gerarCodigo()
+
+            const codigoHash = await codigoVerificacaoService.gerarHashCodigo(codigo)
+
+            const dataExpiracao = codigoVerificacaoService.gerarDataExpiracao()
+
+            // Salva o código e o novo e-mail
+            let resultCodigo = await codigoVerificacaoDAO.insertCodigoVerificacao({
+                id_usuario: idUsuario,
+                finalidade: 'alterar_email',
+                codigo_hash: codigoHash,
+                data_expiracao: dataExpiracao,
+                novo_email: novoEmail
+            })
+
+            if (!resultCodigo) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            // Envia o código para o novo e-mail
+            let emailEnviado = false
+
+            try {
+
+                await emailService.enviarCodigo(
+                    novoEmail,
+                    codigo,
+                    'alterar_email'
+                )
+
+                emailEnviado = true
+
+            } catch (error) {
+
+                console.log('Erro ao enviar código:', error)
+
+            }
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_RESPONSE.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_RESPONSE.status_code
+            customMessage.DEFAULT_MESSAGE.message = emailEnviado
+                ? 'CÓDIGO ENVIADO PARA O NOVO E-MAIL'
+                : 'CÓDIGO GERADO, MAS NÃO FOI POSSÍVEL ENVIAR O E-MAIL'
+
+            customMessage.DEFAULT_MESSAGE.response = {
+                email_enviado: emailEnviado
+            }
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+
+            return customMessage.ERROR_CONTENT_TYPE
+
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
+    }
+
+}
+
+const confirmarAlteracaoEmail = async function(dados, idUsuario, contentType) {
+
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+
+        if (String(contentType).toUpperCase() == 'APPLICATION/JSON') {
+
+            // Valida o ID
+            if (
+                idUsuario == undefined ||
+                idUsuario == null ||
+                idUsuario == '' ||
+                isNaN(idUsuario) ||
+                !Number.isInteger(Number(idUsuario)) ||
+                Number(idUsuario) <= 0
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Valida o código
+            if (
+                dados == undefined ||
+                dados == null ||
+                dados.codigo == undefined ||
+                dados.codigo == null ||
+                !/^\d{6}$/.test(String(dados.codigo))
+            ) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] INVÁLIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Busca o código de alteração de e-mail
+            let resultCodigo = await codigoVerificacaoDAO.selectCodigoVerificacao(
+                idUsuario,
+                'alterar_email'
+            )
+
+            if (resultCodigo === false) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            if (!resultCodigo || resultCodigo.length == 0) {
+                return customMessage.ERROR_NOT_FOUND
+            }
+
+            let codigoArmazenado = resultCodigo[0]
+
+            // Verifica o limite de tentativas
+            if (Number(codigoArmazenado.tentativas) >= 5) {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] LIMITE DE TENTATIVAS ATINGIDO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Verifica se o código expirou
+            let dataExpiracao = codigoArmazenado.data_expiracao instanceof Date
+                ? codigoArmazenado.data_expiracao
+                : new Date(String(codigoArmazenado.data_expiracao).replace(' ', 'T'))
+
+            if (isNaN(dataExpiracao.getTime()) || dataExpiracao.getTime() <= Date.now()) {
+
+                await codigoVerificacaoDAO.deleteCodigoVerificacao(
+                    idUsuario,
+                    'alterar_email'
+                )
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] EXPIRADO. SOLICITE OUTRO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Confere o código
+            const codigoValido = await codigoVerificacaoService.compararCodigo(
+                String(dados.codigo),
+                codigoArmazenado.codigo_hash
+            )
+
+            if (!codigoValido) {
+
+                let resultTentativas = await codigoVerificacaoDAO.updateTentativasCodigo(
+                    idUsuario,
+                    'alterar_email'
+                )
+
+                if (!resultTentativas) {
+                    return customMessage.ERROR_INTERNAL_SERVER_MODEL
+                }
+
+                customMessage.ERROR_BAD_REQUEST.field = '[CODIGO] INCORRETO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            // Confere se existe um novo e-mail armazenado
+            if (!codigoArmazenado.novo_email) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            // Atualiza o e-mail do usuário
+            let resultAtualizar = await usuarioDAO.updateEmailUsuario(
+                idUsuario,
+                codigoArmazenado.novo_email
+            )
+
+            if (resultAtualizar === 'EMAIL_DUPLICADO') {
+
+                customMessage.ERROR_BAD_REQUEST.field = '[EMAIL] JÁ CADASTRADO'
+                return customMessage.ERROR_BAD_REQUEST
+
+            }
+
+            if (!resultAtualizar) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            // Exclui o código utilizado
+            let resultExcluir = await codigoVerificacaoDAO.deleteCodigoVerificacao(
+                idUsuario,
+                'alterar_email'
+            )
+
+            if (!resultExcluir) {
+                return customMessage.ERROR_INTERNAL_SERVER_MODEL
+            }
+
+            customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_UPDATE_ITEM.status
+            customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_UPDATE_ITEM.status_code
+            customMessage.DEFAULT_MESSAGE.message = 'E-MAIL ALTERADO COM SUCESSO'
+
+            customMessage.DEFAULT_MESSAGE.response = {
+                email: codigoArmazenado.novo_email,
+                email_verificado: true
+            }
+
+            return customMessage.DEFAULT_MESSAGE
+
+        } else {
+
+            return customMessage.ERROR_CONTENT_TYPE
+
+        }
+
+    } catch (error) {
+
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+
+    }
+
+}
+
+
+// Validacoes
 const validarDados = async function (usuario) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -1108,5 +1412,7 @@ module.exports = {
     verificarEmail,
     esqueciSenha,
     verificarCodigoRecuperacao,
-    redefinirSenha
+    redefinirSenha,
+    solicitarAlteracaoEmail,
+    confirmarAlteracaoEmail
 }

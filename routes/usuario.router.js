@@ -172,4 +172,28 @@ router.get('/seguindos/:idUser', async function (request, response) {
     response.json(result)
 })
 
+
+// ALTERACAO DE EMAIL
+router.post('/me/alterar-email', bodyParserJSON, auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.id_usuario
+    let dados = request.body
+    let contentType = request.headers['content-type']
+
+    let result = await controllerUsuario.solicitarAlteracaoEmail(dados, idUserPerfil, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.post('/me/confirmar-alteracao-email', bodyParserJSON, auth.verifyToken, async function (request, response) {
+    let idUserPerfil = request.id_usuario
+    let dados = request.body
+    let contentType = request.headers['content-type']
+
+    let result = await controllerUsuario.confirmarAlteracaoEmail(dados, idUserPerfil, contentType)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
 module.exports = router
