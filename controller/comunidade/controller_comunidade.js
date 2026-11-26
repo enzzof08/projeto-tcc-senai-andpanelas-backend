@@ -140,7 +140,7 @@ const listarComunidade = async function (idUsuario) {
 
                 if (idUsuario != undefined) {
 
-                    for (comunidade of result) {
+                    for (let comunidade of result) {
 
                         delete comunidade.id_categoria_principal
 
@@ -155,22 +155,22 @@ const listarComunidade = async function (idUsuario) {
                         let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(comunidade.id)
 
                         if (resultCriador.status) {
-                            result[0].criador = resultCriador.response
+                            comunidade.criador = resultCriador.response
                         } else {
                             return resultCriador
                         }
 
-                        result[0].sou_criador = false
+                        comunidade.sou_criador = false
 
                         if (Number(idUsuario) == Number(resultCriador.response.id)) {
-                            result[0].sou_criador = true
+                            comunidade.sou_criador = true
                         }
 
                         let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUsuario, comunidade.id)
                         if (resultParticipando.status) {
                             comunidade.participando = resultParticipando.response.participando
                         } else
-                            return resultUsuario
+                            return resultParticipando
                     }
                 }
 
@@ -221,22 +221,22 @@ const buscarComunidade = async function (idUser, idComunidade) {
                         comunidade.qtd_membros = resultMembros
                         comunidade.qtd_receitas = resultReceitas
 
-                        delete result[0].id_categoria_principal
+                        delete comunidade.id_categoria_principal
 
                         let resultCriador = await controllerComunidadeUsuario.buscarCriadorPorComunidade(idComunidade)
 
                         if (resultCriador.status) {
-                            result[0].criador = resultCriador.response
+                            comunidade.criador = resultCriador.response
                         } else {
                             return resultCriador
                         }
 
                         // Verifica se o usuário logado é o criador
                         if (idUser != undefined) {
-                            result[0].sou_criador = false
+                            comunidade.sou_criador = false
 
                             if (Number(idUser) == Number(resultCriador.response.id)) {
-                                result[0].sou_criador = true
+                                comunidade.sou_criador = true
                             }
 
                             let resultParticipando = await controllerComunidadeUsuario.verificarComunidadeUsuario(idUser, comunidade.id)
