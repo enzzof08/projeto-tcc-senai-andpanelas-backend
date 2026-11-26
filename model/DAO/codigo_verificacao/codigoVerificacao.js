@@ -15,25 +15,29 @@ const insertCodigoVerificacao = async function(codigo) {
             finalidade,
             codigo_hash,
             data_expiracao,
-            tentativas
+            tentativas,
+            novo_email
         ) values (
             ?,
             ?,
             ?,
             ?,
-            0
+            0,
+            ?
         )
         ON DUPLICATE KEY UPDATE
             codigo_hash = VALUES(codigo_hash),
             data_expiracao = VALUES(data_expiracao),
             tentativas = 0,
+            novo_email = VALUES(novo_email),
             criado_em = CURRENT_TIMESTAMP`
 
         let result = await knexConection.raw(sql, [
             codigo.id_usuario,
             codigo.finalidade,
             codigo.codigo_hash,
-            codigo.data_expiracao
+            codigo.data_expiracao,
+            codigo.novo_email ?? null
         ])
 
         return true

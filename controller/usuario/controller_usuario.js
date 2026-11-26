@@ -788,14 +788,17 @@ const atualizarUsuario = async function (dados, id, contentType) {
 
             let BuscaUsuario = await buscarUsuario(id)
 
-            if (BuscaUsuario) {
+            if (BuscaUsuario.status) {
+
+                let usuario = BuscaUsuario.response.usuario
 
                 let dadosAtualizados = {
                     nome: dados.nome === undefined ? usuario.nome : dados.nome,
                     username: dados.username === undefined ? usuario.username : dados.username,
                     descricao: dados.descricao === undefined ? usuario.descricao : dados.descricao,
                     banner_url: dados.banner_url === undefined ? usuario.banner_url : dados.banner_url,
-                    foto_perfil: dados.foto_perfil === undefined ? usuario.foto_perfil : dados.foto_perfil
+                    foto_perfil: dados.foto_perfil === undefined ? usuario.foto_perfil : dados.foto_perfil,
+                    data_nascimento: dados.data_nascimento === undefined ? usuario.data_nascimento : dados.data_nascimento
                 }
 
                 let validar = await validarDadosAtualizacao(dadosAtualizados)
