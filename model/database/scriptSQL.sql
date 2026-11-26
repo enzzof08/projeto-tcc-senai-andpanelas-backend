@@ -38,6 +38,16 @@ create table tbl_codigo_verificacao (
     ON DELETE CASCADE
 );
 
+ALTER TABLE tbl_codigo_verificacao
+MODIFY finalidade ENUM(
+    'verificar_email',
+    'recuperar_senha',
+    'alterar_email'
+) NOT NULL;
+
+ALTER TABLE tbl_codigo_verificacao
+ADD COLUMN novo_email VARCHAR(256) NULL;
+
 create table tbl_em_alta (
 	id			int not null auto_increment primary key,
     pesquisa	varchar(80) not null,
