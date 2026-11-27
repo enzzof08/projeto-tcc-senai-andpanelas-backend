@@ -175,6 +175,72 @@ const atualizarStatusListaCompra = async function (id, idUsuario, idStatus) {
     }
 }
 
+const excluirIngredienteListaCompra = async function (idUsuario, idLista) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        const idUsuarioNumerico = Number(idUsuario)
+        const idListaNumerico = Number(idLista)
+
+        if (!Number.isInteger(idUsuarioNumerico) || idUsuarioNumerico <= 0) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        if (!Number.isInteger(idListaNumerico) || idListaNumerico <= 0) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_LISTA] INVÁLIDO'
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let result = await listaCompraDAO.deleteListaCompraItem(idUsuarioNumerico, idListaNumerico)
+
+        if (result === false) {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
+
+        if (result === 0) {
+            return customMessage.ERROR_NOT_FOUND
+        }
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+        customMessage.DEFAULT_MESSAGE.message = customMessage.SUCCESS_DELETED_ITEM.message
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
+const excluirTodosListaCompra = async function (idUsuario) {
+    let customMessage = JSON.parse(JSON.stringify(configMessages))
+
+    try {
+        const idUsuarioNumerico = Number(idUsuario)
+
+        if (!Number.isInteger(idUsuarioNumerico) || idUsuarioNumerico <= 0) {
+            customMessage.ERROR_BAD_REQUEST.field = '[ID_USUARIO] INVÁLIDO'
+            return customMessage.ERROR_BAD_REQUEST
+        }
+
+        let result = await listaCompraDAO.deleteListaCompraTodos(idUsuarioNumerico)
+
+        if (result === false) {
+            return customMessage.ERROR_INTERNAL_SERVER_MODEL
+        }
+
+        customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_DELETED_ITEM.status
+        customMessage.DEFAULT_MESSAGE.status_code = customMessage.SUCCESS_DELETED_ITEM.status_code
+        customMessage.DEFAULT_MESSAGE.message = 'Lista de compras limpa com sucesso!'
+
+        return customMessage.DEFAULT_MESSAGE
+    } catch (error) {
+        console.log(error)
+        return customMessage.ERROR_INTERNAL_SERVER_CONTROLLER
+    }
+}
+
 const excluirReceitaListaCompra = async function (idUsuario, idReceita) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
@@ -228,6 +294,8 @@ module.exports = {
     listarIngredientesListaCompraReceita,
     listarReceitasListaCompra,
     atualizarStatusListaCompra,
+    excluirIngredienteListaCompra,
+    excluirTodosListaCompra,
     excluirReceitaListaCompra
 }
 

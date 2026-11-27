@@ -52,7 +52,26 @@ router.put('/:idLista/:idStatus' , auth.verifyToken, async function (request, re
     response.json(result)
 })
 
-router.delete('/:idReceita' , auth.verifyToken, async function (request, response) {
+router.delete('/item/:idLista', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
+    let idLista = request.params.idLista
+
+    let result = await controllerListaCompra.excluirIngredienteListaCompra(idUsuario, idLista)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.delete('/todos', auth.verifyToken, async function (request, response) {
+    let idUsuario = request.id_usuario
+
+    let result = await controllerListaCompra.excluirTodosListaCompra(idUsuario)
+
+    response.status(result.status_code)
+    response.json(result)
+})
+
+router.delete('/:idReceita', auth.verifyToken, async function (request, response) {
     let idUsuario = request.id_usuario
     let idReceita = request.params.idReceita
 

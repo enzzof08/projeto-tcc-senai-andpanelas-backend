@@ -30,44 +30,36 @@ router.get('/', async function (request, response) {
 })
 
 router.post('/comunidade/:id', auth.verifyToken, bodyParserJSON, async function (request, response) {
-    let idUsuario = request.id_usuario
-    let id = request.params.id
-
+    let idUsuarioDenunciante = request.id_usuario
+    let idComunidade = request.params.id
     let dados = request.body
-
     let contentType = request.headers['content-type']
 
-    let result = await controllerDenuncia.inserirDenunciaComunidade(id, dados, contentType, idUsuario)
+    let result = await controllerDenuncia.inserirDenunciaComunidade(idComunidade, dados, contentType, idUsuarioDenunciante)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 router.post('/receita/:id', auth.verifyToken, bodyParserJSON, async function (request, response) {
-    let idUsuario = request.id_usuario
-
-    let id = request.params.id
-
+    let idUsuarioDenunciante = request.id_usuario
+    let idReceita = request.params.id
     let dados = request.body
-
     let contentType = request.headers['content-type']
 
-    let result = await controllerDenuncia.inserirDenunciaReceita(id, dados, contentType, idUsuario)
+    let result = await controllerDenuncia.inserirDenunciaReceita(idReceita, dados, contentType, idUsuarioDenunciante)
 
     response.status(result.status_code)
     response.json(result)
 })
 
 router.post('/usuario/:id', auth.verifyToken, bodyParserJSON, async function (request, response) {
-    let idUsuario = request.id_usuario
-
-    let id = request.params.id
-
+    let idUsuarioDenunciante = request.id_usuario
+    let idUsuarioDenunciado = request.params.id
     let dados = request.body
-
     let contentType = request.headers['content-type']
 
-    let result = await controllerDenuncia.inserirDenunciaUsuario(id, dados, contentType, idUsuario)
+    let result = await controllerDenuncia.inserirDenunciaUsuario(idUsuarioDenunciado, dados, contentType, idUsuarioDenunciante)
 
     response.status(result.status_code)
     response.json(result)

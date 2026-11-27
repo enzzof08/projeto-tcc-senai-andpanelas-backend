@@ -1,4 +1,6 @@
 const configMessages = require('../modulo/configMessages')
+const bcrypt = require('bcrypt')
+const crypto = require('crypto')
 
 const denunciaDAO = require('../../model/DAO/denuncia/denuncia.js')
 
@@ -91,41 +93,41 @@ const validarDados = async function(denuncia){
     }
 }
 
-const inserirDenunciaComunidade = async function (idComunidade, dados, contentType) {
+const inserirDenunciaComunidade = async function (idComunidade, dados, contentType, idUsuarioDenunciante) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+        if (String(contentType).split(';')[0].trim().toUpperCase() != 'APPLICATION/JSON') {
             return customMessage.ERROR_CONTENT_TYPE
         }
 
-        let motivo = typeof dados.motivo == 'string' ? dados.motivo.trim() : ''
-        let detalhe = typeof dados.detalhe == 'string' && dados.detalhe.trim() != '' ? dados.detalhe.trim() : null
+        const idComunidadeNumerico = Number(idComunidade)
+        const denuncia = montarDenuncia(dados, idUsuarioDenunciante)
 
-        if (isNaN(idComunidade) || motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !dados.id_usuario || isNaN(dados.id_usuario)) {
+        if (!Number.isInteger(idComunidadeNumerico) || idComunidadeNumerico <= 0 || !denuncia) {
             return customMessage.ERROR_BAD_REQUEST
         }
 
-        let comunidade = await denunciaDAO.selectComunidadeById(idComunidade)
+        let comunidade = await denunciaDAO.selectComunidadeById(idComunidadeNumerico)
 
         if (!comunidade) {
             return customMessage.ERROR_NOT_FOUND
         }
 
-        await denunciaDAO.insertDenunciaComunidade(idComunidade, { motivo, detalhe, id_usuario: dados.id_usuario })
+        await denunciaDAO.insertDenunciaComunidade(idComunidadeNumerico, denuncia)
 
-        let total = await denunciaDAO.selectTotalDenunciasComunidade(idComunidade)
+        let total = await denunciaDAO.selectTotalDenunciasComunidade(idComunidadeNumerico)
 
         let apagada = false
 
         if (total > 15) {
-            await denunciaDAO.deleteComunidadeComDenuncias(idComunidade)
+            await denunciaDAO.deleteComunidadeComDenuncias(idComunidadeNumerico)
             apagada = true
         } else if (total > 10) {
-            let apagar = await controllerChefinho.avaliarComunidade(comunidade, motivo, detalhe)
+            let apagar = await controllerChefinho.avaliarComunidade(comunidade, denuncia.motivo, denuncia.detalhe)
 
             if (apagar === true) {
-                await denunciaDAO.deleteComunidadeComDenuncias(idComunidade)
+                await denunciaDAO.deleteComunidadeComDenuncias(idComunidadeNumerico)
                 apagada = true
             }
         }
@@ -144,40 +146,43 @@ const inserirDenunciaComunidade = async function (idComunidade, dados, contentTy
 const FOTO_BLOQUEADA = 'https://i.pinimg.com/originals/a9/c1/03/a9c10358112c550006d0db9b0f48d301.jpg'
 const BANNER_BLOQUEADO = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1PUaUb0c3ErJOjlNJd3XPKFynVrpxvjXw9uaHjKZEuA&s=10'
 
-const montarDenuncia = function (dados) {
-    let motivo = typeof dados.motivo == 'string' ? dados.motivo.trim() : ''
-    let detalhe = typeof dados.detalhe == 'string' && dados.detalhe.trim() != '' ? dados.detalhe.trim() : null
+const montarDenuncia = function (dados, idUsuarioDenunciante) {
+    const entrada = dados && typeof dados == 'object' ? dados : {}
+    const motivo = typeof entrada.motivo == 'string' ? entrada.motivo.trim() : ''
+    const detalhe = typeof entrada.detalhe == 'string' && entrada.detalhe.trim() != '' ? entrada.detalhe.trim() : null
+    const idUsuarioNumerico = Number(idUsuarioDenunciante)
 
-    if (motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !dados.id_usuario || isNaN(dados.id_usuario)) {
+    if (motivo == '' || motivo.length > 50 || (detalhe && detalhe.length > 200) || !Number.isInteger(idUsuarioNumerico) || idUsuarioNumerico <= 0) {
         return null
     }
 
-    return { motivo, detalhe, id_usuario: dados.id_usuario }
+    return { motivo, detalhe, id_usuario: idUsuarioNumerico }
 }
 
-const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
+const inserirDenunciaReceita = async function (idReceita, dados, contentType, idUsuarioDenunciante) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+        if (String(contentType).split(';')[0].trim().toUpperCase() != 'APPLICATION/JSON') {
             return customMessage.ERROR_CONTENT_TYPE
         }
 
-        let denuncia = montarDenuncia(dados)
+        const idReceitaNumerico = Number(idReceita)
+        let denuncia = montarDenuncia(dados, idUsuarioDenunciante)
 
-        if (isNaN(idReceita) || !denuncia) {
+        if (!Number.isInteger(idReceitaNumerico) || idReceitaNumerico <= 0 || !denuncia) {
             return customMessage.ERROR_BAD_REQUEST
         }
 
-        let receita = await denunciaDAO.selectReceitaCompleta(idReceita)
+        let receita = await denunciaDAO.selectReceitaCompleta(idReceitaNumerico)
 
         if (!receita) {
             return customMessage.ERROR_NOT_FOUND
         }
 
-        await denunciaDAO.insertDenunciaVinculada('tbl_denuncia_receita', 'id_receita', idReceita, denuncia)
+        await denunciaDAO.insertDenunciaVinculada('tbl_denuncia_receita', 'id_receita', idReceitaNumerico, denuncia)
 
-        let total = await denunciaDAO.selectTotalDenuncias('tbl_denuncia_receita', 'id_receita', idReceita)
+        let total = await denunciaDAO.selectTotalDenuncias('tbl_denuncia_receita', 'id_receita', idReceitaNumerico)
 
         let apagada = false
 
@@ -189,7 +194,7 @@ const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
         }
 
         if (apagada) {
-            await denunciaDAO.deleteReceitaComDenuncias(idReceita)
+            await denunciaDAO.deleteReceitaComDenuncias(idReceitaNumerico)
         }
 
         customMessage.DEFAULT_MESSAGE.status = customMessage.SUCCESS_CREATED_ITEM.status
@@ -203,29 +208,30 @@ const inserirDenunciaReceita = async function (idReceita, dados, contentType) {
     }
 }
 
-const inserirDenunciaUsuario = async function (idUsuario, dados, contentType) {
+const inserirDenunciaUsuario = async function (idUsuarioDenunciado, dados, contentType, idUsuarioDenunciante) {
     let customMessage = JSON.parse(JSON.stringify(configMessages))
 
     try {
-        if (String(contentType).toUpperCase() != 'APPLICATION/JSON') {
+        if (String(contentType).split(';')[0].trim().toUpperCase() != 'APPLICATION/JSON') {
             return customMessage.ERROR_CONTENT_TYPE
         }
 
-        let denuncia = montarDenuncia(dados)
+        const idUsuarioDenunciadoNumerico = Number(idUsuarioDenunciado)
+        let denuncia = montarDenuncia(dados, idUsuarioDenunciante)
 
-        if (isNaN(idUsuario) || !denuncia) {
+        if (!Number.isInteger(idUsuarioDenunciadoNumerico) || idUsuarioDenunciadoNumerico <= 0 || !denuncia) {
             return customMessage.ERROR_BAD_REQUEST
         }
 
-        let usuario = await denunciaDAO.selectUsuarioParaModeracao(idUsuario)
+        let usuario = await denunciaDAO.selectUsuarioParaModeracao(idUsuarioDenunciadoNumerico)
 
         if (!usuario) {
             return customMessage.ERROR_NOT_FOUND
         }
 
-        await denunciaDAO.insertDenunciaVinculada('tbl_denuncia_usuario', 'id_usuario', idUsuario, denuncia)
+        await denunciaDAO.insertDenunciaVinculada('tbl_denuncia_usuario', 'id_usuario', idUsuarioDenunciadoNumerico, denuncia)
 
-        let total = await denunciaDAO.selectTotalDenuncias('tbl_denuncia_usuario', 'id_usuario', idUsuario)
+        let total = await denunciaDAO.selectTotalDenuncias('tbl_denuncia_usuario', 'id_usuario', idUsuarioDenunciadoNumerico)
 
         let bloqueado = false
 
@@ -237,8 +243,8 @@ const inserirDenunciaUsuario = async function (idUsuario, dados, contentType) {
         }
 
         if (bloqueado) {
-            await denunciaDAO.atualizarUsuario(idUsuario, {
-                email: `bloqueado${idUsuario}@entrepanelas.invalid`,
+            await denunciaDAO.atualizarUsuario(idUsuarioDenunciadoNumerico, {
+                email: `bloqueado${idUsuarioDenunciadoNumerico}@entrepanelas.invalid`,
                 senha: await bcrypt.hash(crypto.randomUUID(), 10),
                 foto_perfil: FOTO_BLOQUEADA,
                 banner_url: BANNER_BLOQUEADO

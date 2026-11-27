@@ -124,6 +124,28 @@ const deleteListaCompraReceita = async function (idUsuario, idReceita) {
     }
 }
 
+const deleteListaCompraItem = async function (idUsuario, idLista) {
+    try {
+        return await knexConection('tbl_lista_compra')
+            .where({ id: idLista, id_usuario: idUsuario })
+            .del()
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
+const deleteListaCompraTodos = async function (idUsuario) {
+    try {
+        return await knexConection('tbl_lista_compra')
+            .where({ id_usuario: idUsuario })
+            .del()
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+}
+
 const updateStatusListaCompra = async function (id, idUsuario, idStatus) {
     try {
         let sql = `UPDATE tbl_lista_compra SET
@@ -148,6 +170,8 @@ module.exports = {
     selectALLReceitasListaCompra,
     selectIngredientesListaCompra,
     deleteListaCompraReceita,
+    deleteListaCompraItem,
+    deleteListaCompraTodos,
     updateStatusListaCompra
 }
 
